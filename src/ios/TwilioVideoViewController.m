@@ -18,7 +18,6 @@ NSString *const PERMISSIONS_REQUIRED = @"PERMISSIONS_REQUIRED";
 NSString *const HANG_UP = @"HANG_UP";
 NSString *const CLOSED = @"CLOSED";
 
-//FORKED VERSION
 @implementation TwilioVideoViewController
 
 #pragma mark - UIViewController
