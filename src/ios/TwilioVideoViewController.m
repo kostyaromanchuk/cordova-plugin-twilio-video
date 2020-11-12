@@ -18,6 +18,17 @@ NSString *const PERMISSIONS_REQUIRED = @"PERMISSIONS_REQUIRED";
 NSString *const HANG_UP = @"HANG_UP";
 NSString *const CLOSED = @"CLOSED";
 
+#pragma mark - private
+
+@interface TwilioVideoViewController(){
+    
+}
+//Proximity Monitoring
+@property (nonatomic, assign) BOOL localVideoTrack_wasOnBeforeMovedPhoneToEar;
+
+
+@end
+
 @implementation TwilioVideoViewController
 
 #pragma mark - UIViewController
@@ -58,6 +69,8 @@ NSString *const CLOSED = @"CLOSED";
         self.videoButton.backgroundColor = [TwilioVideoConfig colorFromHexString:secondaryColor];
         self.cameraSwitchButton.backgroundColor = [TwilioVideoConfig colorFromHexString:secondaryColor];
     }
+    
+    [self startProximitySensor];
 }
 
 #pragma mark - Public
@@ -381,7 +394,7 @@ NSString *const CLOSED = @"CLOSED";
         self.remoteParticipant = participant;
         self.remoteParticipant.delegate = self;
     }
-    [self logMessage:[NSString stringWithFormat:@"Participant %@ connected with %lu audio and %lu video tracks",
+    [self logMessage:[NSString stringWithFormat:@"Participant '%@' connected with %lu audio and %lu video tracks",
                       participant.identity,
                       (unsigned long)[participant.audioTracks count],
                       (unsigned long)[participant.videoTracks count]]];
@@ -403,7 +416,7 @@ NSString *const CLOSED = @"CLOSED";
 
     // Remote Participant has offered to share the video Track.
     
-    [self logMessage:[NSString stringWithFormat:@"Participant %@ published %@ video track .",
+    [self logMessage:[NSString stringWithFormat:@"Participant '%@' published video track:'%@' .",
                       participant.identity, publication.trackName]];
 }
 
@@ -411,7 +424,7 @@ NSString *const CLOSED = @"CLOSED";
 
     // Remote Participant has stopped sharing the video Track.
     
-    [self logMessage:[NSString stringWithFormat:@"Participant %@ unpublished %@ video track.",
+    [self logMessage:[NSString stringWithFormat:@"Participant '%@' unpublished video track:'%@'.",
                       participant.identity, publication.trackName]];
 }
 
@@ -419,7 +432,7 @@ NSString *const CLOSED = @"CLOSED";
 
     // Remote Participant has offered to share the audio Track.
     
-    [self logMessage:[NSString stringWithFormat:@"Participant %@ published %@ audio track.",
+    [self logMessage:[NSString stringWithFormat:@"Participant '%@' published audio track:'%@'.",
                       participant.identity, publication.trackName]];
 }
 
@@ -427,7 +440,7 @@ NSString *const CLOSED = @"CLOSED";
 
     // Remote Participant has stopped sharing the audio Track.
     
-    [self logMessage:[NSString stringWithFormat:@"Participant %@ unpublished %@ audio track.",
+    [self logMessage:[NSString stringWithFormat:@"Participant '%@' unpublished audio track:'%@'.",
                       participant.identity, publication.trackName]];
 }
 
@@ -437,7 +450,7 @@ NSString *const CLOSED = @"CLOSED";
     // We are subscribed to the remote Participant's audio Track. We will start receiving the
     // remote Participant's video frames now.
     
-    [self logMessage:[NSString stringWithFormat:@"Subscribed to %@ video track for Participant %@",
+    [self logMessage:[NSString stringWithFormat:@"Subscribed to video track:'%@' for Participant '%@'",
                       publication.trackName, participant.identity]];
     [[TwilioVideoManager getInstance] publishEvent: VIDEO_TRACK_ADDED];
 
@@ -454,7 +467,7 @@ NSString *const CLOSED = @"CLOSED";
     // We are unsubscribed from the remote Participant's video Track. We will no longer receive the
     // remote Participant's video.
     
-    [self logMessage:[NSString stringWithFormat:@"Unsubscribed from %@ video track for Participant %@",
+    [self logMessage:[NSString stringWithFormat:@"Unsubscribed from video track:'%@' for Participant '%@'",
                       publication.trackName, participant.identity]];
     [[TwilioVideoManager getInstance] publishEvent: VIDEO_TRACK_REMOVED];
     
@@ -471,7 +484,7 @@ NSString *const CLOSED = @"CLOSED";
     // We are subscribed to the remote Participant's audio Track. We will start receiving the
     // remote Participant's audio now.
     
-    [self logMessage:[NSString stringWithFormat:@"Subscribed to %@ audio track for Participant %@",
+    [self logMessage:[NSString stringWithFormat:@"Subscribed to audio track:'%@' for Participant '%@'",
                       publication.trackName, participant.identity]];
     [[TwilioVideoManager getInstance] publishEvent: AUDIO_TRACK_ADDED];
 }
@@ -483,44 +496,58 @@ NSString *const CLOSED = @"CLOSED";
     // We are unsubscribed from the remote Participant's audio Track. We will no longer receive the
     // remote Participant's audio.
     
-    [self logMessage:[NSString stringWithFormat:@"Unsubscribed from %@ audio track for Participant %@",
+    [self logMessage:[NSString stringWithFormat:@"Unsubscribed from audio track:'%@' for Participant '%@'",
                       publication.trackName, participant.identity]];
     [[TwilioVideoManager getInstance] publishEvent: AUDIO_TRACK_REMOVED];
 }
 
+#pragma mark -
+#pragma mark VIDEO TRACK on/off
+#pragma mark -
+
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didEnableVideoTrack:(nonnull TVIRemoteVideoTrackPublication *)publication {
-    [self logMessage:[NSString stringWithFormat:@"Participant %@ enabled %@ video track.",
+    [self logMessage:[NSString stringWithFormat:@"Participant '%@' enabled video track:'%@' >> remoteView.isHidden = FALSE",
                       participant.identity, publication.trackName]];
+    
+    [self.remoteView setHidden: FALSE];
 }
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didDisableVideoTrack:(nonnull TVIRemoteVideoTrackPublication *)publication {
-    [self logMessage:[NSString stringWithFormat:@"Participant %@ disabled %@ video track.",
+    [self logMessage:[NSString stringWithFormat:@"Participant '%@' disabled video track:'%@' >> remoteView.isHidden = TRUE",
                       participant.identity, publication.trackName]];
+    
+    //main view is now frozen need to turn it off
+    [self.remoteView setHidden: TRUE];
+    
 }
+#pragma mark -
+#pragma mark AUDIO TRACK on/off
+#pragma mark -
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didEnableAudioTrack:(nonnull TVIRemoteAudioTrackPublication *)publication {
-    [self logMessage:[NSString stringWithFormat:@"Participant %@ enabled %@ audio track.",
+    [self logMessage:[NSString stringWithFormat:@"Participant '%@' enabled %@ audio track.",
                       participant.identity, publication.trackName]];
 }
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didDisableAudioTrack:(nonnull TVIRemoteAudioTrackPublication *)publication {
-    [self logMessage:[NSString stringWithFormat:@"Participant %@ disabled %@ audio track.",
+    [self logMessage:[NSString stringWithFormat:@"Participant '%@' disabled %@ audio track.",
                       participant.identity, publication.trackName]];
 }
 
 - (void)didFailToSubscribeToAudioTrack:(nonnull TVIRemoteAudioTrackPublication *)publication
                                  error:(nonnull NSError *)error
                         forParticipant:(nonnull TVIRemoteParticipant *)participant {
-    [self logMessage:[NSString stringWithFormat:@"Participant %@ failed to subscribe to %@ audio track.",
+    [self logMessage:[NSString stringWithFormat:@"Participant '%@' failed to subscribe to audio track:'%@'.",
                       participant.identity, publication.trackName]];
 }
 
 - (void)didFailToSubscribeToVideoTrack:(nonnull TVIRemoteVideoTrackPublication *)publication
                                  error:(nonnull NSError *)error
                         forParticipant:(nonnull TVIRemoteParticipant *)participant {
-    [self logMessage:[NSString stringWithFormat:@"Participant %@ failed to subscribe to %@ video track.",
+    [self logMessage:[NSString stringWithFormat:@"Participant '%@' failed to subscribe to video track:'%@'.",
                       participant.identity, publication.trackName]];
 }
+
 
 #pragma mark - TVIVideoViewDelegate
 
@@ -535,4 +562,103 @@ NSString *const CLOSED = @"CLOSED";
     [self logMessage:[NSString stringWithFormat:@"Capture failed with error.\ncode = %lu error = %@", error.code, error.localizedDescription]];
 }
 
+
+#pragma mark - ProximityMonitoring
+
+-(BOOL)startProximitySensor
+{
+    [self logMessage:@"[TwilioVideoViewController.m] startProximitySensor"];
+    
+    if([UIDevice currentDevice].proximityMonitoringEnabled == FALSE)
+        [UIDevice currentDevice].proximityMonitoringEnabled = TRUE;
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(proximityStateDidChange:) name:UIDeviceProximityStateDidChangeNotification object:nil];
+
+    
+    return [UIDevice currentDevice].proximityMonitoringEnabled;
+}
+
+-(NSString *)printableProximityInfo
+{
+    return (self.latestProximityReading == TRUE) ? @"CloseProximity" : @"DistantProximity";
+}
+
+-(BOOL) latestProximityReading
+{
+    return [UIDevice currentDevice].proximityState;
+}
+
+- (void)proximityStateDidChange:(NSNotification *)notification
+{
+    //--------------------------------------------------------------------------
+    //DEBUG
+    //    BOOL state = [UIDevice currentDevice].proximityState;
+    //    NSString *msg = [NSString stringWithFormat:@"[TwilioVideoViewController.m] proximityStateDidChange:%d", state];
+    //    [self logMessage:msg];
+    //[TwilioVideoViewController.m] proximityStateDidChange:0
+    //[TwilioVideoViewController.m] proximityStateDidChange:1
+    //--------------------------------------------------------------------------
+    //VIDEO is ON  > MOVE PHONE TO EAR        > TURN VIDEO OFF
+    //               MOVE PHONE AWAY FROM EAR > turn it back on
+    
+    //VIDEO is OFF > MOVE PHONE TO EAR        > VIDEO STAYS OFF
+    //               MOVE PHONE AWAY FROM EAR > dont turn it back on
+    //--------------------------------------------------------------------------
+    if([UIDevice currentDevice].proximityState){
+        //PROXIMITY: is TRUE the phone is near users ear
+        //iOS will turn off the screen
+        //BUT twilio video will still be on and on other devices with see blurry ear
+        
+        if(self.localVideoTrack.enabled){
+            //Camera was ON when user moved phone to their ear.
+            //later when user moves phone away from ear
+            //and proximityStateDidChange triggered again
+            //we should turn camera back on
+            self.localVideoTrack_wasOnBeforeMovedPhoneToEar = TRUE;
+            
+            //Phone is at EAR > TURN VIDEO OFF - youll only se this on other phone
+            //on this phone iOS turns users screen off
+            [self logMessage:@"[PROXIMITY: TRUE] TURN OFF VIDEO: self.localVideoTrack.enabled = FALSE"];
+            self.localVideoTrack.enabled = FALSE;
+            
+        }else{
+            //Camera was OFF when user moved phone to their ear.
+            //later when user moves phone away from ear >  proximityStateDidChange called again
+            //we should NOT turn camera back on
+            self.localVideoTrack_wasOnBeforeMovedPhoneToEar = FALSE;
+            
+            //video already off
+            [self logMessage:@"[PROXIMITY: TRUE] Video already off - DO NOTHING"];
+        }
+    }else{
+        //PROXIMITY: FALSE - phone is not near face
+        //turn on video ONLY IF it had been previously ON
+        if(self.localVideoTrack_wasOnBeforeMovedPhoneToEar){
+            
+            //turn it back on when you move phone away from ear
+            self.localVideoTrack.enabled = TRUE;
+            [self logMessage:@"[PROXIMITY: FALSE] TURN VIDEO BACK ON"];
+            
+        }else{
+            //user moved phone away from ear but they had VIDEO off before
+            //so dont automatically turn it back on
+            [self logMessage:@"[PROXIMITY: FALSE] VIDEO was off BEFORE dont turn back on"];
+        }
+    }
+}
+
+-(void)viewWillDisappear:(BOOL)animated{
+    [super viewWillDisappear: animated];
+    [self logMessage:@"[TwilioVideoViewController.m] viewWillDisappear >> stopProximitySensor"];
+    
+    [self stopProximitySensor];
+    
+}
+
+-(void)stopProximitySensor
+{
+    [UIDevice currentDevice].proximityMonitoringEnabled = FALSE;
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIDeviceProximityStateDidChangeNotification object:nil];
+    
+}
 @end
