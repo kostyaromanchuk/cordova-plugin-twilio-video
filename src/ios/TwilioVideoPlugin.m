@@ -25,7 +25,18 @@
         
         vc.config = config;
 
-        vc.view.backgroundColor = [UIColor clearColor];
+        //----------------------------------------------------------------------
+        //not required - needed when the Leave Room was in the cordova WebView
+        //behind this TwilioVideoViewController.view
+        //vc.view.backgroundColor = [UIColor clearColor];
+        //vc.view.backgroundColor = [UIColor redColor];
+        //----------------------------------------------------------------------
+        //Sea/ grey - if you comment this out it will use the color set in TwilioVideo.storyboard
+        vc.view.backgroundColor = [UIColor colorWithRed: 17.0/255.0
+                                                  green: 37.0/255.0
+                                                   blue: 57.0/255.0
+                                                  alpha:1.0];
+        //----------------------------------------------------------------------
         vc.modalPresentationStyle = UIModalPresentationOverFullScreen;
         
         [self.viewController presentViewController:vc animated:NO completion:^{
