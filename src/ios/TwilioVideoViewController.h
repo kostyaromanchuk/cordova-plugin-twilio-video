@@ -15,10 +15,13 @@
 #pragma mark Video SDK components
 
 @property (nonatomic, strong) TVICameraSource *camera;
+
 @property (nonatomic, strong) TVILocalVideoTrack *localVideoTrack;
 @property (nonatomic, strong) TVILocalAudioTrack *localAudioTrack;
+
 @property (nonatomic, strong) TVIRemoteParticipant *remoteParticipant;
 @property (nonatomic, weak) TVIVideoView *remoteView;
+
 @property (nonatomic, strong) TVIRoom *room;
 
 #pragma mark UI Element Outlets and handles

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="17506" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="jSN-F6-Q4K">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="17156" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="jSN-F6-Q4K">
     <device id="retina4_7" orientation="portrait" appearance="light"/>
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17505"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17126"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
@@ -21,60 +21,12 @@
                             <view contentMode="scaleAspectFit" translatesAutoresizingMaskIntoConstraints="NO" id="hJ3-NM-pz1" customClass="TVIVideoView">
                                 <rect key="frame" x="239" y="399" width="120" height="160"/>
                                 <color key="backgroundColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
-                            </view>
-                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="r4p-h9-xiA">
-                                <rect key="frame" x="16" y="20" width="343" height="100"/>
-                                <subviews>
-                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Sr9-om-6LZ">
-                                        <rect key="frame" x="8" y="8" width="84" height="84"/>
-                                        <subviews>
-                                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="sea_chat_user_lorin.png" translatesAutoresizingMaskIntoConstraints="NO" id="4rw-7g-hOA">
-                                                <rect key="frame" x="0.0" y="0.0" width="84" height="84"/>
-                                            </imageView>
-                                        </subviews>
-                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                        <constraints>
-                                            <constraint firstItem="4rw-7g-hOA" firstAttribute="leading" secondItem="Sr9-om-6LZ" secondAttribute="leading" id="8X8-DY-TBh"/>
-                                            <constraint firstAttribute="bottom" secondItem="4rw-7g-hOA" secondAttribute="bottom" id="9cb-dt-yhJ"/>
-                                            <constraint firstAttribute="width" secondItem="Sr9-om-6LZ" secondAttribute="height" multiplier="1:1" id="AXI-pE-Bm2"/>
-                                            <constraint firstAttribute="trailing" secondItem="4rw-7g-hOA" secondAttribute="trailing" id="i1C-ef-BKP"/>
-                                            <constraint firstItem="4rw-7g-hOA" firstAttribute="top" secondItem="Sr9-om-6LZ" secondAttribute="top" id="kma-nF-hPt"/>
-                                        </constraints>
-                                    </view>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Lorin Kalemi" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="10" translatesAutoresizingMaskIntoConstraints="NO" id="aqP-iA-exF">
-                                        <rect key="frame" x="100" y="8" width="235" height="21"/>
-                                        <constraints>
-                                            <constraint firstAttribute="height" constant="21" id="Uic-oV-igI"/>
-                                        </constraints>
-                                        <fontDescription key="fontDescription" type="system" pointSize="20"/>
-                                        <color key="textColor" red="1" green="0.99311947410000001" blue="0.90725500079999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                        <nil key="highlightedColor"/>
-                                    </label>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Calling..." textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="8" translatesAutoresizingMaskIntoConstraints="NO" id="jwj-CT-Sak">
-                                        <rect key="frame" x="100" y="37" width="235" height="21"/>
-                                        <constraints>
-                                            <constraint firstAttribute="height" constant="21" id="EGt-7c-k2E"/>
-                                        </constraints>
-                                        <fontDescription key="fontDescription" type="system" pointSize="15"/>
-                                        <color key="textColor" red="1" green="0.99311947410000001" blue="0.90725500079999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                        <nil key="highlightedColor"/>
-                                    </label>
-                                </subviews>
-                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <constraints>
-                                    <constraint firstItem="jwj-CT-Sak" firstAttribute="leading" secondItem="Sr9-om-6LZ" secondAttribute="trailing" constant="8" symbolic="YES" id="9fO-tV-DjU"/>
-                                    <constraint firstItem="aqP-iA-exF" firstAttribute="leading" secondItem="Sr9-om-6LZ" secondAttribute="trailing" constant="8" symbolic="YES" id="Go1-dK-hnR"/>
-                                    <constraint firstAttribute="trailing" secondItem="aqP-iA-exF" secondAttribute="trailing" constant="8" id="KNm-ZG-5We"/>
-                                    <constraint firstAttribute="height" constant="100" id="QOi-nm-yhd"/>
-                                    <constraint firstItem="jwj-CT-Sak" firstAttribute="top" secondItem="aqP-iA-exF" secondAttribute="bottom" constant="8" symbolic="YES" id="ZkJ-mA-T4G"/>
-                                    <constraint firstAttribute="bottom" secondItem="Sr9-om-6LZ" secondAttribute="bottom" constant="8" id="g7b-oW-u9X"/>
-                                    <constraint firstItem="aqP-iA-exF" firstAttribute="top" secondItem="r4p-h9-xiA" secondAttribute="top" constant="8" id="gKu-h9-hBb"/>
-                                    <constraint firstItem="Sr9-om-6LZ" firstAttribute="top" secondItem="r4p-h9-xiA" secondAttribute="top" constant="8" id="hCS-1E-VJH"/>
-                                    <constraint firstItem="Sr9-om-6LZ" firstAttribute="leading" secondItem="r4p-h9-xiA" secondAttribute="leading" constant="8" id="hDL-zb-cml"/>
-                                    <constraint firstAttribute="trailing" secondItem="jwj-CT-Sak" secondAttribute="trailing" constant="8" id="hdn-LJ-zey"/>
+                                    <constraint firstAttribute="width" constant="120" id="J2o-Jc-2yg"/>
+                                    <constraint firstAttribute="height" constant="160" id="XWb-h1-Lbd"/>
                                 </constraints>
                             </view>
-                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="l3a-7A-hrE" userLabel="viewButtonOuter">
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="l3a-7A-hrE" userLabel="View[ButtonsOuter]">
                                 <rect key="frame" x="0.0" y="567" width="375" height="100"/>
                                 <subviews>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="uVW-zg-aXt" userLabel="View[ButtonsInner]">
@@ -184,32 +136,19 @@
                         </subviews>
                         <color key="backgroundColor" red="0.067076466979999999" green="0.1435638964" blue="0.222487241" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
-                            <constraint firstItem="hJ3-NM-pz1" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leading" constant="239" id="1gS-nq-n0q" userLabel="nsLayoutConstraint_previewView_leading"/>
-                            <constraint firstItem="r4p-h9-xiA" firstAttribute="top" secondItem="8oD-ke-cGW" secondAttribute="bottom" constant="20" id="LaB-tj-Qc8"/>
                             <constraint firstItem="l3a-7A-hrE" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leading" id="Wq0-WB-aGa"/>
                             <constraint firstAttribute="trailing" secondItem="l3a-7A-hrE" secondAttribute="trailing" id="XOY-T0-gzf"/>
-                            <constraint firstAttribute="trailing" secondItem="hJ3-NM-pz1" secondAttribute="trailing" constant="16" id="Y4t-3f-0e6" userLabel="nsLayoutConstraint_previewView_trailing"/>
-                            <constraint firstItem="hJ3-NM-pz1" firstAttribute="top" secondItem="3Bh-pO-6uY" secondAttribute="top" constant="399" id="Yku-8X-yFb" userLabel="nsLayoutConstraint_previewView_top"/>
-                            <constraint firstItem="r4p-h9-xiA" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leadingMargin" id="dKs-U1-o7T"/>
-                            <constraint firstAttribute="bottom" secondItem="hJ3-NM-pz1" secondAttribute="bottom" constant="108" id="qJb-Zx-oKk" userLabel="nsLayoutConstraint_previewView_bottom"/>
+                            <constraint firstItem="l3a-7A-hrE" firstAttribute="top" secondItem="hJ3-NM-pz1" secondAttribute="bottom" constant="8" symbolic="YES" id="ZJ4-2Q-BPk"/>
+                            <constraint firstItem="hJ3-NM-pz1" firstAttribute="trailing" secondItem="3Bh-pO-6uY" secondAttribute="trailingMargin" id="oeO-SA-Dt9"/>
                             <constraint firstItem="tZu-uw-hgi" firstAttribute="top" secondItem="l3a-7A-hrE" secondAttribute="bottom" id="vBu-Z0-1Ki"/>
-                            <constraint firstItem="r4p-h9-xiA" firstAttribute="trailing" secondItem="3Bh-pO-6uY" secondAttribute="trailingMargin" id="zTK-8d-idS"/>
                         </constraints>
                     </view>
                     <connections>
                         <outlet property="cameraSwitchButton" destination="XKU-af-eTc" id="jTc-4v-uIt"/>
                         <outlet property="disconnectButton" destination="krA-sT-Z3g" id="uQu-1U-Ree"/>
-                        <outlet property="imageViewOtherUser" destination="4rw-7g-hOA" id="4Og-as-WqN"/>
                         <outlet property="micButton" destination="rwp-9E-VzS" id="SW4-po-OHw"/>
-                        <outlet property="nsLayoutConstraint_previewView_bottom" destination="qJb-Zx-oKk" id="5iZ-8S-Oy6"/>
-                        <outlet property="nsLayoutConstraint_previewView_leading" destination="1gS-nq-n0q" id="Fgn-ch-nOd"/>
-                        <outlet property="nsLayoutConstraint_previewView_top" destination="Yku-8X-yFb" id="xHW-gs-NfR"/>
-                        <outlet property="nsLayoutConstraint_previewView_trailing" destination="Y4t-3f-0e6" id="P2j-U7-8vv"/>
                         <outlet property="previewView" destination="hJ3-NM-pz1" id="1kY-rd-tEJ"/>
-                        <outlet property="textViewOtherUserName" destination="aqP-iA-exF" id="jf0-PT-1kG"/>
                         <outlet property="videoButton" destination="7bK-Tc-zw5" id="WoD-99-cw1"/>
-                        <outlet property="viewButtonOuter" destination="l3a-7A-hrE" id="14i-bO-JBf"/>
-                        <outlet property="viewCallingInfo" destination="r4p-h9-xiA" id="oP5-TA-CII"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="JfB-JL-3y4" sceneMemberID="firstResponder"/>
@@ -220,7 +159,6 @@
     <resources>
         <image name="end_call.png" width="11.520000457763672" height="11.520000457763672"/>
         <image name="mic.png" width="6" height="11.520000457763672"/>
-        <image name="sea_chat_user_lorin.png" width="72" height="72"/>
         <image name="switch_camera.png" width="11.520000457763672" height="8.6400003433227539"/>
         <image name="video.png" width="11.520000457763672" height="6.4800000190734863"/>
     </resources>

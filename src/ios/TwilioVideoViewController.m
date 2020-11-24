@@ -21,11 +21,35 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark - private
 
 @interface TwilioVideoViewController(){
-    
+    BOOL _log_info_on;
+    BOOL _log_debug_on;
+    BOOL _log_error_on;
+
 }
+
 //Proximity Monitoring
 @property (nonatomic, assign) BOOL localVideoTrack_wasOnBeforeMovedPhoneToEar;
 
+@property (unsafe_unretained, nonatomic) IBOutlet NSLayoutConstraint *nsLayoutConstraint_previewView_top;
+@property (unsafe_unretained, nonatomic) IBOutlet NSLayoutConstraint *nsLayoutConstraint_previewView_bottom;
+@property (unsafe_unretained, nonatomic) IBOutlet NSLayoutConstraint *nsLayoutConstraint_previewView_leading;
+@property (unsafe_unretained, nonatomic) IBOutlet NSLayoutConstraint *nsLayoutConstraint_previewView_trailing;
+
+//the default values for the 4 constraints for previewView BEFORE we go full screen
+//We will reset to these values when we leave full screen
+//values are set out in Storyboard
+//@property (nonatomic, assign) CGFloat nsLayoutConstraint_previewView_top_constant;
+//@property (nonatomic, assign) CGFloat nsLayoutConstraint_previewView_bottom_constant;
+//@property (nonatomic, assign) CGFloat nsLayoutConstraint_previewView_leading_constant;
+//@property (nonatomic, assign) CGFloat nsLayoutConstraint_previewView_trailing_constant;
+
+
+//we animate preview to be above this
+@property (unsafe_unretained, nonatomic) IBOutlet UIView *viewButtonOuter;
+
+@property (unsafe_unretained, nonatomic) IBOutlet UIImageView *imageViewOtherUser;
+@property (unsafe_unretained, nonatomic) IBOutlet UILabel *textViewOtherUserName;
+@property (unsafe_unretained, nonatomic) IBOutlet UIView *viewCallingInfo;
 
 @end
 
@@ -36,12 +60,30 @@ NSString *const CLOSED = @"CLOSED";
 - (void)viewDidLoad {
     [super viewDidLoad];
     
+    [self configureLogging];
+    
+    //---------------------------------------
+    //PREVIEW
+    //---------------------------------------
+    [self setupPreviewView];
+    
+    //---------------------------------------
+    //DEBUG - draws borders aroud view - handy to track animations
+    //---------------------------------------
+    //    [self addBorderToView:self.previewView withColor:[UIColor redColor]];
+    //    [self addBorderToView:self.viewButtonOuter withColor:[UIColor blueColor]];
+    //    [self addBorderToView:self.imageViewOtherUser withColor:[UIColor whiteColor]];
+    
+    self.imageViewOtherUser.layer.cornerRadius = self.imageViewOtherUser.frame.size.height / 2.0;
+    self.imageViewOtherUser.layer.borderWidth = 5.f;
+    
+    //---------------------------------------
     [[TwilioVideoManager getInstance] setActionDelegate:self];
-
+    
     [[TwilioVideoManager getInstance] publishEvent: OPENED];
     [self.navigationController setNavigationBarHidden:YES animated:NO];
     
-    [self logMessage:[NSString stringWithFormat:@"TwilioVideo v%@", [TwilioVideoSDK sdkVersion]]];
+    [self log_info:[NSString stringWithFormat:@"TwilioVideo v%@", [TwilioVideoSDK sdkVersion]]];
     
     // Configure access token for testing. Create one manually in the console
     // at https://www.twilio.com/console/video/runtime/testing-tools
@@ -73,21 +115,249 @@ NSString *const CLOSED = @"CLOSED";
     [self startProximitySensor];
 }
 
-#pragma mark - Public
+
+
+//DEBUG - draws line aroudn a UIView
+-(void)addBorderToView:(UIView *)view withColor:(UIColor *) color{
+    //view.layer.borderColor = [[UIColor colorWithRed:70.53/255.0 green:94.54/255.0 blue:107.50/255.0 alpha:1.00] CGColor];
+    //view.layer.borderColor = [[UIColor redColor] CGColor];
+    view.layer.borderColor = [color CGColor];
+    view.layer.borderWidth = 1.0f;
+}
+
+-(void)loadUserImageInBackground_async{
+    [self performSelectorInBackground:@selector(loadUserImageInBackground) withObject:nil];
+
+}
+
+- (void)loadUserImageInBackground
+{
+    NSURL * url = [NSURL URLWithString:@"https://sealogin-trfm-prd-cdn.azureedge.net/API/1_3/User/picture?imageUrl=673623fdc8b39b5b05b3167765019398.jpg"];
+    NSData * data = [NSData dataWithContentsOfURL:url];
+    UIImage * image = [UIImage imageWithData:data];
+    if (image)
+    {
+        // Success use the image
+        dispatch_async(dispatch_get_main_queue(), ^{
+            self.imageViewOtherUser.image = image;
+        });
+    }
+    else
+    {
+        // Failed (load an error image?)
+        [self log_error:@"[loadImage] failed to load from url ] "];
+    }
+}
+
+-(void)otherUserCallingPanel_configure{
+    self.textViewOtherUserName.text = @"Lorin Kaliemi";
+    
+    //TODO - url is hard codes should be passed in from cordova
+    [self loadUserImageInBackground_async];
+}
+
+-(void)otherUserCallingPanel_isVisible:(BOOL)isVisible{
+    if(isVisible){
+        [self.viewCallingInfo setHidden:FALSE];
+        
+    }else{
+        [self.viewCallingInfo setHidden:TRUE];
+       
+    }
+}
+
+-(void)setupPreviewView{
+    
+    [self otherUserCallingPanel_configure];
+    //HIDE till my camera connected
+    [self otherUserCallingPanel_isVisible:FALSE];
+    
+    //set it always to Fill so it looks ok in fullscreen
+    //I tried changing it to Fit/Fill but jumps at the end when it zooms in
+    self.previewView.contentMode = UIViewContentModeScaleAspectFill;
+    
+    //DEBUG - when video is full screen is may have wrong AspectFit or AspectFil
+   [self updateConstraints_PreviewView_toFullScreen: TRUE animated:FALSE];
+}
+
+-(void)updateConstraints_PreviewView_toFullScreen:(BOOL)fullScreen{
+    if(fullScreen){
+
+        //THESE are linked to SuperView not Layoutguide - may go behind nav bar
+        self.nsLayoutConstraint_previewView_top.constant = 0.0;
+        self.nsLayoutConstraint_previewView_bottom.constant = 0.0;
+        
+        self.nsLayoutConstraint_previewView_leading.constant = 0.0;
+        self.nsLayoutConstraint_previewView_trailing.constant = 0.0;
+        
+        //self.previewView.contentMode = UIViewContentModeScaleAspectFill;
+        
+    }else{
+        
+        //----------------------------------------------------------------------
+        CGFloat screen_width = self.view.frame.size.width;
+        CGFloat screen_height = self.view.frame.size.height;
+        
+        CGFloat border = 8.0;
+        CGFloat previewView_height_small = 160.0;
+        CGFloat previewView_width_small = 120.0;
+    
+        //----------------------------------------------------------------------
+        //BOTTOM
+        //----------------------------------------------------------------------
+        //ISSUE - previewView in full screen ignores Safe Area
+        //BUT viewButtonOuter bottom is calculated from view.safeAreaInsets.bottom
+        //
+        //UIEdgeInsets screen_safeAreaInsets = self.view.safeAreaInsets;
+    
+        CGFloat bottom = (self.viewButtonOuter.frame.size.height + self.view.safeAreaInsets.bottom + 8.0);
+        
+        self.nsLayoutConstraint_previewView_bottom.constant = bottom;
+        
+        //----------------------------------------------------------------------
+        //TOP = BOTTOM + HEIGHT of preview
+        //----------------------------------------------------------------------
+        CGFloat top = screen_height - (bottom + previewView_height_small);
+        self.nsLayoutConstraint_previewView_top.constant = top;
+        
+        //----------------------------------------------------------------------
+        //TRAILING
+        //----------------------------------------------------------------------
+        CGFloat trailing = self.view.safeAreaInsets.right + border;
+        self.nsLayoutConstraint_previewView_trailing.constant = trailing;
+        
+        //----------------------------------------------------------------------
+        //LEADING
+        //----------------------------------------------------------------------
+        CGFloat leading = screen_width - (trailing + previewView_width_small);
+        self.nsLayoutConstraint_previewView_leading.constant = leading;
+        
+        //self.previewView.contentMode = UIViewContentModeScaleAspectFit;
+    }
+}
+
+
+-(void)updateConstraints_PreviewView_toFullScreen:(BOOL)fullScreen animated:(BOOL)isAnimated{
+
+    //animation in and out should be same number of secs
+    NSTimeInterval duration = 0.3;
+    
+    if(fullScreen){
+        if(isAnimated){
+            //------------------------------------------------------------------
+            //FULL SCREEN + ANIMATED
+            //------------------------------------------------------------------
+            [UIView animateWithDuration:duration
+                                  delay:0
+                                options:UIViewAnimationOptionCurveEaseInOut
+                             animations:^{
+                                //--------------------------------------------------
+                                [self updateConstraints_PreviewView_toFullScreen: TRUE];
+                                //--------------------------------------------------
+                                //will resize but animate without this
+                                [self.view layoutIfNeeded];
+                                //--------------------------------------------------
+                             }
+                             completion:^(BOOL finished) {
+                                //DONE
+                             }
+            ];
+           
+        }else{
+            //------------------------------------------------------------------
+            //FULL SCREEN + UNANIMATED (when app starts)
+            //------------------------------------------------------------------
+            [self updateConstraints_PreviewView_toFullScreen: TRUE];
+            
+        }
+    }else{
+        if(isAnimated){
+            //------------------------------------------------------------------
+            //NOT FULL SCREEN + ANIMATED - (dialing ends shrink preview to bottom right)
+            //------------------------------------------------------------------
+            [UIView animateWithDuration:duration
+                                  delay:0
+                                options:UIViewAnimationOptionCurveEaseInOut
+                             animations:^{
+                //--------------------------------------------------
+                [self updateConstraints_PreviewView_toFullScreen: FALSE];
+                //--------------------------------------------------
+                //will resize but animate without this
+                [self.view layoutIfNeeded];
+                //--------------------------------------------------
+            }
+            completion:^(BOOL finished) {
+                //DONE
+            }
+             ];
+            
+        }else{
+            //------------------------------------------------------------------
+            //NOT FULL SCREEN + UNANIMATED (preview size jumps to bottom right - unused)
+            //------------------------------------------------------------------
+            [self updateConstraints_PreviewView_toFullScreen: FALSE];
+            
+        }
+    }
+    
+    //[self.view setNeedsUpdateConstraints];
+}
+
+
+
+#pragma mark -
+#pragma mark PUBLIC - connectToRoom
+#pragma mark -
 
 - (void)connectToRoom:(NSString*)room token:(NSString *)token {
+    [self log_debug:@"[TwilioVideoViewController.m - connectToRoom]"];
+    
     self.roomName = room;
     self.accessToken = token;
+    
+    [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> [self showRoomUI:YES]"];
+    
     [self showRoomUI:YES];
 
+    [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions"];
     [TwilioVideoPermissions requestRequiredPermissions:^(BOOL grantedPermissions) {
          if (grantedPermissions) {
+             [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions:OK > doConnect"];
              [self doConnect];
          } else {
+             [self log_error:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions: grantedPermissions:FALSE > send PERMISSIONS_REQUIRED"];
              [[TwilioVideoManager getInstance] publishEvent: PERMISSIONS_REQUIRED];
              [self handleConnectionError: [self.config i18nConnectionError]];
          }
     }];
+}
+
+#pragma mark -
+#pragma mark BUTTONS
+#pragma mark -
+
+- (IBAction)videoButtonPressed:(id)sender {
+//    if(self.localVideoTrack){
+//        self.localVideoTrack.enabled = !self.localVideoTrack.isEnabled;
+//        [self.videoButton setSelected: !self.localVideoTrack.isEnabled];
+//    }
+    [self updateConstraints_PreviewView_toFullScreen: TRUE animated:TRUE];
+}
+
+
+- (IBAction)micButtonPressed:(id)sender {
+    // We will toggle the mic to mute/unmute and change the title according to the user action.
+    
+//    if (self.localAudioTrack) {
+//        self.localAudioTrack.enabled = !self.localAudioTrack.isEnabled;
+//        // If audio not enabled, mic is muted and button crossed out
+//        [self.micButton setSelected: !self.localAudioTrack.isEnabled];
+//    }
+    [self updateConstraints_PreviewView_toFullScreen: FALSE animated:TRUE];
+}
+
+- (IBAction)cameraSwitchButtonPressed:(id)sender {
+    [self flipCamera];
 }
 
 - (IBAction)disconnectButtonPressed:(id)sender {
@@ -98,26 +368,7 @@ NSString *const CLOSED = @"CLOSED";
     }
 }
 
-- (IBAction)micButtonPressed:(id)sender {
-    // We will toggle the mic to mute/unmute and change the title according to the user action.
-    
-    if (self.localAudioTrack) {
-        self.localAudioTrack.enabled = !self.localAudioTrack.isEnabled;
-        // If audio not enabled, mic is muted and button crossed out
-        [self.micButton setSelected: !self.localAudioTrack.isEnabled];
-    }
-}
 
-- (IBAction)cameraSwitchButtonPressed:(id)sender {
-    [self flipCamera];
-}
-
-- (IBAction)videoButtonPressed:(id)sender {
-    if(self.localVideoTrack){
-        self.localVideoTrack.enabled = !self.localVideoTrack.isEnabled;
-        [self.videoButton setSelected: !self.localVideoTrack.isEnabled];
-    }
-}
 
 #pragma mark - Private
 
@@ -128,9 +379,15 @@ NSString *const CLOSED = @"CLOSED";
     return NO;
 }
 
+
 - (void)startPreview {
+    [self log_debug:@"[startPreview] START"];
+
+    
     // TVICameraCapturer is not supported with the Simulator.
     if ([self isSimulator]) {
+        [self log_error:@"[startPreview] preview doesnt work in Simulator. Must run on real device 'TVICameraCapturer is not supported with the Simulator.'"];
+        
         [self.previewView removeFromSuperview];
         return;
     }
@@ -139,18 +396,29 @@ NSString *const CLOSED = @"CLOSED";
     AVCaptureDevice *backCamera = [TVICameraSource captureDeviceForPosition:AVCaptureDevicePositionBack];
     
     if (frontCamera != nil || backCamera != nil) {
+        [self log_debug:@"[startPreview] localVideoTrack set to self.camera which is frontCamera or backCamera"];
+        
         self.camera = [[TVICameraSource alloc] initWithDelegate:self];
         self.localVideoTrack = [TVILocalVideoTrack trackWithSource:self.camera
                                                              enabled:YES
                                                                 name:@"Camera"];
         if (!self.localVideoTrack) {
-            [self logMessage:@"Failed to add video track"];
+            [self log_error:@"[startPreview] Failed to add video track - self.localVideoTrack is NULL"];
+            
         } else {
+            [self log_debug:@"[startPreview] localVideoTrack ok >> addRenderer:self.previewView"];
+            
             // Add renderer to video track for local preview
             [self.localVideoTrack addRenderer:self.previewView];
             
-            [self logMessage:@"Video track created"];
             
+            
+            
+            [self log_debug:@"self.localVideoTrack created and connected to previewView"];
+            
+            //------------------------------------------------------------------
+            //TAP on preview swaps to front or back
+            //------------------------------------------------------------------
             if (frontCamera != nil && backCamera != nil) {
                 UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self
                                                                                       action:@selector(flipCamera)];
@@ -158,23 +426,39 @@ NSString *const CLOSED = @"CLOSED";
                 self.cameraSwitchButton.hidden = NO;
             }
             
+            //UNHIDE video button(so user can turn it off if needed)
             self.videoButton.hidden = NO;
+            
+            [self log_debug:@"[startPreview][self.camera startCaptureWithDevice: FROM current camera frontCamera OR backCamera"];
             
             [self.camera startCaptureWithDevice:frontCamera != nil ? frontCamera : backCamera
                  completion:^(AVCaptureDevice *device, TVIVideoFormat *format, NSError *error) {
                      if (error != nil) {
-                         [self logMessage:[NSString stringWithFormat:@"Start capture failed with error.\ncode = %lu error = %@", error.code, error.localizedDescription]];
+                        [self log_error:[NSString stringWithFormat:@"[startPreview][self.camera startCaptureWithDevice: failed with error.\ncode = %lu error = %@", error.code, error.localizedDescription]];
+                        
                      } else {
+                         [self log_info:@"[startPreview]self.camera startCaptureWithDevice: STARTED OK"];
+                         
+                         //FLIP the video on horizontal so it looks right (e.g. text on tshort not flipped)
                          self.previewView.mirror = (device.position == AVCaptureDevicePositionFront);
+                         
+                         //---------------------------------------------------------
+                         //preview is inserted o
+                         //---------------------------------------------------------
+                         [self otherUserCallingPanel_isVisible:TRUE];
+                         [self.view bringSubviewToFront:self.viewCallingInfo];
                      }
             }];
         }
     } else {
-       [self logMessage:@"No front or back capture device found!"];
+       [self log_info:@"No front or back capture device found!"];
    }
 }
 
 - (void)flipCamera {
+    
+    [self log_debug:@"[flipCamera] START"];
+    
     AVCaptureDevice *newDevice = nil;
     
     if (self.camera.device.position == AVCaptureDevicePositionFront) {
@@ -186,7 +470,7 @@ NSString *const CLOSED = @"CLOSED";
     if (newDevice != nil) {
         [self.camera selectCaptureDevice:newDevice completion:^(AVCaptureDevice *device, TVIVideoFormat *format, NSError *error) {
             if (error != nil) {
-                [self logMessage:[NSString stringWithFormat:@"Error selecting capture device.\ncode = %lu error = %@", error.code, error.localizedDescription]];
+                [self log_info:[NSString stringWithFormat:@"Error selecting capture device.\ncode = %lu error = %@", error.code, error.localizedDescription]];
             } else {
                 self.previewView.mirror = (device.position == AVCaptureDevicePositionFront);
             }
@@ -200,13 +484,17 @@ NSString *const CLOSED = @"CLOSED";
     
     // Create an audio track.
     if (!self.localAudioTrack) {
+        //
+        //https://twilio.github.io/twilio-video-ios/docs/2.8.1/index.html
+        //----------------------------------------------------------------------
         self.localAudioTrack = [TVILocalAudioTrack trackWithOptions:nil
                                                             enabled:YES
                                                                name:@"Microphone"];
-        
+        //----------------------------------------------------------------------
         if (!self.localAudioTrack) {
-            [self logMessage:@"Failed to add audio track"];
+            [self log_info:@"Failed to add audio track"];
         }
+        //----------------------------------------------------------------------
     }
     
     // Create a video track which captures from the camera.
@@ -216,14 +504,19 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 - (void)doConnect {
+    [self log_debug:@"[TwilioVideoViewController.m - doConnect] START"];
+    
     if ([self.accessToken isEqualToString:@"TWILIO_ACCESS_TOKEN"]) {
-        [self logMessage:@"Please provide a valid token to connect to a room"];
+        [self log_info:@"Please provide a valid token to connect to a room"];
         return;
     }
     
+    //--------------------------------------------------------------------------
+    [self log_debug:@"[TwilioVideoViewController.m - doConnect] >> prepareLocalMedia"];
+    
     // Prepare local media which we will share with Room Participants.
     [self prepareLocalMedia];
-    
+    //--------------------------------------------------------------------------
     TVIConnectOptions *connectOptions = [TVIConnectOptions optionsWithToken:self.accessToken
                                                                       block:^(TVIConnectOptionsBuilder * _Nonnull builder) {
                                                                           builder.roomName = self.roomName;
@@ -231,14 +524,22 @@ NSString *const CLOSED = @"CLOSED";
                                                                           builder.audioTracks = self.localAudioTrack ? @[ self.localAudioTrack ] : @[ ];
                                                                           builder.videoTracks = self.localVideoTrack ? @[ self.localVideoTrack ] : @[ ];
                                                                       }];
-    
+    //--------------------------------------------------------------------------
     // Connect to the Room using the options we provided.
+    
+    [self log_debug:@"[TwilioVideoViewController.m - doConnect] >> connectWithOptions:connectOptions (LOCAL VIDEO AUDIO) >> ROOM"];
     self.room = [TwilioVideoSDK connectWithOptions:connectOptions delegate:self];
     
-    [self logMessage:@"Attempting to connect to room"];
+    [self log_info:@"Attempting to connect to room"];
 }
 
+#pragma mark -
+#pragma mark remoteView
+#pragma mark -
+
 - (void)setupRemoteView {
+    [self log_debug:@"[TwilioVideoViewController.m - setupRemoteView] MAKE TVIVideoView *remoteView"];
+
     // Creating `TVIVideoView` programmatically
     TVIVideoView *remoteView = [[TVIVideoView alloc] init];
         
@@ -273,6 +574,7 @@ NSString *const CLOSED = @"CLOSED";
                                                             multiplier:1
                                                               constant:0];
     [self.view addConstraint:width];
+    
     NSLayoutConstraint *height = [NSLayoutConstraint constraintWithItem:self.remoteView
                                                               attribute:NSLayoutAttributeHeight
                                                               relatedBy:NSLayoutRelationEqual
@@ -283,13 +585,21 @@ NSString *const CLOSED = @"CLOSED";
     [self.view addConstraint:height];
 }
 
+#pragma mark -
+#pragma mark showRoomUI
+#pragma mark -
+
+
 // Reset the client ui status
 - (void)showRoomUI:(BOOL)inRoom {
+    [self log_debug:@"[TwilioVideoViewController.m - showRoomUI] hide mic/ show spinner"];
+
     self.micButton.hidden = !inRoom;
     [UIApplication sharedApplication].idleTimerDisabled = inRoom;
 }
 
 - (void)cleanupRemoteParticipant {
+    [self log_debug:@"[TwilioVideoViewController.m - cleanupRemoteParticipant]"];
     if (self.remoteParticipant) {
         if ([self.remoteParticipant.videoTracks count] > 0) {
             TVIRemoteVideoTrack *videoTrack = self.remoteParticipant.remoteVideoTracks[0].remoteTrack;
@@ -300,17 +610,15 @@ NSString *const CLOSED = @"CLOSED";
     }
 }
 
-- (void)logMessage:(NSString *)msg {
-    NSLog(@"%@", msg);
-}
 
 - (void)handleConnectionError: (NSString*)message {
     if ([self.config handleErrorInApp]) {
-        [self logMessage: @"Error handling disabled for the plugin. This error should be handled in the hybrid app"];
+        [self log_info: @"Error handling disabled for the plugin. This error should be handled in the hybrid app"];
         [self dismiss];
         return;
     }
-    [self logMessage: @"Connection error handled by the plugin"];
+    
+    [self log_info: @"Connection error handled by the plugin"];
     UIAlertController * alert = [UIAlertController
                                  alertControllerWithTitle:NULL
                                  message: message
@@ -337,6 +645,7 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark - TwilioVideoActionProducerDelegate
 
 - (void)onDisconnect {
+    [self log_debug:@"[TwilioVideoViewController.m - TwilioVideoActionProducerDelegate.onDisconnect] >> [self.room disconnect]"];
     if (self.room != NULL) {
         [self.room disconnect];
     }
@@ -345,10 +654,14 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark - TVIRoomDelegate
 
 - (void)didConnectToRoom:(nonnull TVIRoom *)room {
+    
+    [self log_debug:@"[TwilioVideoViewController.m - TVIRoomDelegate.didConnectToRoom] >> GET FIRST room.remoteParticipants[0]"];
+    
     // At the moment, this example only supports rendering one Participant at a time.
-    [self logMessage:[NSString stringWithFormat:@"Connected to room %@ as %@", room.name, room.localParticipant.identity]];
+    [self log_info:[NSString stringWithFormat:@"Connected to room %@ as %@", room.name, room.localParticipant.identity]];
     [[TwilioVideoManager getInstance] publishEvent: CONNECTED];
     
+    //NO MATTER HOW MANY ROOM PARTICIPANTS - just pick the first
     if (room.remoteParticipants.count > 0) {
         self.remoteParticipant = room.remoteParticipants[0];
         self.remoteParticipant.delegate = self;
@@ -356,7 +669,7 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 - (void)room:(nonnull TVIRoom *)room didFailToConnectWithError:(nonnull NSError *)error {
-    [self logMessage:[NSString stringWithFormat:@"Failed to connect to room, error = %@", error]];
+    [self log_info:[NSString stringWithFormat:@"Failed to connect to room, error = %@", error]];
     [[TwilioVideoManager getInstance] publishEvent: CONNECT_FAILURE with:[TwilioVideoUtils convertErrorToDictionary:error]];
     
     self.room = nil;
@@ -366,7 +679,7 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 - (void)room:(nonnull TVIRoom *)room didDisconnectWithError:(nullable NSError *)error {
-    [self logMessage:[NSString stringWithFormat:@"Disconnected from room %@, error = %@", room.name, error]];
+    [self log_info:[NSString stringWithFormat:@"Disconnected from room %@, error = %@", room.name, error]];
     
     [self cleanupRemoteParticipant];
     self.room = nil;
@@ -390,11 +703,13 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 - (void)room:(nonnull TVIRoom *)room participantDidConnect:(nonnull TVIRemoteParticipant *)participant {
+    [self log_debug:@"[TwilioVideoViewController.m - TVIRoomDelegate.participantDidConnect] "];
+    
     if (!self.remoteParticipant) {
         self.remoteParticipant = participant;
         self.remoteParticipant.delegate = self;
     }
-    [self logMessage:[NSString stringWithFormat:@"Participant '%@' connected with %lu audio and %lu video tracks",
+    [self log_info:[NSString stringWithFormat:@"Participant '%@' connected with %lu audio and %lu video tracks",
                       participant.identity,
                       (unsigned long)[participant.audioTracks count],
                       (unsigned long)[participant.videoTracks count]]];
@@ -402,10 +717,13 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 - (void)room:(nonnull TVIRoom *)room participantDidDisconnect:(nonnull TVIRemoteParticipant *)participant {
+    [self log_debug:@"[TwilioVideoViewController.m - TVIRoomDelegate.participantDidDisconnect] "];
+    
+    
     if (self.remoteParticipant == participant) {
         [self cleanupRemoteParticipant];
     }
-    [self logMessage:[NSString stringWithFormat:@"Room %@ participant %@ disconnected", room.name, participant.identity]];
+    [self log_info:[NSString stringWithFormat:@"Room %@ participant %@ disconnected", room.name, participant.identity]];
     [[TwilioVideoManager getInstance] publishEvent: PARTICIPANT_DISCONNECTED];
 }
 
@@ -413,44 +731,50 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark - TVIRemoteParticipantDelegate
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didPublishVideoTrack:(nonnull TVIRemoteVideoTrackPublication *)publication {
-
+    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.remoteParticipant:didPublishVideoTrack] DO NOTHING JUST LOG"];
+    
     // Remote Participant has offered to share the video Track.
     
-    [self logMessage:[NSString stringWithFormat:@"Participant '%@' published video track:'%@' .",
+    [self log_info:[NSString stringWithFormat:@"Participant '%@' published video track:'%@' .",
                       participant.identity, publication.trackName]];
 }
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didUnpublishVideoTrack:(nonnull TVIRemoteVideoTrackPublication *)publication {
-
+    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.remoteParticipant:didUnpublishVideoTrack] DO NOTHING JUST LOG"];
     // Remote Participant has stopped sharing the video Track.
     
-    [self logMessage:[NSString stringWithFormat:@"Participant '%@' unpublished video track:'%@'.",
+    [self log_info:[NSString stringWithFormat:@"Participant '%@' unpublished video track:'%@'.",
                       participant.identity, publication.trackName]];
 }
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didPublishAudioTrack:(nonnull TVIRemoteAudioTrackPublication *)publication {
-
+    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.remoteParticipant:didPublishAudioTrack] DO NOTHING JUST LOG"];
     // Remote Participant has offered to share the audio Track.
     
-    [self logMessage:[NSString stringWithFormat:@"Participant '%@' published audio track:'%@'.",
+    [self log_info:[NSString stringWithFormat:@"Participant '%@' published audio track:'%@'.",
                       participant.identity, publication.trackName]];
 }
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didUnpublishAudioTrack:(nonnull TVIRemoteAudioTrackPublication *)publication {
+    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.remoteParticipant:didUnpublishAudioTrack] DO NOTHING JUST LOG"];
 
     // Remote Participant has stopped sharing the audio Track.
     
-    [self logMessage:[NSString stringWithFormat:@"Participant '%@' unpublished audio track:'%@'.",
+    [self log_info:[NSString stringWithFormat:@"Participant '%@' unpublished audio track:'%@'.",
                       participant.identity, publication.trackName]];
 }
 
 - (void)didSubscribeToVideoTrack:(nonnull TVIRemoteVideoTrack *)videoTrack
                      publication:(nonnull TVIRemoteVideoTrackPublication *)publication
                   forParticipant:(nonnull TVIRemoteParticipant *)participant {
+    
+    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.didSubscribeToVideoTrack:publication: forParticipant] send VIDEO_TRACK_ADDED swap REMOTE VIDEO to new TRACK"];
+
+    
     // We are subscribed to the remote Participant's audio Track. We will start receiving the
     // remote Participant's video frames now.
     
-    [self logMessage:[NSString stringWithFormat:@"Subscribed to video track:'%@' for Participant '%@'",
+    [self log_info:[NSString stringWithFormat:@"Subscribed to video track:'%@' for Participant '%@'",
                       publication.trackName, participant.identity]];
     [[TwilioVideoManager getInstance] publishEvent: VIDEO_TRACK_ADDED];
 
@@ -464,10 +788,12 @@ NSString *const CLOSED = @"CLOSED";
                          publication:(nonnull TVIRemoteVideoTrackPublication *)publication
                       forParticipant:(nonnull TVIRemoteParticipant *)participant {
 
+    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.didUNSUBSCRIBEFromVideoTrack:publication: forParticipant] send VIDEO_TRACK_REMOVED remove REMOTE VIDEO"];
+
     // We are unsubscribed from the remote Participant's video Track. We will no longer receive the
     // remote Participant's video.
     
-    [self logMessage:[NSString stringWithFormat:@"Unsubscribed from video track:'%@' for Participant '%@'",
+    [self log_info:[NSString stringWithFormat:@"Unsubscribed from video track:'%@' for Participant '%@'",
                       publication.trackName, participant.identity]];
     [[TwilioVideoManager getInstance] publishEvent: VIDEO_TRACK_REMOVED];
     
@@ -481,10 +807,13 @@ NSString *const CLOSED = @"CLOSED";
                      publication:(nonnull TVIRemoteAudioTrackPublication *)publication
                   forParticipant:(nonnull TVIRemoteParticipant *)participant {
 
+    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.didSubscribeToAudioTrack:publication: forParticipant] send AUDIO_TRACK_ADDED swap REMOTE AUDIO to new TRACK"];
+
+ 
     // We are subscribed to the remote Participant's audio Track. We will start receiving the
     // remote Participant's audio now.
     
-    [self logMessage:[NSString stringWithFormat:@"Subscribed to audio track:'%@' for Participant '%@'",
+    [self log_info:[NSString stringWithFormat:@"Subscribed to audio track:'%@' for Participant '%@'",
                       publication.trackName, participant.identity]];
     [[TwilioVideoManager getInstance] publishEvent: AUDIO_TRACK_ADDED];
 }
@@ -493,10 +822,12 @@ NSString *const CLOSED = @"CLOSED";
                          publication:(nonnull TVIRemoteAudioTrackPublication *)publication
                       forParticipant:(nonnull TVIRemoteParticipant *)participant {
 
+    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.didUnsubscribeFromAudioTrack:publication: forParticipant] send AUDIO_TRACK_REMOVED remove REMOTE AUDIO"];
+
     // We are unsubscribed from the remote Participant's audio Track. We will no longer receive the
     // remote Participant's audio.
     
-    [self logMessage:[NSString stringWithFormat:@"Unsubscribed from audio track:'%@' for Participant '%@'",
+    [self log_info:[NSString stringWithFormat:@"Unsubscribed from audio track:'%@' for Participant '%@'",
                       publication.trackName, participant.identity]];
     [[TwilioVideoManager getInstance] publishEvent: AUDIO_TRACK_REMOVED];
 }
@@ -506,14 +837,20 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark -
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didEnableVideoTrack:(nonnull TVIRemoteVideoTrackPublication *)publication {
-    [self logMessage:[NSString stringWithFormat:@"Participant '%@' enabled video track:'%@' >> remoteView.isHidden = FALSE",
+    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.remoteParticipant:didEnableVideoTrack] >> UNHIDE self.remoteView"];
+
+    [self log_info:[NSString stringWithFormat:@"Participant '%@' enabled video track:'%@' >> remoteView.isHidden = FALSE",
                       participant.identity, publication.trackName]];
     
     [self.remoteView setHidden: FALSE];
 }
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didDisableVideoTrack:(nonnull TVIRemoteVideoTrackPublication *)publication {
-    [self logMessage:[NSString stringWithFormat:@"Participant '%@' disabled video track:'%@' >> remoteView.isHidden = TRUE",
+   
+    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.remoteParticipant:didDisableVideoTrack] >> HIDE self.remoteView"];
+
+    
+    [self log_info:[NSString stringWithFormat:@"Participant '%@' disabled video track:'%@' >> remoteView.isHidden = TRUE",
                       participant.identity, publication.trackName]];
     
     //main view is now frozen need to turn it off
@@ -525,26 +862,30 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark -
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didEnableAudioTrack:(nonnull TVIRemoteAudioTrackPublication *)publication {
-    [self logMessage:[NSString stringWithFormat:@"Participant '%@' enabled %@ audio track.",
+    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.remoteParticipant:didEnableAudioTrack] >> do nothing"];
+    
+    [self log_info:[NSString stringWithFormat:@"Participant '%@' enabled %@ audio track.",
                       participant.identity, publication.trackName]];
 }
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didDisableAudioTrack:(nonnull TVIRemoteAudioTrackPublication *)publication {
-    [self logMessage:[NSString stringWithFormat:@"Participant '%@' disabled %@ audio track.",
+    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.remoteParticipant:didDisableAudioTrack] >> do nothing"];
+    
+    [self log_info:[NSString stringWithFormat:@"Participant '%@' disabled %@ audio track.",
                       participant.identity, publication.trackName]];
 }
 
 - (void)didFailToSubscribeToAudioTrack:(nonnull TVIRemoteAudioTrackPublication *)publication
                                  error:(nonnull NSError *)error
                         forParticipant:(nonnull TVIRemoteParticipant *)participant {
-    [self logMessage:[NSString stringWithFormat:@"Participant '%@' failed to subscribe to audio track:'%@'.",
+    [self log_info:[NSString stringWithFormat:@"Participant '%@' failed to subscribe to audio track:'%@'.",
                       participant.identity, publication.trackName]];
 }
 
 - (void)didFailToSubscribeToVideoTrack:(nonnull TVIRemoteVideoTrackPublication *)publication
                                  error:(nonnull NSError *)error
                         forParticipant:(nonnull TVIRemoteParticipant *)participant {
-    [self logMessage:[NSString stringWithFormat:@"Participant '%@' failed to subscribe to video track:'%@'.",
+    [self log_info:[NSString stringWithFormat:@"Participant '%@' failed to subscribe to video track:'%@'.",
                       participant.identity, publication.trackName]];
 }
 
@@ -552,14 +893,16 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark - TVIVideoViewDelegate
 
 - (void)videoView:(nonnull TVIVideoView *)view videoDimensionsDidChange:(CMVideoDimensions)dimensions {
-    NSLog(@"Dimensions changed to: %d x %d", dimensions.width, dimensions.height);
+    
+    [self log_debug:[NSString stringWithFormat:@"Dimensions changed to: %d x %d", dimensions.width, dimensions.height]];
+    
     [self.view setNeedsLayout];
 }
 
 #pragma mark - TVICameraSourceDelegate
 
 - (void)cameraSource:(nonnull TVICameraSource *)source didFailWithError:(nonnull NSError *)error {
-    [self logMessage:[NSString stringWithFormat:@"Capture failed with error.\ncode = %lu error = %@", error.code, error.localizedDescription]];
+    [self log_info:[NSString stringWithFormat:@"Capture failed with error.\ncode = %lu error = %@", error.code, error.localizedDescription]];
 }
 
 
@@ -567,7 +910,7 @@ NSString *const CLOSED = @"CLOSED";
 
 -(BOOL)startProximitySensor
 {
-    [self logMessage:@"[TwilioVideoViewController.m] startProximitySensor"];
+    [self log_info:@"[TwilioVideoViewController.m] startProximitySensor"];
     
     if([UIDevice currentDevice].proximityMonitoringEnabled == FALSE)
         [UIDevice currentDevice].proximityMonitoringEnabled = TRUE;
@@ -618,7 +961,7 @@ NSString *const CLOSED = @"CLOSED";
             
             //Phone is at EAR > TURN VIDEO OFF - youll only se this on other phone
             //on this phone iOS turns users screen off
-            [self logMessage:@"[PROXIMITY: TRUE] TURN OFF VIDEO: self.localVideoTrack.enabled = FALSE"];
+            [self log_info:@"[PROXIMITY: TRUE] TURN OFF VIDEO: self.localVideoTrack.enabled = FALSE"];
             self.localVideoTrack.enabled = FALSE;
             
         }else{
@@ -628,7 +971,7 @@ NSString *const CLOSED = @"CLOSED";
             self.localVideoTrack_wasOnBeforeMovedPhoneToEar = FALSE;
             
             //video already off
-            [self logMessage:@"[PROXIMITY: TRUE] Video already off - DO NOTHING"];
+            [self log_info:@"[PROXIMITY: TRUE] Video already off - DO NOTHING"];
         }
     }else{
         //PROXIMITY: FALSE - phone is not near face
@@ -637,19 +980,19 @@ NSString *const CLOSED = @"CLOSED";
             
             //turn it back on when you move phone away from ear
             self.localVideoTrack.enabled = TRUE;
-            [self logMessage:@"[PROXIMITY: FALSE] TURN VIDEO BACK ON"];
+            [self log_info:@"[PROXIMITY: FALSE] TURN VIDEO BACK ON"];
             
         }else{
             //user moved phone away from ear but they had VIDEO off before
             //so dont automatically turn it back on
-            [self logMessage:@"[PROXIMITY: FALSE] VIDEO was off BEFORE dont turn back on"];
+            [self log_info:@"[PROXIMITY: FALSE] VIDEO was off BEFORE dont turn back on"];
         }
     }
 }
 
 -(void)viewWillDisappear:(BOOL)animated{
     [super viewWillDisappear: animated];
-    [self logMessage:@"[TwilioVideoViewController.m] viewWillDisappear >> stopProximitySensor"];
+    [self log_info:@"[TwilioVideoViewController.m] viewWillDisappear >> stopProximitySensor"];
     
     [self stopProximitySensor];
     
@@ -660,5 +1003,30 @@ NSString *const CLOSED = @"CLOSED";
     [UIDevice currentDevice].proximityMonitoringEnabled = FALSE;
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIDeviceProximityStateDidChangeNotification object:nil];
     
+}
+
+#pragma mark -
+#pragma mark LOGGING
+#pragma mark -
+
+-(void) configureLogging{
+    _log_info_on = TRUE;
+    _log_debug_on = TRUE;
+    _log_error_on = TRUE; //leave on
+}
+- (void)log_info:(NSString *)msg {
+    if (_log_info_on) {
+        NSLog(@"[INFO] %@", msg);
+    }
+}
+- (void)log_debug:(NSString *)msg {
+    if (_log_debug_on) {
+        NSLog(@"[DEBUG] %@", msg);
+    }
+}
+- (void)log_error:(NSString *)msg {
+    if (_log_error_on) {
+        NSLog(@"[ERROR] %@", msg);
+    }
 }
 @end
