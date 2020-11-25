@@ -1,4 +1,5 @@
 #import "TwilioVideoViewController.h"
+#import <AVFoundation/AVFoundation.h>
 
 // CALL EVENTS
 NSString *const OPENED = @"OPENED";
@@ -20,36 +21,39 @@ NSString *const CLOSED = @"CLOSED";
 
 #pragma mark - private
 
-@interface TwilioVideoViewController(){
+@interface TwilioVideoViewController()<AVAudioPlayerDelegate>{
     BOOL _log_info_on;
     BOOL _log_debug_on;
     BOOL _log_error_on;
+    
+    //Dialing... tone
+    AVAudioPlayer *audioPlayer;
 
 }
 
 //Proximity Monitoring
 @property (nonatomic, assign) BOOL localVideoTrack_wasOnBeforeMovedPhoneToEar;
 
+//Constraints animating the ZOOM of Preview from FULLSCREEN to mini in bottom right corner after remote user connects
 @property (unsafe_unretained, nonatomic) IBOutlet NSLayoutConstraint *nsLayoutConstraint_previewView_top;
 @property (unsafe_unretained, nonatomic) IBOutlet NSLayoutConstraint *nsLayoutConstraint_previewView_bottom;
 @property (unsafe_unretained, nonatomic) IBOutlet NSLayoutConstraint *nsLayoutConstraint_previewView_leading;
 @property (unsafe_unretained, nonatomic) IBOutlet NSLayoutConstraint *nsLayoutConstraint_previewView_trailing;
 
-//the default values for the 4 constraints for previewView BEFORE we go full screen
-//We will reset to these values when we leave full screen
-//values are set out in Storyboard
-//@property (nonatomic, assign) CGFloat nsLayoutConstraint_previewView_top_constant;
-//@property (nonatomic, assign) CGFloat nsLayoutConstraint_previewView_bottom_constant;
-//@property (nonatomic, assign) CGFloat nsLayoutConstraint_previewView_leading_constant;
-//@property (nonatomic, assign) CGFloat nsLayoutConstraint_previewView_trailing_constant;
-
-
 //we animate preview to be above this
 @property (unsafe_unretained, nonatomic) IBOutlet UIView *viewButtonOuter;
 
-@property (unsafe_unretained, nonatomic) IBOutlet UIImageView *imageViewOtherUser;
-@property (unsafe_unretained, nonatomic) IBOutlet UILabel *textViewOtherUserName;
-@property (unsafe_unretained, nonatomic) IBOutlet UIView *viewCallingInfo;
+@property (unsafe_unretained, nonatomic) IBOutlet UIImageView *imageViewRemoteParticipant;
+@property (unsafe_unretained, nonatomic) IBOutlet UILabel *textViewRemoteParticipantName;
+//Calling.../Disconnected
+@property (unsafe_unretained, nonatomic) IBOutlet UILabel *textViewRemoteParticipantConnectionState;
+
+@property (unsafe_unretained, nonatomic) IBOutlet UIView *viewRemoteParticipantInfo;
+
+@property (nonatomic, assign) BOOL previewIsFullScreen;
+
+@property (nonatomic, strong) NSString * remoteUserName;
+@property (nonatomic, strong) NSString * remoteUserPhotoURL;
 
 @end
 
@@ -60,6 +64,14 @@ NSString *const CLOSED = @"CLOSED";
 - (void)viewDidLoad {
     [super viewDidLoad];
     
+    //---------------------------------------------------------
+    //REMOTE USER PANEL
+    //---------------------------------------------------------
+    self.textViewRemoteParticipantName.text = @"";
+    self.textViewRemoteParticipantConnectionState.text = @"";
+    
+    
+    //---------------------------------------------------------
     [self configureLogging];
     
     //---------------------------------------
@@ -74,9 +86,7 @@ NSString *const CLOSED = @"CLOSED";
     //    [self addBorderToView:self.viewButtonOuter withColor:[UIColor blueColor]];
     //    [self addBorderToView:self.imageViewOtherUser withColor:[UIColor whiteColor]];
     
-    self.imageViewOtherUser.layer.cornerRadius = self.imageViewOtherUser.frame.size.height / 2.0;
-    self.imageViewOtherUser.layer.borderWidth = 5.f;
-    
+     
     //---------------------------------------
     [[TwilioVideoManager getInstance] setActionDelegate:self];
     
@@ -126,51 +136,90 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 -(void)loadUserImageInBackground_async{
+    
+    self.imageViewRemoteParticipant.backgroundColor = [UIColor whiteColor];
+    self.imageViewRemoteParticipant.layer.cornerRadius = self.imageViewRemoteParticipant.frame.size.height / 2.0;
+    self.imageViewRemoteParticipant.layer.borderWidth = 4.f;
+    self.imageViewRemoteParticipant.layer.borderColor = [[UIColor whiteColor] CGColor];
+    
     [self performSelectorInBackground:@selector(loadUserImageInBackground) withObject:nil];
 
 }
 
 - (void)loadUserImageInBackground
 {
-    NSURL * url = [NSURL URLWithString:@"https://sealogin-trfm-prd-cdn.azureedge.net/API/1_3/User/picture?imageUrl=673623fdc8b39b5b05b3167765019398.jpg"];
-    NSData * data = [NSData dataWithContentsOfURL:url];
-    UIImage * image = [UIImage imageWithData:data];
-    if (image)
-    {
-        // Success use the image
-        dispatch_async(dispatch_get_main_queue(), ^{
-            self.imageViewOtherUser.image = image;
-        });
-    }
-    else
-    {
-        // Failed (load an error image?)
-        [self log_error:@"[loadImage] failed to load from url ] "];
+    
+    if(self.remoteUserPhotoURL){
+        NSURL * url = [NSURL URLWithString:self.remoteUserPhotoURL];
+        //remoteUserPhotoURL is passed in from cordova - check is valid url
+        if(url){
+            NSData * data = [NSData dataWithContentsOfURL:url];
+            if(data){
+                UIImage * image = [UIImage imageWithData:data];
+                if (image)
+                {
+                    // Success use the image
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        self.imageViewRemoteParticipant.image = image;
+                    });
+                }
+                else
+                {
+                    // Failed (load an error image?)
+                    [self log_error:[NSString stringWithFormat:@"[loadImage] imageWithData failed to load from self.remoteUserPhotoURL:'%@'", self.remoteUserPhotoURL]];
+                    
+                    //if no image show blank circle else name an Disconnected look off center
+                    //self.imageViewRemoteParticipant.layer.borderWidth = 0.0f;
+                    
+                }
+            }else{
+                [self log_error:[NSString stringWithFormat:@"[loadImage] dataWithContentsOfURL failed to load from self.remoteUserPhotoURL:'%@'", self.remoteUserPhotoURL]];
+            }
+            
+        }else{
+            [self log_error:[NSString stringWithFormat:@"[loadImage] URLWithString failed to load from self.remoteUserPhotoURL:'%@'", self.remoteUserPhotoURL]];
+        }
+        
+    }else{
+        [self log_error:@"[loadUserImageInBackground] self.remoteUserPhotoURL is NULL"];
     }
 }
 
--(void)otherUserCallingPanel_configure{
-    self.textViewOtherUserName.text = @"Lorin Kaliemi";
+-(void)fillIn_viewRemoteParticipantInfo{
+    if (self.remoteUserName) {
+        self.textViewRemoteParticipantName.text = self.remoteUserName;
+    }else{
+        [self log_error:@"[fillIn_viewRemoteParticipantInfo] self.remoteUserName is NULL"];
+        self.textViewRemoteParticipantName.text = @"";
+    }
+   
     
     //TODO - url is hard codes should be passed in from cordova
     [self loadUserImageInBackground_async];
+    
+    //text set in didConnectToRoom_StartACall*
+    self.textViewRemoteParticipantConnectionState.text = @"";
 }
 
--(void)otherUserCallingPanel_isVisible:(BOOL)isVisible{
-    if(isVisible){
-        [self.viewCallingInfo setHidden:FALSE];
-        
+-(void)show_viewRemoteParticipantInfoWithState:(NSString *) state{
+    [self.viewRemoteParticipantInfo setHidden:FALSE];
+    
+    if(self.textViewRemoteParticipantName != NULL){
+        self.textViewRemoteParticipantConnectionState.text = state;
     }else{
-        [self.viewCallingInfo setHidden:TRUE];
-       
+        
     }
 }
 
+-(void)hide_viewRemoteParticipantInfo{
+    [self.viewRemoteParticipantInfo setHidden:TRUE];
+    self.textViewRemoteParticipantConnectionState.text = @"";
+}
+
 -(void)setupPreviewView{
-    
-    [self otherUserCallingPanel_configure];
+
     //HIDE till my camera connected
-    [self otherUserCallingPanel_isVisible:FALSE];
+    [self hide_viewRemoteParticipantInfo];
     
     //set it always to Fill so it looks ok in fullscreen
     //I tried changing it to Fit/Fill but jumps at the end when it zooms in
@@ -192,6 +241,7 @@ NSString *const CLOSED = @"CLOSED";
         
         //self.previewView.contentMode = UIViewContentModeScaleAspectFill;
         
+        self.previewIsFullScreen = TRUE;
     }else{
         
         //----------------------------------------------------------------------
@@ -233,6 +283,8 @@ NSString *const CLOSED = @"CLOSED";
         self.nsLayoutConstraint_previewView_leading.constant = leading;
         
         //self.previewView.contentMode = UIViewContentModeScaleAspectFit;
+        
+        self.previewIsFullScreen = FALSE;
     }
 }
 
@@ -259,7 +311,8 @@ NSString *const CLOSED = @"CLOSED";
                                 //--------------------------------------------------
                              }
                              completion:^(BOOL finished) {
-                                //DONE
+                                //ANIMATION DONE
+
                              }
             ];
            
@@ -309,11 +362,27 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark PUBLIC - connectToRoom
 #pragma mark -
 
-- (void)connectToRoom:(NSString*)room token:(NSString *)token {
+//- (void)connectToRoom:(NSString*)room token:(NSString *)token {
+//    #pragma mark TODO - NOW - HARDCODED NEEDS TO BE PASSED IN FROM CORDOVA
+//    [self connectToRoom:room
+//                  token:token
+//         remoteUserName:@"Lorin Kalemi"
+//     remoteUserPhotoURL:@"https://sealogin-trfm-prd-cdn.azureedge.net/API/1_3/User/picture?imageUrl=673623fdc8b39b5b05b3167765019398.jpg"];
+//}
+
+- (void)connectToRoom:(NSString*)room
+                token:(NSString *)token
+       remoteUserName:(NSString *)remoteUserName
+   remoteUserPhotoURL:(NSString *)remoteUserPhotoURL
+{
+    
     [self log_debug:@"[TwilioVideoViewController.m - connectToRoom]"];
     
     self.roomName = room;
     self.accessToken = token;
+    
+    self.remoteUserName = remoteUserName;
+    self.remoteUserPhotoURL = remoteUserPhotoURL;
     
     [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> [self showRoomUI:YES]"];
     
@@ -337,23 +406,23 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark -
 
 - (IBAction)videoButtonPressed:(id)sender {
-//    if(self.localVideoTrack){
-//        self.localVideoTrack.enabled = !self.localVideoTrack.isEnabled;
-//        [self.videoButton setSelected: !self.localVideoTrack.isEnabled];
-//    }
-    [self updateConstraints_PreviewView_toFullScreen: TRUE animated:TRUE];
+    if(self.localVideoTrack){
+        self.localVideoTrack.enabled = !self.localVideoTrack.isEnabled;
+        [self.videoButton setSelected: !self.localVideoTrack.isEnabled];
+    }
+    //DEBUG [self updateConstraints_PreviewView_toFullScreen: TRUE animated:TRUE];
 }
 
 
 - (IBAction)micButtonPressed:(id)sender {
     // We will toggle the mic to mute/unmute and change the title according to the user action.
     
-//    if (self.localAudioTrack) {
-//        self.localAudioTrack.enabled = !self.localAudioTrack.isEnabled;
-//        // If audio not enabled, mic is muted and button crossed out
-//        [self.micButton setSelected: !self.localAudioTrack.isEnabled];
-//    }
-    [self updateConstraints_PreviewView_toFullScreen: FALSE animated:TRUE];
+    if (self.localAudioTrack) {
+        self.localAudioTrack.enabled = !self.localAudioTrack.isEnabled;
+        // If audio not enabled, mic is muted and button crossed out
+        [self.micButton setSelected: !self.localAudioTrack.isEnabled];
+    }
+    //[self updateConstraints_PreviewView_toFullScreen: FALSE animated:TRUE];
 }
 
 - (IBAction)cameraSwitchButtonPressed:(id)sender {
@@ -383,7 +452,6 @@ NSString *const CLOSED = @"CLOSED";
 - (void)startPreview {
     [self log_debug:@"[startPreview] START"];
 
-    
     // TVICameraCapturer is not supported with the Simulator.
     if ([self isSimulator]) {
         [self log_error:@"[startPreview] preview doesnt work in Simulator. Must run on real device 'TVICameraCapturer is not supported with the Simulator.'"];
@@ -410,8 +478,6 @@ NSString *const CLOSED = @"CLOSED";
             
             // Add renderer to video track for local preview
             [self.localVideoTrack addRenderer:self.previewView];
-            
-            
             
             
             [self log_debug:@"self.localVideoTrack created and connected to previewView"];
@@ -445,8 +511,9 @@ NSString *const CLOSED = @"CLOSED";
                          //---------------------------------------------------------
                          //preview is inserted o
                          //---------------------------------------------------------
-                         [self otherUserCallingPanel_isVisible:TRUE];
-                         [self.view bringSubviewToFront:self.viewCallingInfo];
+                         [self show_viewRemoteParticipantInfoWithState:@""];
+                         //preview can be inserted in front - if full screen can hide the viewRemoteParticipantInfo
+                         [self.view bringSubviewToFront:self.viewRemoteParticipantInfo];
                      }
             }];
         }
@@ -455,6 +522,98 @@ NSString *const CLOSED = @"CLOSED";
    }
 }
 
+-(void)didConnectToRoom_StartACall{
+    [self log_info:@"[didConnectToRoom_StartACall] START"];
+    
+    if(self.previewIsFullScreen){
+        //----------------------------------------------------------------------
+        //Show the dialing panel
+    
+        [self fillIn_viewRemoteParticipantInfo];
+        
+        [self show_viewRemoteParticipantInfoWithState:@"Calling..."];
+        
+        //----------------------------------------------------------------------
+        //show LOCAL USER full screen while waiting for othe ruser to answer
+        [self updateConstraints_PreviewView_toFullScreen:TRUE animated:FALSE];
+        
+    }else{
+        [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
+    }
+}
+
+//On the ANSWERING PHONE it will trigger
+//didConnectToRoom_AnswerACall only
+-(void)didConnectToRoom_AnswerACall{
+    [self log_info:@"[didConnectToRoom_AnswerACall] START"];
+    
+    if(self.previewIsFullScreen){
+        //REMOTE USER CONNECTED
+        //Hide the dialing screen
+        [self hide_viewRemoteParticipantInfo];
+        
+        //Zoom the preview from FULL SCREEN to MINI
+        [self updateConstraints_PreviewView_toFullScreen: FALSE animated:TRUE];
+    }else{
+        [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
+    }
+}
+
+
+//called by TVIRoomDelegate.participantDidConnect
+//Same app installed on both phones but UI changes depending on who starts or answers a call
+//1 local + 0 remote - LOCAL USER is person dialing REMOTE participant.
+//Remote hasnt joined the room yet so hasnt answered so show 'Dialing..'
+//On the CALLING PHONE it will trigger
+//didConnectToRoom_StartACall >> participantDidConnect_RemoteUserHasAnswered
+-(void)participantDidConnect_RemoteUserHasAnswered{
+    [self log_info:@"[participantDidConnect_StartACall] START"];
+    
+    if(self.previewIsFullScreen){
+        
+        [self hide_viewRemoteParticipantInfo];
+        
+        //REMOTE user is visible in full screen
+        //shrink PREVIEW from FULL SCREEN to MINI to show REMOTE user behind
+        [self updateConstraints_PreviewView_toFullScreen: FALSE animated:FALSE];
+        
+    }else{
+        [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
+    }
+}
+
+//called by TVIRoomDelegate.participantDidConnect
+//Same app installed on both phones but UI changes depending on who starts or answers a call
+//1 local + 1 remote - REMOTE user in room is the other person who started the call
+//LOCAL USER is answering a call so dont show 'Dialing..'
+-(void)participantDidConnect{
+    [self log_info:@"[participantDidConnect_AnswerACall] Unused in 1..1 - use for GROUP"];
+}
+
+-(void)participantDidDisconnect:(NSString *)remoteParticipant_identity;{
+    
+    if(self.previewIsFullScreen){
+        [self log_error:@"[participantDidDisconnect] new participant joined room BUT previewIsFullScreen is true - shouldnt happen for 1..1 CALL"];
+        
+    }else{
+        //REMOTE USER DISCONNECTED
+        //show the remote user panel with state 'Disconnected'
+        
+        //if app running on REMOTE photo will just show white circle no photo
+        //this is so Disconnected isnt off center
+        [self loadUserImageInBackground_async];
+        if(remoteParticipant_identity){
+            self.textViewRemoteParticipantName.text = remoteParticipant_identity;
+            
+        }else{
+            [self log_error:@"[participantDidDisconnect:] remoteParticipant_identity is NULL - if LOCAL hangs up before REMOTE then no photo or name just 'Disconnected may show'"];
+        }
+        [self show_viewRemoteParticipantInfoWithState:@"Disconnected"];
+        
+        //Zoom the preview from MINI to FULL SCREEN
+        [self updateConstraints_PreviewView_toFullScreen:TRUE animated:TRUE];
+    }
+}
 - (void)flipCamera {
     
     [self log_debug:@"[flipCamera] START"];
@@ -658,13 +817,43 @@ NSString *const CLOSED = @"CLOSED";
     [self log_debug:@"[TwilioVideoViewController.m - TVIRoomDelegate.didConnectToRoom] >> GET FIRST room.remoteParticipants[0]"];
     
     // At the moment, this example only supports rendering one Participant at a time.
-    [self log_info:[NSString stringWithFormat:@"Connected to room %@ as %@", room.name, room.localParticipant.identity]];
+    [self log_info:[NSString stringWithFormat:@"[didConnectToRoom] Connected to room %@ as %@", room.name, room.localParticipant.identity]];
     [[TwilioVideoManager getInstance] publishEvent: CONNECTED];
+    
+    
     
     //NO MATTER HOW MANY ROOM PARTICIPANTS - just pick the first
     if (room.remoteParticipants.count > 0) {
         self.remoteParticipant = room.remoteParticipants[0];
         self.remoteParticipant.delegate = self;
+    }
+    
+    //didConnectToRoom
+    
+    if([room.remoteParticipants count] == 0){
+        //----------------------------------------------------------------------
+        //1..1 CALL - no remote users so I am DIALING the REMOTE USER
+        //----------------------------------------------------------------------
+        [self log_info:[NSString stringWithFormat:@"[didConnectToRoom] room.remoteParticipants count:%lu >> LOCAL USER is STARTING A 1..1 CALL",
+                        (unsigned long)[room.remoteParticipants count]]];
+        //----------------------------------------------------------------------
+        [self didConnectToRoom_StartACall];
+        //----------------------------------------------------------------------
+    }
+    else if([room.remoteParticipants count] == 1){
+        //----------------------------------------------------------------------
+        //1..1 CALL - 1 remote user in room so LOCAL USER is ANSWERING a CALL
+        //----------------------------------------------------------------------
+        [self log_info:[NSString stringWithFormat:@"[didConnectToRoom] room.remoteParticipants count:%lu >> REMOTE USER is ANSWERING A 1..1 CALL",
+                        (unsigned long)[room.remoteParticipants count]]];
+        //----------------------------------------------------------------------
+        [self didConnectToRoom_AnswerACall];
+        //----------------------------------------------------------------------
+    }
+    else{
+        [self log_error:[NSString stringWithFormat:@"[didConnectToRoom] room.remoteParticipants count:%lu >> UNHANDLED MORE THAN 2 USERS in room 1 LOCAL + %lu REMOTE - TODO IN FUTURE GROUP CALLS",
+                         (unsigned long)[room.remoteParticipants count],
+                         (unsigned long)[room.remoteParticipants count]]];
     }
 }
 
@@ -703,17 +892,50 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 - (void)room:(nonnull TVIRoom *)room participantDidConnect:(nonnull TVIRemoteParticipant *)participant {
+    
     [self log_debug:@"[TwilioVideoViewController.m - TVIRoomDelegate.participantDidConnect] "];
     
     if (!self.remoteParticipant) {
         self.remoteParticipant = participant;
         self.remoteParticipant.delegate = self;
     }
-    [self log_info:[NSString stringWithFormat:@"Participant '%@' connected with %lu audio and %lu video tracks",
+    [self log_info:[NSString stringWithFormat:@"[room:participantDidConnect:] Participant '%@' connected with %lu audio and %lu video tracks",
                       participant.identity,
                       (unsigned long)[participant.audioTracks count],
                       (unsigned long)[participant.videoTracks count]]];
     [[TwilioVideoManager getInstance] publishEvent: PARTICIPANT_CONNECTED];
+    
+    
+    
+    if([room.remoteParticipants count] == 0){
+        //----------------------------------------------------------------------
+        //1..1 CALL - no remote users so I an STARTING A CALL
+        //----------------------------------------------------------------------
+        [self log_info:[NSString stringWithFormat:@"[room:participantDidConnect:] room.remoteParticipants count:%lu >> LOCAL USER is STARTING A 1..1 CALL",
+                        (unsigned long)[room.remoteParticipants count]]];
+        //----------------------------------------------------------------------
+        //[self participantDidConnect_AnswerACall];
+        //used didConnectToRoom_AnswerACall instead
+        //for GROUP participantDidConnect will do thinks like inc particpant count
+        //show list of users etc
+        //----------------------------------------------------------------------
+    }
+    else if([room.remoteParticipants count] == 1){
+        //----------------------------------------------------------------------
+        //1..1 CALL - 1 remote user in room so LOCAL USER is ANSWERING a CALL
+        //----------------------------------------------------------------------
+        [self log_info:[NSString stringWithFormat:@"[room:participantDidConnect:] room.remoteParticipants count:%lu >> REMOTE USER is ANSWERING A 1..1 CALL",
+                        (unsigned long)[room.remoteParticipants count]]];
+        //----------------------------------------------------------------------
+        [self participantDidConnect_RemoteUserHasAnswered];
+        //----------------------------------------------------------------------
+    }
+    else{
+        [self log_error:[NSString stringWithFormat:@"[room:participantDidConnect:] room.remoteParticipants count:%lu >> UNHANDLED MORE THAN 2 USERS in room 1 LOCAL + %lu REMOTE - TODO IN FUTURE GROUP CALLS",
+                        (unsigned long)[room.remoteParticipants count],
+                         (unsigned long)[room.remoteParticipants count]]];
+    }
+    
 }
 
 - (void)room:(nonnull TVIRoom *)room participantDidDisconnect:(nonnull TVIRemoteParticipant *)participant {
@@ -725,6 +947,12 @@ NSString *const CLOSED = @"CLOSED";
     }
     [self log_info:[NSString stringWithFormat:@"Room %@ participant %@ disconnected", room.name, participant.identity]];
     [[TwilioVideoManager getInstance] publishEvent: PARTICIPANT_DISCONNECTED];
+    // if LOCAL caller hangs up first the REMOTE phone will show 'Disconnected'
+    // but self.remoteUserName is NULL on REMOTE side so no IMAGE or NAME
+    // so pass in the identity of the participant that disconnected to we can say
+    //'John Smith Disconnected'
+    
+    [self participantDidDisconnect:participant.identity];
 }
 
 
@@ -992,8 +1220,17 @@ NSString *const CLOSED = @"CLOSED";
 
 -(void)viewWillDisappear:(BOOL)animated{
     [super viewWillDisappear: animated];
-    [self log_info:@"[TwilioVideoViewController.m] viewWillDisappear >> stopProximitySensor"];
     
+    [self log_info:@"[TwilioVideoViewController.m] viewWillDisappear >> stopCaptureWithCompletion"];
+    [self.camera stopCaptureWithCompletion:^(NSError * _Nullable error) {
+        if(error){
+            [self log_info:[NSString stringWithFormat:@"[TwilioVideoViewController.m] stopCaptureWithCompletion >> stopCaptureWithCompletion: error:%@", error]];
+        }else{
+            [self log_info:@"[TwilioVideoViewController.m] stopCaptureWithCompletion >> stopCaptureWithCompletion: OK"];
+        }
+    }];
+      
+    [self log_info:@"[TwilioVideoViewController.m] viewWillDisappear >> stopProximitySensor"];
     [self stopProximitySensor];
     
 }
@@ -1005,18 +1242,84 @@ NSString *const CLOSED = @"CLOSED";
     
 }
 
+
+#pragma mark -
+#pragma mark DIALING... TONE
+#pragma mark -
+
+-(void) dialingSound_setup{
+    
+    NSError *setCategoryError = nil;
+    [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&setCategoryError];
+    
+    NSString * fileName = @"ringing";
+    NSString * fileExtension = @"mp3";
+    
+    NSURL *soundPath = [[NSURL alloc] initFileURLWithPath:[[NSBundle mainBundle] pathForResource:fileName ofType:fileExtension]];
+    if (NULL != soundPath) {
+        audioPlayer = [[AVAudioPlayer alloc]initWithContentsOfURL:soundPath error:NULL];
+        if (NULL != audioPlayer) {
+            [audioPlayer setDelegate:nil];
+            [audioPlayer prepareToPlay];
+        }else{
+            NSLog(@"ERROR: audioPlayer is NULL");
+        }
+    }else{
+        NSLog(@"ERROR: soundPath is NULL cant find sound file in mainBundle called %@.%@", fileName, fileExtension);
+    }
+}
+
+-(void) dialingSound_start{
+    if (audioPlayer) {
+        [audioPlayer play];
+    }else{
+        [self log_error:@"[dialingSound_start] audioPlayer is NULL [audioPlayer play] FAILED"];
+    }
+}
+
+-(void) dialingSound_stop{
+    if (audioPlayer) {
+        [audioPlayer stop];
+    }else{
+        [self log_error:@"[dialingSound_stop] audioPlayer is NULL [audioPlayer stop] FAILED"];
+    }
+}
+
+#pragma mark -
+#pragma mark AVAudioPlayerDelegate
+#pragma mark -
+/* audioPlayerDidFinishPlaying:successfully: is called when a sound has finished playing. This method is NOT called if the player is stopped due to an interruption. */
+- (void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player successfully:(BOOL)flag{
+    if (flag) {
+        NSLog(@"audioPlayerDidFinishPlaying: successfully: TRUE");
+    }else{
+        NSLog(@"audioPlayerDidFinishPlaying: successfully: FALSE");
+    }
+    
+}
+
+/* if an error occurs while decoding it will be reported to the delegate. */
+- (void)audioPlayerDecodeErrorDidOccur:(AVAudioPlayer *)player error:(NSError * __nullable)error{
+    
+    NSLog(@"audioPlayerDecodeErrorDidOccur: error:%@", error);
+}
+
+
+
+
+
 #pragma mark -
 #pragma mark LOGGING
 #pragma mark -
 
 -(void) configureLogging{
     _log_info_on = TRUE;
-    _log_debug_on = TRUE;
+    _log_debug_on = TRUE; //turn off on release
     _log_error_on = TRUE; //leave on
 }
 - (void)log_info:(NSString *)msg {
     if (_log_info_on) {
-        NSLog(@"[INFO] %@", msg);
+        NSLog(@"[INFO ] %@", msg);
     }
 }
 - (void)log_debug:(NSString *)msg {

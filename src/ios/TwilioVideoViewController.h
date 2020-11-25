@@ -36,6 +36,10 @@
 @property (nonatomic, weak) IBOutlet UIButton *cameraSwitchButton;
 @property (nonatomic, weak) IBOutlet UIButton *videoButton;
 
-- (void)connectToRoom:(NSString*)room token: (NSString *)token;
+//- (void)connectToRoom:(NSString*)room token: (NSString *)token;
+- (void)connectToRoom:(NSString*)room
+                token:(NSString *)token
+       remoteUserName:(NSString *)remoteUserName
+   remoteUserPhotoURL:(NSString *)remoteUserName;
 
 @end

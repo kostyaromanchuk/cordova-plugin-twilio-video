@@ -41,7 +41,7 @@
                                             <constraint firstItem="4rw-7g-hOA" firstAttribute="top" secondItem="Sr9-om-6LZ" secondAttribute="top" id="kma-nF-hPt"/>
                                         </constraints>
                                     </view>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Lorin Kalemi" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="10" translatesAutoresizingMaskIntoConstraints="NO" id="aqP-iA-exF">
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="NAME" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="10" translatesAutoresizingMaskIntoConstraints="NO" id="aqP-iA-exF">
                                         <rect key="frame" x="100" y="8" width="235" height="21"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="21" id="Uic-oV-igI"/>
@@ -50,7 +50,7 @@
                                         <color key="textColor" red="1" green="0.99311947410000001" blue="0.90725500079999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Calling..." textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="8" translatesAutoresizingMaskIntoConstraints="NO" id="jwj-CT-Sak">
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Connection State..." textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="8" translatesAutoresizingMaskIntoConstraints="NO" id="jwj-CT-Sak">
                                         <rect key="frame" x="100" y="37" width="235" height="21"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="21" id="EGt-7c-k2E"/>
@@ -199,17 +199,18 @@
                     <connections>
                         <outlet property="cameraSwitchButton" destination="XKU-af-eTc" id="jTc-4v-uIt"/>
                         <outlet property="disconnectButton" destination="krA-sT-Z3g" id="uQu-1U-Ree"/>
-                        <outlet property="imageViewOtherUser" destination="4rw-7g-hOA" id="4Og-as-WqN"/>
+                        <outlet property="imageViewRemoteParticipant" destination="4rw-7g-hOA" id="4Og-as-WqN"/>
                         <outlet property="micButton" destination="rwp-9E-VzS" id="SW4-po-OHw"/>
                         <outlet property="nsLayoutConstraint_previewView_bottom" destination="qJb-Zx-oKk" id="5iZ-8S-Oy6"/>
                         <outlet property="nsLayoutConstraint_previewView_leading" destination="1gS-nq-n0q" id="Fgn-ch-nOd"/>
                         <outlet property="nsLayoutConstraint_previewView_top" destination="Yku-8X-yFb" id="xHW-gs-NfR"/>
                         <outlet property="nsLayoutConstraint_previewView_trailing" destination="Y4t-3f-0e6" id="P2j-U7-8vv"/>
                         <outlet property="previewView" destination="hJ3-NM-pz1" id="1kY-rd-tEJ"/>
-                        <outlet property="textViewOtherUserName" destination="aqP-iA-exF" id="jf0-PT-1kG"/>
+                        <outlet property="textViewRemoteParticipantConnectionState" destination="jwj-CT-Sak" id="klk-uU-wRn"/>
+                        <outlet property="textViewRemoteParticipantName" destination="aqP-iA-exF" id="jf0-PT-1kG"/>
                         <outlet property="videoButton" destination="7bK-Tc-zw5" id="WoD-99-cw1"/>
                         <outlet property="viewButtonOuter" destination="l3a-7A-hrE" id="14i-bO-JBf"/>
-                        <outlet property="viewCallingInfo" destination="r4p-h9-xiA" id="oP5-TA-CII"/>
+                        <outlet property="viewRemoteParticipantInfo" destination="r4p-h9-xiA" id="oP5-TA-CII"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="JfB-JL-3y4" sceneMemberID="firstResponder"/>

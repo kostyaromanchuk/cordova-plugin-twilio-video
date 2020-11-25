@@ -12,13 +12,35 @@
 - (void)openRoom:(CDVInvokedUrlCommand*)command {
     self.listenerCallbackID = command.callbackId;
     NSArray *args = command.arguments;
+    
+    //--------------------------------------------------------------------------
+    //EXTRACT ARGUMENTS - START
+    //--------------------------------------------------------------------------
+    //args[0]
     NSString* token = args[0];
+    
+    //--------------------------------------------------------------------------
+    //args[1]
     NSString* room = args[1];
+    
+    //--------------------------------------------------------------------------
+    //args[2] - Added by BC
+    NSString* remote_user_name = args[2];
+    
+    //--------------------------------------------------------------------------
+    //args[3] - Added by BC
+    NSString* remote_user_photo_url = args[3];
+    
+    //--------------------------------------------------------------------------
+    //args[4] - was args[2]
     TwilioVideoConfig *config = [[TwilioVideoConfig alloc] init];
     if ([args count] > 2) {
-        [config parse: command.arguments[2]];
+        [config parse: command.arguments[4]];
     }
-    
+    //--------------------------------------------------------------------------
+    //ARGUMENTS - END
+    //--------------------------------------------------------------------------
+
     dispatch_async(dispatch_get_main_queue(), ^{
         UIStoryboard *sb = [UIStoryboard storyboardWithName:@"TwilioVideo" bundle:nil];
         TwilioVideoViewController *vc = [sb instantiateViewControllerWithIdentifier:@"TwilioVideoViewController"];
@@ -40,7 +62,13 @@
         vc.modalPresentationStyle = UIModalPresentationOverFullScreen;
         
         [self.viewController presentViewController:vc animated:NO completion:^{
-            [vc connectToRoom:room token:token];
+            //------------------------------------------------------------------
+            //remoteUserName and remoteUserPhotoURL ADDED BY BC
+            [vc connectToRoom:room
+                        token:token
+               remoteUserName:remote_user_name
+           remoteUserPhotoURL:remote_user_photo_url];
+            //------------------------------------------------------------------
         }];
     });
 }
