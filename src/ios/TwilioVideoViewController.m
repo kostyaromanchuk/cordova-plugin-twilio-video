@@ -74,6 +74,14 @@ NSString *const CLOSED = @"CLOSED";
     //---------------------------------------------------------
     [self configureLogging];
     
+    
+    //---------------------------------------
+    //DIALING.. MP3
+    //---------------------------------------
+    [self dialingSound_setup];
+    //moved from didConnectToRoom_StartACall - run it before room connects
+    //[self dialingSound_start];
+    
     //---------------------------------------
     //PREVIEW
     //---------------------------------------
@@ -411,6 +419,8 @@ NSString *const CLOSED = @"CLOSED";
         [self.videoButton setSelected: !self.localVideoTrack.isEnabled];
     }
     //DEBUG [self updateConstraints_PreviewView_toFullScreen: TRUE animated:TRUE];
+    
+    //DEBUG [self dialingSound_start];
 }
 
 
@@ -423,6 +433,7 @@ NSString *const CLOSED = @"CLOSED";
         [self.micButton setSelected: !self.localAudioTrack.isEnabled];
     }
     //[self updateConstraints_PreviewView_toFullScreen: FALSE animated:TRUE];
+    //DEBUG [self dialingSound_stop];
 }
 
 - (IBAction)cameraSwitchButtonPressed:(id)sender {
@@ -537,6 +548,13 @@ NSString *const CLOSED = @"CLOSED";
         //show LOCAL USER full screen while waiting for othe ruser to answer
         [self updateConstraints_PreviewView_toFullScreen:TRUE animated:FALSE];
         
+        //----------------------------------------------------------------------
+        //FIRST TIME VERY LOUD - cant set volume to 0
+        //NEXT TIMES too quiet
+        //will start it before room connect in viewDidLoad
+        [self dialingSound_start];
+        //----------------------------------------------------------------------
+        
     }else{
         [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
     }
@@ -568,6 +586,8 @@ NSString *const CLOSED = @"CLOSED";
 //didConnectToRoom_StartACall >> participantDidConnect_RemoteUserHasAnswered
 -(void)participantDidConnect_RemoteUserHasAnswered{
     [self log_info:@"[participantDidConnect_StartACall] START"];
+    
+    [self dialingSound_stop];
     
     if(self.previewIsFullScreen){
         
@@ -1221,6 +1241,12 @@ NSString *const CLOSED = @"CLOSED";
 -(void)viewWillDisappear:(BOOL)animated{
     [super viewWillDisappear: animated];
     
+    //if user disconnects while waiting for remote user to answer
+    [self dialingSound_stop];
+    //Strange issue where first time was quiet but 2nd, 3rd loud
+    //i think maybe multiple players?
+    audioPlayer = NULL;
+    
     [self log_info:@"[TwilioVideoViewController.m] viewWillDisappear >> stopCaptureWithCompletion"];
     [self.camera stopCaptureWithCompletion:^(NSError * _Nullable error) {
         if(error){
@@ -1247,31 +1273,66 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark DIALING... TONE
 #pragma mark -
 
+//ISSUE - IF i turn up the volume and get 50% it get stuck at loud
+// I had to start the mp3 BEFORE connecting to the room else it jumps to loud
+
 -(void) dialingSound_setup{
     
-    NSError *setCategoryError = nil;
-    [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&setCategoryError];
-    
-    NSString * fileName = @"ringing";
-    NSString * fileExtension = @"mp3";
-    
-    NSURL *soundPath = [[NSURL alloc] initFileURLWithPath:[[NSBundle mainBundle] pathForResource:fileName ofType:fileExtension]];
-    if (NULL != soundPath) {
-        audioPlayer = [[AVAudioPlayer alloc]initWithContentsOfURL:soundPath error:NULL];
-        if (NULL != audioPlayer) {
-            [audioPlayer setDelegate:nil];
-            [audioPlayer prepareToPlay];
-        }else{
-            NSLog(@"ERROR: audioPlayer is NULL");
-        }
+    if (NULL != audioPlayer) {
+        NSLog(@"ERROR: audioPlayer is NOT NULL - dont call dialingSound_setup TWICE youll get same sound played twice sounds VERY LOUD");
     }else{
-        NSLog(@"ERROR: soundPath is NULL cant find sound file in mainBundle called %@.%@", fileName, fileExtension);
+        NSError *setCategoryError = nil;
+        
+     //   [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&setCategoryError];
+        //[[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategorySoloAmbient error:&setCategoryError];
+        //[[AVAudioSession sharedInstance] setCategory:AVAudioSessionModeDefault error:&setCategoryError];
+        
+        //UInt32 mix  = 1;
+        //UInt32 duck = 1;
+        //AudioSessionSetProperty(kAudioSessionProperty_OverrideCategoryMixWithOthers, sizeof(mix), &mix);
+        //AudioSessionSetProperty(kAudioSessionProperty_OtherMixableAudioShouldDuck, sizeof(duck), &duck);
+        
+        NSString * fileName = @"ringing";
+        NSString * fileExtension = @"mp3";
+        
+        NSURL *soundPath = [[NSURL alloc] initFileURLWithPath:[[NSBundle mainBundle] pathForResource:fileName ofType:fileExtension]];
+        if (NULL != soundPath) {
+            audioPlayer = [[AVAudioPlayer alloc]initWithContentsOfURL:soundPath error:NULL];
+            if (NULL != audioPlayer) {
+                [audioPlayer setDelegate:self];
+                [audioPlayer prepareToPlay];
+                /* APPLE DOCS The volume for the sound. The nominal range is from 0.0 to 1.0. */
+                //[audioPlayer setVolume:0.3];
+            }else{
+                NSLog(@"ERROR: audioPlayer is NULL");
+            }
+        }else{
+            NSLog(@"ERROR: soundPath is NULL cant find sound file in mainBundle called %@.%@", fileName, fileExtension);
+        }
     }
 }
-
+-(void) dialingSound_setVolume{
+    //FIRST TIME ALWAYS LOUD THEN USES VOLUME
+   // [audioPlayer setVolume:0.6];
+}
 -(void) dialingSound_start{
     if (audioPlayer) {
-        [audioPlayer play];
+        
+        if([audioPlayer isPlaying]){
+            [self log_debug:@"[dialingSound_start] [audioPlayer isPlaying] is TRUE - DONT start another one you get a VERY loud audio"];
+        }else{
+            [self log_debug:@"[dialingSound_start]  >> [audioPlayer play]"];
+            
+            [audioPlayer setNumberOfLoops:1];
+            
+            //[audioPlayer setVolume:0.4];
+            [audioPlayer play];
+            
+            //https://stackoverflow.com/questions/25394627/how-to-lower-the-volume-of-music-in-swift
+            //SO - make sure you set volume AFTER PLAY
+            [self dialingSound_setVolume];
+        }
+        
     }else{
         [self log_error:@"[dialingSound_start] audioPlayer is NULL [audioPlayer play] FAILED"];
     }
@@ -1279,6 +1340,8 @@ NSString *const CLOSED = @"CLOSED";
 
 -(void) dialingSound_stop{
     if (audioPlayer) {
+        [self log_debug:@"[dialingSound_stop] >> [audioPlayer stop]"];
+        
         [audioPlayer stop];
     }else{
         [self log_error:@"[dialingSound_stop] audioPlayer is NULL [audioPlayer stop] FAILED"];
@@ -1295,7 +1358,6 @@ NSString *const CLOSED = @"CLOSED";
     }else{
         NSLog(@"audioPlayerDidFinishPlaying: successfully: FALSE");
     }
-    
 }
 
 /* if an error occurs while decoding it will be reported to the delegate. */
