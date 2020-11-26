@@ -28,7 +28,7 @@
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Sr9-om-6LZ">
                                         <rect key="frame" x="8" y="8" width="84" height="84"/>
                                         <subviews>
-                                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="sea_chat_user_lorin.png" translatesAutoresizingMaskIntoConstraints="NO" id="4rw-7g-hOA">
+                                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="4rw-7g-hOA">
                                                 <rect key="frame" x="0.0" y="0.0" width="84" height="84"/>
                                             </imageView>
                                         </subviews>
@@ -221,7 +221,6 @@
     <resources>
         <image name="end_call.png" width="11.520000457763672" height="11.520000457763672"/>
         <image name="mic.png" width="6" height="11.520000457763672"/>
-        <image name="sea_chat_user_lorin.png" width="72" height="72"/>
         <image name="switch_camera.png" width="11.520000457763672" height="8.6400003433227539"/>
         <image name="video.png" width="11.520000457763672" height="6.4800000190734863"/>
     </resources>
