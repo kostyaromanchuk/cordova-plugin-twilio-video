@@ -744,46 +744,56 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                if (cameraCapturer != null) {
-//                    CameraSource cameraSource = cameraCapturer.getCameraSource();
-//                    cameraCapturer.switchCamera();
-//                    if (thumbnailVideoView.getVisibility() == View.VISIBLE) {
-//                        thumbnailVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
-//                    } else {
-//                        primaryVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
-//                    }
-//                }
 
-
-                if (thumbnailVideoView != null) {
-                    ViewGroup.LayoutParams layoutParams = thumbnailVideoView.getLayoutParams();
-
-                    layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
-                    layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
-
-                    //layoutParams.setMargins(10, 20, 30, 40);
-
-                    thumbnailVideoView.setLayoutParams(layoutParams);
-                } else {
-                    Log.e(TAG, "onClick: thumbnailVideoView is null");
-                }
-
+                //------------------------------------------------------------------------------------------
                 android.widget.FrameLayout video_container = findViewById(FAKE_R.getId("video_container"));
+                ViewGroup.LayoutParams layoutParams = ((ViewGroup) video_container).getLayoutParams();
+                //setMargins not found - you need to cast it
 
-//                ViewGroup.LayoutParams layoutParams = video_container.getLayoutParams();
-//
-//                layoutParams.setMargins(10, 20, 30, 40);
+                if (layoutParams instanceof ViewGroup.MarginLayoutParams) {
+                    ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) layoutParams;
+                    //OK but sets all
+                    marginLayoutParams.setMargins(50, 50, 16, 80); // left, top, right, bottom
 
+// TODO: 27/11/2020 MAY NEED TO CALC margins
+                    call this first
+                        the mic button sets height/width and thsi code does unset it
+                    //((ViewGroup.MarginLayoutParams) layoutParams).topMargin = 0;
+                    //((ViewGroup.MarginLayoutParams) layoutParams).leftMargin = 0;
+                    //((ViewGroup.MarginLayoutParams) layoutParams).bottomMargin = 0;
+                    //((ViewGroup.MarginLayoutParams) layoutParams).rightMargin = 0;
 
-                ViewGroup.LayoutParams lp = ((ViewGroup) video_container).getLayoutParams();
-                if (lp instanceof ViewGroup.MarginLayoutParams) {
-                    ((ViewGroup.MarginLayoutParams) lp).topMargin = 0;
-                    ((ViewGroup.MarginLayoutParams) lp).leftMargin = 0;
-                } else
+                    
+                    video_container.requestLayout();
+                } else{
                     Log.e("MyApp", "Attempted to set the margins on a class that doesn't support margins: video_container");
+                }
+                //------------------------------------------------------------------------------------------
 
-                 }
-        };
+
+//                if (thumbnailVideoView != null) {
+//                    ViewGroup.LayoutParams layoutParams = thumbnailVideoView.getLayoutParams();
+//
+//                    layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
+//                    layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
+//
+//                    //layoutParams.setMargins(10, 20, 30, 40);
+//
+//                    thumbnailVideoView.setLayoutParams(layoutParams);
+//                } else {
+//                    Log.e(TAG, "onClick: thumbnailVideoView is null");
+//                }
+                //------------------------------------------------------------------------------------------
+
+                //------------------------------------------------------------------------------------------
+                //                ViewGroup.LayoutParams layoutParams = video_container.getLayoutParams();
+
+                //                layoutParams.setMargins(10, 20, 30, 40);
+
+
+            }//onclick
+
+        };//return
     }
 
     private View.OnClickListener switchAudioClickListener() {
