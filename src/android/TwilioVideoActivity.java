@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 
 import com.twilio.video.CameraCapturer;
 import com.twilio.video.CameraCapturer.CameraSource;
@@ -47,7 +48,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class TwilioVideoActivity extends AppCompatActivity implements CallActionObserver {
-
+    public static final String TAG = "TwilioVideoActivity";
     /*
      * Audio and video tracks can be created with names. This feature is useful for categorizing
      * tracks of participants. For example, if one participant publishes a video track with
@@ -743,16 +744,45 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (cameraCapturer != null) {
-                    CameraSource cameraSource = cameraCapturer.getCameraSource();
-                    cameraCapturer.switchCamera();
-                    if (thumbnailVideoView.getVisibility() == View.VISIBLE) {
-                        thumbnailVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
-                    } else {
-                        primaryVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
-                    }
+//                if (cameraCapturer != null) {
+//                    CameraSource cameraSource = cameraCapturer.getCameraSource();
+//                    cameraCapturer.switchCamera();
+//                    if (thumbnailVideoView.getVisibility() == View.VISIBLE) {
+//                        thumbnailVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
+//                    } else {
+//                        primaryVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
+//                    }
+//                }
+
+
+                if (thumbnailVideoView != null) {
+                    ViewGroup.LayoutParams layoutParams = thumbnailVideoView.getLayoutParams();
+
+                    layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                    layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
+
+                    //layoutParams.setMargins(10, 20, 30, 40);
+
+                    thumbnailVideoView.setLayoutParams(layoutParams);
+                } else {
+                    Log.e(TAG, "onClick: thumbnailVideoView is null");
                 }
-            }
+
+                android.widget.FrameLayout video_container = findViewById(FAKE_R.getId("video_container"));
+
+//                ViewGroup.LayoutParams layoutParams = video_container.getLayoutParams();
+//
+//                layoutParams.setMargins(10, 20, 30, 40);
+
+
+                ViewGroup.LayoutParams lp = ((ViewGroup) video_container).getLayoutParams();
+                if (lp instanceof ViewGroup.MarginLayoutParams) {
+                    ((ViewGroup.MarginLayoutParams) lp).topMargin = 0;
+                    ((ViewGroup.MarginLayoutParams) lp).leftMargin = 0;
+                } else
+                    Log.e("MyApp", "Attempted to set the margins on a class that doesn't support margins: video_container");
+
+                 }
         };
     }
 
@@ -760,16 +790,26 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (audioManager.isSpeakerphoneOn()) {
-                    audioManager.setSpeakerphoneOn(false);
-                } else {
-                    audioManager.setSpeakerphoneOn(true);
+//                if (audioManager.isSpeakerphoneOn()) {
+//                    audioManager.setSpeakerphoneOn(false);
+//                } else {
+//                    audioManager.setSpeakerphoneOn(true);
+//
+//                }
+//                int icon = audioManager.isSpeakerphoneOn() ?
+//                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
+//                switchAudioActionFab.setImageDrawable(ContextCompat.getDrawable(
+//                        TwilioVideoActivity.this, icon));
 
+                if(thumbnailVideoView != null){
+                    ViewGroup.LayoutParams layoutParams = thumbnailVideoView.getLayoutParams();
+                    layoutParams.width = 96;
+                    layoutParams.height = 96;
+                    thumbnailVideoView.setLayoutParams(layoutParams);
+                }else{
+                    Log.e(TAG, "onClick: thumbnailVideoView is null");
                 }
-                int icon = audioManager.isSpeakerphoneOn() ?
-                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
-                switchAudioActionFab.setImageDrawable(ContextCompat.getDrawable(
-                        TwilioVideoActivity.this, icon));
+
             }
         };
     }

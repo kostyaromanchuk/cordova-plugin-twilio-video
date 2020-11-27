@@ -1,5 +1,5 @@
 {
-    "version": "5.0.10",
+    "version": "5.0.11",
     "name": "cordova-plugin-twilio-video",
     "cordova_name": "Twilio video plugin",
     "license": "MIT",

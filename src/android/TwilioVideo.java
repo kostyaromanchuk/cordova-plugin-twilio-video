@@ -63,15 +63,26 @@ public class TwilioVideo extends CordovaPlugin {
         try {
             this.token = args.getString(0);
             this.roomId = args.getString(1);
+
+            //Added by BC
+            String remote_user_name = args.getString(2);
+            String remote_user_photo_url = args.getString(3);
+
+
             final CordovaPlugin that = this;
-            final String token = this.token;
+            final String room = this.token;
             final String roomId = this.roomId;
-            if (args.length() > 2) {
-                this.config.parse(args.getJSONObject(2));
+
+
+            //param:config moved to position 5
+            if (args.length() > 4) {
+                this.config.parse(args.getJSONObject(4));
             }
 
             LOG.d(TAG, "TOKEN: " + token);
             LOG.d(TAG, "ROOMID: " + roomId);
+            LOG.d(TAG, "remote_user_name: " + remote_user_name);
+            LOG.d(TAG, "remote_user_photo_url: " + remote_user_photo_url);
 
             cordova.getThreadPool().execute(new Runnable() {
                 public void run() {

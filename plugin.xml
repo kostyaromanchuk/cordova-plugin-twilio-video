@@ -110,6 +110,9 @@
         <resource-file src="src/android/res/values/dimens.xml" target="res/values/dimens.xml" />
         <resource-file src="src/android/res/values/styles.xml" target="res/values/styles.xml" />
         <resource-file src="src/android/res/values-v21/styles.xml" target="res/values-v21/styles.xml" />
-
+       
+        <resource-file src="src/android/res/anim/zoom_in.xml" target="res/anim/zoom_in.xml" />
+        <resource-file src="src/android/res/anim/zoom_out.xml" target="res/anim/zoom_out.xml" />
+ 
     </platform>
 </plugin>
