@@ -8,6 +8,7 @@
              android:keepScreenOn="true"
              tools:showIn="@layout/activity_video">
 
+
     <com.twilio.video.VideoView
         android:id="@+id/thumbnail_video_view"
         app:tviOverlaySurface="true"
@@ -22,5 +23,59 @@
         android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="top"
+        android:layout_gravity="top"
+        android:orientation="horizontal" >
+
+        <ImageView
+            android:id="@+id/imageViewRemoteParticipant"
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+
+            android:layout_marginLeft="16dp"
+            android:layout_marginTop="16dp"
+
+            android:background="#03A9F4" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="top"
+            android:layout_gravity="top"
+            android:orientation="vertical" >
+
+            <TextView
+                android:id="@+id/textViewRemoteParticipantName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+
+                android:layout_marginLeft="16dp"
+                android:layout_marginTop="16dp"
+
+                android:textSize="17sp"
+                android:background="#03A9F4"
+                android:text="" />
+            <TextView
+                android:id="@+id/textViewRemoteParticipantConnectionState"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+
+                android:layout_marginLeft="16dp"
+                android:layout_marginTop="8dp"
+
+                android:textSize="12sp"
+                android:background="#03A9F4"
+                android:text="" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+
+
 
 </FrameLayout>

@@ -12,6 +12,7 @@ import android.graphics.Color;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
@@ -22,6 +23,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.twilio.video.CameraCapturer;
 import com.twilio.video.CameraCapturer.CameraSource;
@@ -48,6 +51,8 @@ import org.json.JSONObject;
 import java.util.Collections;
 import java.util.List;
 
+import com.squareup.picasso.Picasso;
+
 public class TwilioVideoActivity extends AppCompatActivity implements CallActionObserver {
     public static final String TAG = "TwilioVideoActivity";
     /*
@@ -71,6 +76,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private String accessToken;
     private String roomId;
     private CallConfig config;
+
+    private String remote_user_name;
+    private String remote_user_photo_url;
 
     /*
      * A Room represents communication between a local participant and one or more participants.
@@ -104,8 +112,16 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private boolean disconnectedFromOnDestroy;
     private VideoRenderer localVideoView;
 
+    //play ringing.mp3
+    private MediaPlayer mediaPlayer;
+    //remote participant image
+    private ImageView imageViewRemoteParticipant;
 
+    private TextView textViewRemoteParticipantName;
+    private TextView textViewRemoteParticipantConnectionState;
 
+    private boolean previewIsFullScreen;
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -126,6 +142,13 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         muteActionFab = findViewById(FAKE_R.getId("mute_action_fab"));
         switchAudioActionFab = findViewById(FAKE_R.getId("switch_audio_action_fab"));
 
+        //filled below from url passed in from cordova via intent
+        imageViewRemoteParticipant = findViewById(FAKE_R.getId("imageViewRemoteParticipant"));
+        textViewRemoteParticipantName = findViewById(FAKE_R.getId("textViewRemoteParticipantName"));
+        textViewRemoteParticipantConnectionState = findViewById(FAKE_R.getId("textViewRemoteParticipantConnectionState"));
+
+
+
         /*
          * Enable changing the volume using the up/down keys during a conversation
          */
@@ -137,11 +160,44 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         audioManager.setSpeakerphoneOn(true);
 
+        //to play ringing.mp3
+        int id_ringing =  FAKE_R.getResourceId( TwilioVideoActivity.this, "raw", "ringing");
+        mediaPlayer = MediaPlayer.create(TwilioVideoActivity.this, id_ringing);
+        if (mediaPlayer != null) {
+            mediaPlayer.setLooping(true); 
+            //use .play + pause 
+            //.play() + .stop() seems to kill it next .play() fails
+        }else{
+            Log.e(TAG, "methodName: mediaPlayer is null");
+        }
+        //------------------------------------------------------------------------------------------
         Intent intent = getIntent();
 
         this.accessToken = intent.getStringExtra("token");
         this.roomId = intent.getStringExtra("roomId");
         this.config = (CallConfig) intent.getSerializableExtra("config");
+
+        this.remote_user_name = intent.getStringExtra("remote_user_name");
+        this.remote_user_photo_url = intent.getStringExtra("remote_user_photo_url");
+
+        //------------------------------------------------------------------------------------------
+        //FILL USER INFO but dont show yet
+        this.hide_imageViewRemoteParticipant();
+        this.hide_textViewRemoteParticipantName();
+        this.hide_textViewRemoteParticipantConnectionState();
+
+
+        if (textViewRemoteParticipantName != null) {
+            textViewRemoteParticipantName.setText(this.remote_user_name);
+        }else{
+            Log.e(TAG, "methodName: textViewRemoteParticipantName is null");
+        }
+
+
+
+
+
+        //------------------------------------------------------------------------------------------
 
         Log.d(TwilioVideo.TAG, "BEFORE REQUEST PERMISSIONS");
         if (!hasPermissionForCameraAndMicrophone()) {
@@ -157,7 +213,543 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
          * Set the initial state of the UI
          */
         initializeUI();
+        setupPreviewView();
     }
+
+    private void setupPreviewView(){
+        //HIDE till my camera connected
+        this.hide_viewRemoteParticipantInfo();
+
+        //set it always to Fill so it looks ok in fullscreen
+        //I tried changing it to Fit/Fill but jumps at the end when it zooms in
+        //self.previewView.contentMode = UIViewContentModeScaleAspectFill;
+
+        //DEBUG - when video is full screen is may have wrong AspectFit or AspectFil
+
+        this.updateConstraints_PreviewView_toFullScreen(true, false);
+    }
+
+
+
+    private void fillIn_viewRemoteParticipantInfo(){
+
+        if (this.remote_user_name != null) {
+            this.textViewRemoteParticipantName.setText(this.remote_user_name);
+        }else{
+            Log.e(TAG, "instance initializer: this.remoteUserName is NULL");
+            this.textViewRemoteParticipantName.setText("");
+        }
+
+        this.loadUserImageInBackground_async();
+
+        //text set in didConnectToRoom_StartACall*
+        this.textViewRemoteParticipantConnectionState.setText("");
+    }
+    
+
+    private void loadUserImageInBackground_async(){
+        //TODO add border around image
+        //            self.imageViewRemoteParticipant.backgroundColor = [UIColor whiteColor];
+        //            self.imageViewRemoteParticipant.layer.cornerRadius = self.imageViewRemoteParticipant.frame.size.height / 2.0;
+        //            self.imageViewRemoteParticipant.layer.borderWidth = 4.f;
+        //            self.imageViewRemoteParticipant.layer.borderColor = [[UIColor whiteColor] CGColor];
+
+        //            [self performSelectorInBackground:@selector(loadUserImageInBackground) withObject:nil];
+
+        //------------------------------------------------------------------------------------------
+        //Fill imageView async
+        //------------------------------------------------------------------------------------------
+        //"https://sealogin-trfm-prd-cdn.azureedge.net/API/1_3/User/picture?imageUrl=673623fdc8b39b5b05b3167765019398.jpg"
+        //------------------------------------------------------------------------------------------
+        if (this.remote_user_photo_url != null) {
+            Picasso.get().load(this.remote_user_photo_url).into(imageViewRemoteParticipant);
+        }else{
+            Log.e(TAG, "onCreate: imageViewRemoteParticipant is null");
+        }
+    }
+
+
+    //------------------------------------------------------------------------------------------
+    //SHOW REMOTE USER PANEL with image name and state e.g. Dialing..
+
+    private void show_viewRemoteParticipantInfoWithState(String state){
+        show_imageViewRemoteParticipant();
+        show_textViewRemoteParticipantName();
+        show_textViewRemoteParticipantConnectionState();
+
+        set_state_textViewRemoteParticipantConnectionState(state);
+    }
+    private void hide_viewRemoteParticipantInfo(){
+        hide_imageViewRemoteParticipant();
+        hide_textViewRemoteParticipantName();
+        hide_textViewRemoteParticipantConnectionState();
+        //clear it
+        set_state_textViewRemoteParticipantConnectionState("");
+    }
+
+    //------------------------------------------------------------------------------------------
+    //SHOW/HIDE each control
+    private void show_imageViewRemoteParticipant(){
+        if (this.imageViewRemoteParticipant != null) {
+            this.imageViewRemoteParticipant.setVisibility(View.VISIBLE);
+        }else{
+            Log.e(TAG, "show_imageViewRemoteParticipant: imageViewRemoteParticipant is null");
+        }
+    }
+    private void hide_imageViewRemoteParticipant(){
+        if (this.imageViewRemoteParticipant != null) {
+            this.imageViewRemoteParticipant.setVisibility(View.GONE);
+        }else{
+            Log.e(TAG, "hide_imageViewRemoteParticipant: imageViewRemoteParticipant is null");
+        }
+    }
+
+    //show_textViewRemoteParticipantName
+    private void show_textViewRemoteParticipantName(){
+        if (this.textViewRemoteParticipantName != null) {
+            this.textViewRemoteParticipantName.setVisibility(View.VISIBLE);
+        }else{
+            Log.e(TAG, "show_textViewRemoteParticipantName: textViewRemoteParticipantName is null");
+        }
+    }
+    private void hide_textViewRemoteParticipantName(){
+        if (this.textViewRemoteParticipantName != null) {
+            this.textViewRemoteParticipantName.setVisibility(View.GONE);
+        }else{
+            Log.e(TAG, "hide_textViewRemoteParticipantName: textViewRemoteParticipantName is null");
+        }
+    }
+    //show_textViewRemoteParticipantConnectionState
+    private void show_textViewRemoteParticipantConnectionState(){
+        if (this.textViewRemoteParticipantConnectionState != null) {
+            this.textViewRemoteParticipantConnectionState.setVisibility(View.VISIBLE);
+        }else{
+            Log.e(TAG, "show_textViewRemoteParticipantConnectionState: textViewRemoteParticipantConnectionState is null");
+        }
+    }
+    private void hide_textViewRemoteParticipantConnectionState(){
+        if (this.textViewRemoteParticipantConnectionState != null) {
+            this.textViewRemoteParticipantConnectionState.setVisibility(View.GONE);
+        }else{
+            Log.e(TAG, "hide_textViewRemoteParticipantConnectionState: textViewRemoteParticipantConnectionState is null");
+        }
+    }
+    private void set_state_textViewRemoteParticipantConnectionState(String state){
+        if (this.textViewRemoteParticipantConnectionState != null) {
+            this.textViewRemoteParticipantConnectionState.setText(state);
+        }else{
+            Log.e(TAG, "hide_textViewRemoteParticipantConnectionState: textViewRemoteParticipantConnectionState is null");
+        }
+    }
+
+    //------------------------------------------------------------------------------------------
+    //DELEGATE > UPDATE UI
+    //------------------------------------------------------------------------------------------
+    
+    private void didConnectToRoom_StartACall(){
+        Log.e(TAG, "didConnectToRoom_StartACall: START");
+
+        if(this.previewIsFullScreen){
+            //----------------------------------------------------------------------
+            //Show the dialing panel
+    
+            this.fillIn_viewRemoteParticipantInfo();
+        
+            this.show_viewRemoteParticipantInfoWithState("Calling...");
+
+            //----------------------------------------------------------------------
+            //show LOCAL USER full screen while waiting for other user to answer
+            this.updateConstraints_PreviewView_toFullScreen(true, false);
+            //----------------------------------------------------------------------
+            //FIRST TIME VERY LOUD - cant set volume to 0
+            //NEXT TIMES too quiet
+            //will start it before room connect in viewDidLoad
+            this.dialing_sound_start();
+            //----------------------------------------------------------------------
+
+        }else{
+            Log.e(TAG, "didConnectToRoom_StartACall: new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL");
+        }
+    }
+
+    //On the ANSWERING PHONE it will trigger
+    //didConnectToRoom_AnswerACall only
+    private void didConnectToRoom_AnswerACall(){
+        Log.e(TAG, "didConnectToRoom_AnswerACall: START");
+        
+        if(this.previewIsFullScreen){
+            //REMOTE USER CONNECTED
+            //Hide the dialing screen
+            this.hide_viewRemoteParticipantInfo();
+
+            //Zoom the preview from FULL SCREEN to MINI
+            this.updateConstraints_PreviewView_toFullScreen(false, true);
+
+        }else{
+            Log.e(TAG, "didConnectToRoom_AnswerACall: new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL");
+        }
+    }
+
+
+    //called by TVIRoomDelegate.participantDidConnect
+    //Same app installed on both phones but UI changes depending on who starts or answers a call
+    //1 local + 0 remote - LOCAL USER is person dialing REMOTE participant.
+    //Remote hasnt joined the room yet so hasnt answered so show 'Dialing..'
+    //On the CALLING PHONE it will trigger
+    //didConnectToRoom_StartACall >> participantDidConnect_RemoteUserHasAnswered
+    private void participantDidConnect_RemoteUserHasAnswered() {
+        Log.e(TAG, "participantDidConnect_RemoteUserHasAnswered: START");
+
+        //if you need to restart it use _pause
+        this.dialing_sound_stop();
+
+        if(this.previewIsFullScreen){
+
+            this.hide_viewRemoteParticipantInfo();
+
+            //REMOTE user is visible in full screen
+            //shrink PREVIEW from FULL SCREEN to MINI to show REMOTE user behind
+            this.updateConstraints_PreviewView_toFullScreen(false, false);
+
+        }else{
+            Log.e(TAG, "participantDidConnect_RemoteUserHasAnswered: new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL");
+        }
+    }
+
+    //called by TVIRoomDelegate.participantDidConnect
+    //Same app installed on both phones but UI changes depending on who starts or answers a call
+    //1 local + 1 remote - REMOTE user in room is the other person who started the call
+    //LOCAL USER is answering a call so dont show 'Dialing..'
+
+    private void participantDidConnect(String remoteParticipant_identity) {
+        Log.e(TAG, "participantDidConnect: START -  Unused in 1..1 - use for GROUP");
+
+        if(this.previewIsFullScreen){
+            Log.e(TAG, "participantDidConnect:new participant joined room BUT previewIsFullScreen is true - shouldnt happen for 1..1 CALL");
+
+        }else{
+            //REMOTE USER DISCONNECTED
+            //show the remote user panel with state 'Disconnected'
+
+            //if app running on REMOTE photo will just show white circle no photo
+            //this is so Disconnected isnt off center
+
+            this.loadUserImageInBackground_async();
+
+            if (remoteParticipant_identity != null) {
+                this.textViewRemoteParticipantName.setText(remoteParticipant_identity);
+            }else{
+                Log.e(TAG, "remoteParticipant_identity is null");
+            }
+
+            this.show_viewRemoteParticipantInfoWithState("Disconnected");
+
+            //Zoom the preview from MINI to FULL SCREEN
+            this.updateConstraints_PreviewView_toFullScreen(true, true);
+
+        }
+    }
+
+    private void participantDidDisconnect(String remoteParticipant_identity) {
+        Log.e(TAG, "participantDidDisconnect: START");
+
+        if(this.previewIsFullScreen){
+            Log.e(TAG, "participantDidDisconnect: new participant joined room BUT previewIsFullScreen is true - shouldnt happen for 1..1 CALL");
+
+        }else{
+            //REMOTE USER DISCONNECTED
+            //show the remote user panel with state 'Disconnected'
+
+            //if app running on REMOTE photo will just show white circle no photo
+            //this is so Disconnected isnt off center
+            this.loadUserImageInBackground_async();
+             if (remoteParticipant_identity != null) {
+                   this.textViewRemoteParticipantName.setText(remoteParticipant_identity);
+             }else{
+                 Log.e(TAG, "emoteParticipant_identity is NULL - if LOCAL hangs up before REMOTE then no photo or name just 'Disconnected may show'");
+             }
+
+             this.show_viewRemoteParticipantInfoWithState("Disconnected");
+             //TODO - should prob hange up
+
+            //Zoom the preview from MINI to FULL SCREEN
+            this.updateConstraints_PreviewView_toFullScreen(true, true);
+        }
+    }
+
+    private void shrinkPreview(){
+        //------------------------------------------------------------------------------------------
+        //android.widget.FrameLayout video_container = findViewById(FAKE_R.getId("video_container"));
+        //ViewGroup.LayoutParams layoutParams = ((ViewGroup) video_container).getLayoutParams();
+
+        android.widget.FrameLayout thumbnail_video_view = findViewById(FAKE_R.getId("thumbnail_video_view"));
+        ViewGroup.LayoutParams layoutParams = ((ViewGroup) thumbnail_video_view).getLayoutParams();
+
+
+        //setMargins not found - you need to cast it
+        Log.e(TAG, "onClick: layoutParams:" + layoutParams);
+
+        int screen_width_pixels = Resources.getSystem().getDisplayMetrics().widthPixels;
+        int screen_height_pixels = Resources.getSystem().getDisplayMetrics().heightPixels;
+
+        Log.e(TAG, "onClick: screen_width_pixels:" + screen_width_pixels + ",screen_height_pixels:"+ screen_height_pixels );
+        //1080, 2076
+
+        int preview_mini_width = 350;
+        int preview_mini_height = 650;
+        int margin = 64;
+
+
+        if (layoutParams instanceof ViewGroup.MarginLayoutParams) {
+            ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) layoutParams;
+
+
+            int leftMargin = screen_width_pixels - preview_mini_width - margin;
+            int topMargin  = screen_height_pixels - preview_mini_height - margin;
+
+            //OK but sets all
+            marginLayoutParams.setMargins(leftMargin, topMargin, margin, margin * 6); // left, top, right, bottom
+
+//// TODO: 27/11/2020 MAY NEED TO CALC margins
+//                    call this first
+//                        the mic button sets height/width and thsi code does unset it
+//                            i pasted this into the plugin
+            //https://developer.android.com/reference/android/view/ViewGroup.MarginLayoutParams
+            //((ViewGroup.MarginLayoutParams) layoutParams).topMargin = 0;
+            //((ViewGroup.MarginLayoutParams) layoutParams).leftMargin = 0;
+            //((ViewGroup.MarginLayoutParams) layoutParams).bottomMargin = 0;
+            //((ViewGroup.MarginLayoutParams) layoutParams).rightMargin = 0;
+
+
+            //video_container.requestLayout();
+
+            thumbnail_video_view.requestLayout();
+        } else{
+            Log.e("MyApp", "Attempted to set the margins on a class that doesn't support margins: video_container");
+        }
+        //------------------------------------------------------------------------------------------
+
+        //java.lang.ClassCastException: androidx.coordinatorlayout.widget.CoordinatorLayout$LayoutParams cannot be cast to android.widget.FrameLayout$LayoutParams
+
+//                if (thumbnailVideoView != null) {
+//                    ViewGroup.LayoutParams thumbnailVideoView_layoutParams = thumbnailVideoView.getLayoutParams();
+//
+//                    //thumbnailVideoView_layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
+//                    //thumbnailVideoView_layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
+//                    thumbnailVideoView_layoutParams.width = 100;
+//                    thumbnailVideoView_layoutParams.height = 200;
+//
+//                    //layoutParams.setMargins(10, 20, 30, 40);
+//
+//                    thumbnailVideoView.setLayoutParams(thumbnailVideoView_layoutParams);
+//
+//                    thumbnailVideoView.requestLayout();
+//                } else {
+//                    Log.e(TAG, "onClick: thumbnailVideoView is null");
+//                }
+        //------------------------------------------------------------------------------------------
+
+        //------------------------------------------------------------------------------------------
+        //                ViewGroup.LayoutParams layoutParams = video_container.getLayoutParams();
+
+        //                layoutParams.setMargins(10, 20, 30, 40);
+
+
+//        if(thumbnailVideoView != null){
+//            ViewGroup.LayoutParams layoutParams = thumbnailVideoView.getLayoutParams();
+//            layoutParams.width = 96;
+//            layoutParams.height = 96;
+//            thumbnailVideoView.setLayoutParams(layoutParams);
+//        }else{
+//            Log.e(TAG, "onClick: thumbnailVideoView is null");
+//        }
+
+
+    }
+
+
+
+    private void updateConstraints_PreviewView_toFullScreen(boolean fullScreen) {
+        Log.e(TAG, "updateConstraints_PreviewView_toFullScreen: START");
+        if(fullScreen){
+
+            //------------------------------------------------------------------------------------------
+            //FULLSCREEN VIEW
+            //------------------------------------------------------------------------------------------
+
+            if (thumbnailVideoView != null) {
+                ViewGroup.LayoutParams thumbnailVideoView_layoutParams = thumbnailVideoView.getLayoutParams();
+
+                thumbnailVideoView_layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                thumbnailVideoView_layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
+
+                thumbnailVideoView.setLayoutParams(thumbnailVideoView_layoutParams);
+
+                thumbnail_video_view_setmargins(0, 0, 0, 0);
+
+                thumbnailVideoView.requestLayout();
+            } else {
+                Log.e(TAG, "onClick: thumbnailVideoView is null");
+            }
+
+            this.previewIsFullScreen = true;
+        }else{
+            //------------------------------------------------------------------------------------------
+            //MINI VIEW
+            //------------------------------------------------------------------------------------------
+
+            int screen_width_pixels = Resources.getSystem().getDisplayMetrics().widthPixels;
+            int screen_height_pixels = Resources.getSystem().getDisplayMetrics().heightPixels;
+
+            Log.e(TAG, "onClick: screen_width_pixels:" + screen_width_pixels + ",screen_height_pixels:"+ screen_height_pixels );
+            //1080, 2076
+
+            int preview_mini_width = 350;
+            int preview_mini_height = 650;
+            int margin = 64;
+            int leftMargin = screen_width_pixels - preview_mini_width - margin;
+            int topMargin  = screen_height_pixels - preview_mini_height - margin;
+
+            thumbnail_video_view_setmargins(leftMargin, topMargin, margin, margin * 3);
+
+            this.previewIsFullScreen = false;
+        }
+    }
+    private void thumbnail_video_view_setmargins(int leftmargin, int topMargin, int rightMargin, int bottomMargin){
+        VideoView thumbnail_video_view = findViewById(FAKE_R.getId("thumbnail_video_view"));
+        ViewGroup.LayoutParams layoutParams = thumbnail_video_view.getLayoutParams();
+
+
+        if (layoutParams instanceof ViewGroup.MarginLayoutParams) {
+            ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) layoutParams;
+
+            //OK but sets all
+            marginLayoutParams.setMargins(leftmargin, topMargin, rightMargin, bottomMargin); // left, top, right, bottom
+
+            //https://developer.android.com/reference/android/view/ViewGroup.MarginLayoutParams
+            //((ViewGroup.MarginLayoutParams) layoutParams).topMargin = 0;
+            //((ViewGroup.MarginLayoutParams) layoutParams).leftMargin = 0;
+            //((ViewGroup.MarginLayoutParams) layoutParams).bottomMargin = 0;
+            //((ViewGroup.MarginLayoutParams) layoutParams).rightMargin = 0;
+
+            //video_container.requestLayout();
+            thumbnail_video_view.requestLayout();
+        } else{
+            Log.e("MyApp", "Attempted to set the margins on a class that doesn't support margins: video_container");
+        }
+    }
+
+    private void updateConstraints_PreviewView_toFullScreen(boolean fullScreen, boolean isAnimated) {
+
+        //animation in and out should be same number of secs
+        //NSTimeInterval duration = 0.3;
+
+        if(fullScreen){
+            if(isAnimated){
+                //------------------------------------------------------------------
+                //FULL SCREEN + ANIMATED
+                //------------------------------------------------------------------
+//            [UIView animateWithDuration:duration
+//                delay:0
+//                options:UIViewAnimationOptionCurveEaseInOut
+//                animations:^{
+//                    //--------------------------------------------------
+//                                [self updateConstraints_PreviewView_toFullScreen: TRUE];
+//                    //--------------------------------------------------
+//                    //will resize but animate without this
+//                                [this.view layoutIfNeeded];
+//                    //--------------------------------------------------
+//                }
+//                completion:^(BOOL finished) {
+//                    //ANIMATION DONE
+//
+//                }
+//            ];
+
+             this.updateConstraints_PreviewView_toFullScreen(true);
+
+            }else{
+                //------------------------------------------------------------------
+                //FULL SCREEN + UNANIMATED (when app starts)
+                //------------------------------------------------------------------
+                this.updateConstraints_PreviewView_toFullScreen(true);
+
+            }
+        }else{
+            if(isAnimated){
+                //------------------------------------------------------------------
+                //NOT FULL SCREEN + ANIMATED - (dialing ends shrink preview to bottom right)
+                //------------------------------------------------------------------
+//            [UIView animateWithDuration:duration
+//                delay:0
+//                options:UIViewAnimationOptionCurveEaseInOut
+//                animations:^{
+//                    //--------------------------------------------------
+//                [self updateConstraints_PreviewView_toFullScreen: FALSE];
+//                    //--------------------------------------------------
+//                    //will resize but animate without this
+//                [this.view layoutIfNeeded];
+//                    //--------------------------------------------------
+//                }
+//                completion:^(BOOL finished) {
+//                    //DONE
+//                }
+//             ];
+
+                this.updateConstraints_PreviewView_toFullScreen(false);
+
+            }else{
+                //------------------------------------------------------------------
+                //NOT FULL SCREEN + UNANIMATED (preview size jumps to bottom right - unused)
+                //------------------------------------------------------------------
+
+                this.updateConstraints_PreviewView_toFullScreen(false);
+
+            }
+        }
+    }
+
+
+
+
+    //------------------------------------------------------------------------------------------
+    //MEDIA PLAYER - ringing.mp3
+    //------------------------------------------------------------------------------------------
+    //use .play + pause 
+    //.play() + .stop() seems to kill it next .play() fails
+    
+    private void dialing_sound_start(){
+        //use .play + pause 
+        //.play() + .stop() seems to kill it next .play() fails
+        if (mediaPlayer != null) {
+            mediaPlayer.start();
+            //use .start() + pause() 
+            //not .start() + .stop() seems to kill it, next .play() fails
+        }else{
+            Log.e(TAG, "methodName: mediaPlayer is null");
+        }
+    }
+    private void dialing_sound_pause(){
+        if (mediaPlayer != null) {
+            mediaPlayer.pause();
+            //use .start() + pause() 
+            //not .start() + .stop() seems to kill it, next .play() fails
+
+        }else{
+            Log.e(TAG, "methodName: mediaPlayer is null");
+        }
+    }
+    private void dialing_sound_stop(){
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            //use .start() + pause() 
+            //not .start() + .stop() seems to kill it, next .play() fails
+
+        }else{
+            Log.e(TAG, "methodName: mediaPlayer is null");
+        }
+    }
+    
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
@@ -448,6 +1040,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         return new Room.Listener() {
             @Override
             public void onConnected(Room room) {
+                Log.e(TAG, "Room.Listener onConnected: ");
                 localParticipant = room.getLocalParticipant();
                 publishEvent(CallEvent.CONNECTED);
 
@@ -455,26 +1048,59 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 if (remoteParticipants != null && !remoteParticipants.isEmpty()) {
                     addRemoteParticipant(remoteParticipants.get(0));
                 }
+
+                if (remoteParticipants != null) {
+                    if (remoteParticipants.isEmpty()) {
+                        //----------------------------------------------------------------------
+                        //1..1 CALL - no remote users so I am DIALING the REMOTE USER
+                        //----------------------------------------------------------------------
+                        Log.e(TAG, "Room.Listener onConnected: room.remoteParticipants count is 0 >> LOCAL USER is STARTING A 1..1 CALL");
+
+                        //----------------------------------------------------------------------
+                        didConnectToRoom_StartACall();
+
+                    }else if (remoteParticipants.size() == 1) {
+                        //----------------------------------------------------------------------
+                        //1..1 CALL - 1 remote user in room so LOCAL USER is ANSWERING a CALL
+                        //----------------------------------------------------------------------
+                        Log.e(TAG, "Room.Listener onConnected: room.remoteParticipants count:%lu >> REMOTE USER is ANSWERING A 1..1 CALL");
+                        //----------------------------------------------------------------------
+                        didConnectToRoom_AnswerACall();
+                    }
+                    else {
+                        Log.e(TAG, "remoteParticipants.size() > 1 - GROUP CALL NOT HANDLED IN v1");
+                    }
+                }else{
+                    Log.e(TAG, "methodName: remoteParticipants is null");
+                }
             }
 
             @Override
             public void onConnectFailure(Room room, TwilioException e) {
+                Log.e(TAG, "Room.Listener onConnectFailure: ");
+
                 publishEvent(CallEvent.CONNECT_FAILURE, TwilioVideoUtils.convertToJSON(e));
                 TwilioVideoActivity.this.handleConnectionError(config.getI18nConnectionError());
             }
 
             @Override
             public void onReconnecting(@NonNull Room room, @NonNull TwilioException e) {
+                Log.e(TAG, "Room.Listener onReconnecting: ");
+
                 publishEvent(CallEvent.RECONNECTING, TwilioVideoUtils.convertToJSON(e));
             }
 
             @Override
             public void onReconnected(@NonNull Room room) {
+                Log.e(TAG, "Room.Listener onReconnected: ");
+
                 publishEvent(CallEvent.RECONNECTED);
             }
 
             @Override
             public void onDisconnected(Room room, TwilioException e) {
+                Log.e(TAG, "Room.Listener onDisconnected: ");
+
                 localParticipant = null;
                 TwilioVideoActivity.this.room = null;
                 // Only reinitialize the UI if disconnect was not called from onDestroy()
@@ -488,18 +1114,57 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onParticipantConnected(Room room, RemoteParticipant participant) {
+                Log.e(TAG, "Room.Listener onParticipantConnected: ");
+
                 publishEvent(CallEvent.PARTICIPANT_CONNECTED);
                 addRemoteParticipant(participant);
+
+                //------------------------------------------------------------------------------------------
+                final List<RemoteParticipant> remoteParticipants = room.getRemoteParticipants();
+
+                if (remoteParticipants != null) {
+
+                    if (remoteParticipants.isEmpty()) {
+                        //----------------------------------------------------------------------
+                        //1..1 CALL - no remote users so I an STARTING A CALL
+                        //----------------------------------------------------------------------
+                        Log.e(TAG, "onParticipantConnected: oom.remoteParticipants count:0 >> LOCAL USER is STARTING A 1..1 CALL");
+                        //----------------------------------------------------------------------
+                        //[self participantDidConnect_AnswerACall];
+                        //used didConnectToRoom_AnswerACall instead
+                        //for GROUP participantDidConnect will do thinks like inc particpant count
+                        //show list of users etc
+                        //----------------------------------------------------------------------
+
+                    }else if (remoteParticipants.size() == 1) {
+                        //----------------------------------------------------------------------
+                        //1..1 CALL - 1 remote user in room so LOCAL USER is ANSWERING a CALL
+                        //----------------------------------------------------------------------
+                        Log.e(TAG, "onParticipantConnected: room.remoteParticipants count:1 >> REMOTE USER is ANSWERING A 1..1 CALL");
+                        //----------------------------------------------------------------------
+                        participantDidConnect_RemoteUserHasAnswered();
+                    }
+                    else {
+                        Log.e(TAG, "remoteParticipants.size() > 1 - GROUP CALL NOT HANDLED IN v1");
+                    }
+                }else{
+                    Log.e(TAG, "methodName: remoteParticipants is null");
+                }
             }
 
             @Override
             public void onParticipantDisconnected(Room room, RemoteParticipant participant) {
+                Log.e(TAG, "Room.Listener onParticipantDisconnected: ");
+
                 publishEvent(CallEvent.PARTICIPANT_DISCONNECTED);
                 removeRemoteParticipant(participant);
+
+                participantDidDisconnect(participant.getIdentity());
             }
 
             @Override
             public void onRecordingStarted(Room room) {
+                Log.e(TAG, "Room.Listener onRecordingStarted: ");
                 /*
                  * Indicates when media shared to a Room is being recorded. Note that
                  * recording is only available in our Group Rooms developer preview.
@@ -509,6 +1174,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onRecordingStopped(Room room) {
+                Log.e(TAG, "Room.Listener onRecordingStopped: ");
                 /*
                  * Indicates when media shared to a Room is no longer being recorded. Note that
                  * recording is only available in our Group Rooms developer preview.
@@ -523,7 +1189,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onAudioTrackPublished(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication) {
-                Log.i(TwilioVideo.TAG, String.format("onAudioTrackPublished: " +
+                Log.e(TAG, "RemoteParticipant.Listener onAudioTrackPublished: ");
+
+                Log.e(TwilioVideo.TAG, String.format("onAudioTrackPublished: " +
                                 "[RemoteParticipant: identity=%s], " +
                                 "[RemoteAudioTrackPublication: sid=%s, enabled=%b, " +
                                 "subscribed=%b, name=%s]",
@@ -536,6 +1204,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onAudioTrackUnpublished(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication) {
+                Log.e(TAG, "RemoteParticipant.Listener onAudioTrackUnpublished: ");
+
                 Log.i(TwilioVideo.TAG, String.format("onAudioTrackUnpublished: " +
                                 "[RemoteParticipant: identity=%s], " +
                                 "[RemoteAudioTrackPublication: sid=%s, enabled=%b, " +
@@ -549,6 +1219,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onAudioTrackSubscribed(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication, RemoteAudioTrack remoteAudioTrack) {
+                Log.e(TAG, "RemoteParticipant.Listener onAudioTrackSubscribed: ");
+
                 Log.i(TwilioVideo.TAG, String.format("onAudioTrackSubscribed: " +
                                 "[RemoteParticipant: identity=%s], " +
                                 "[RemoteAudioTrack: enabled=%b, playbackEnabled=%b, name=%s]",
@@ -561,6 +1233,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onAudioTrackSubscriptionFailed(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication, TwilioException twilioException) {
+                Log.e(TAG, "RemoteParticipant.Listener onAudioTrackSubscriptionFailed: ");
+
+
                 Log.i(TwilioVideo.TAG, String.format("onAudioTrackSubscriptionFailed: " +
                                 "[RemoteParticipant: identity=%s], " +
                                 "[RemoteAudioTrackPublication: sid=%b, name=%s]" +
@@ -574,6 +1249,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onAudioTrackUnsubscribed(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication, RemoteAudioTrack remoteAudioTrack) {
+                Log.e(TAG, "RemoteParticipant.Listener onAudioTrackUnsubscribed: ");
+
+
                 Log.i(TwilioVideo.TAG, String.format("onAudioTrackUnsubscribed: " +
                                 "[RemoteParticipant: identity=%s], " +
                                 "[RemoteAudioTrack: enabled=%b, playbackEnabled=%b, name=%s]",
@@ -586,6 +1264,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onVideoTrackPublished(RemoteParticipant remoteParticipant, RemoteVideoTrackPublication remoteVideoTrackPublication) {
+                Log.e(TAG, "RemoteParticipant.Listener onVideoTrackPublished: ");
+
+
                 Log.i(TwilioVideo.TAG, String.format("onVideoTrackPublished: " +
                                 "[RemoteParticipant: identity=%s], " +
                                 "[RemoteVideoTrackPublication: sid=%s, enabled=%b, " +
@@ -599,6 +1280,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onVideoTrackUnpublished(RemoteParticipant remoteParticipant, RemoteVideoTrackPublication remoteVideoTrackPublication) {
+                Log.e(TAG, "RemoteParticipant.Listener onVideoTrackUnpublished: ");
+
+
                 Log.i(TwilioVideo.TAG, String.format("onVideoTrackUnpublished: " +
                                 "[RemoteParticipant: identity=%s], " +
                                 "[RemoteVideoTrackPublication: sid=%s, enabled=%b, " +
@@ -612,6 +1296,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onVideoTrackSubscribed(RemoteParticipant remoteParticipant, RemoteVideoTrackPublication remoteVideoTrackPublication, RemoteVideoTrack remoteVideoTrack) {
+                Log.e(TAG, "RemoteParticipant.Listener onVideoTrackSubscribed: ");
+
                 Log.i(TwilioVideo.TAG, String.format("onVideoTrackSubscribed: " +
                                 "[RemoteParticipant: identity=%s], " +
                                 "[RemoteVideoTrack: enabled=%b, name=%s]",
@@ -624,7 +1310,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onVideoTrackSubscriptionFailed(RemoteParticipant remoteParticipant, RemoteVideoTrackPublication remoteVideoTrackPublication, TwilioException twilioException) {
-                Log.i(TwilioVideo.TAG, String.format("onVideoTrackSubscriptionFailed: " +
+                Log.e(TAG, "RemoteParticipant.Listener onVideoTrackSubscriptionFailed: ");
+
+                Log.e(TwilioVideo.TAG, String.format("onVideoTrackSubscriptionFailed: " +
                                 "[RemoteParticipant: identity=%s], " +
                                 "[RemoteVideoTrackPublication: sid=%b, name=%s]" +
                                 "[TwilioException: code=%d, message=%s]",
@@ -637,7 +1325,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onVideoTrackUnsubscribed(RemoteParticipant remoteParticipant, RemoteVideoTrackPublication remoteVideoTrackPublication, RemoteVideoTrack remoteVideoTrack) {
-                Log.i(TwilioVideo.TAG, String.format("onVideoTrackUnsubscribed: " +
+                Log.e(TwilioVideo.TAG, String.format("onVideoTrackUnsubscribed: " +
                                 "[RemoteParticipant: identity=%s], " +
                                 "[RemoteVideoTrack: enabled=%b, name=%s]",
                         remoteParticipant.getIdentity(),
@@ -649,7 +1337,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onDataTrackPublished(RemoteParticipant remoteParticipant, RemoteDataTrackPublication remoteDataTrackPublication) {
-                Log.i(TwilioVideo.TAG, String.format("onDataTrackPublished: " +
+                Log.e(TwilioVideo.TAG, String.format("onDataTrackPublished: " +
                                 "[RemoteParticipant: identity=%s], " +
                                 "[RemoteDataTrackPublication: sid=%s, enabled=%b, " +
                                 "subscribed=%b, name=%s]",
@@ -662,7 +1350,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onDataTrackUnpublished(RemoteParticipant remoteParticipant, RemoteDataTrackPublication remoteDataTrackPublication) {
-                Log.i(TwilioVideo.TAG, String.format("onDataTrackUnpublished: " +
+                Log.e(TwilioVideo.TAG, String.format("onDataTrackUnpublished: " +
                                 "[RemoteParticipant: identity=%s], " +
                                 "[RemoteDataTrackPublication: sid=%s, enabled=%b, " +
                                 "subscribed=%b, name=%s]",
@@ -675,7 +1363,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onDataTrackSubscribed(RemoteParticipant remoteParticipant, RemoteDataTrackPublication remoteDataTrackPublication, RemoteDataTrack remoteDataTrack) {
-                Log.i(TwilioVideo.TAG, String.format("onDataTrackSubscribed: " +
+                Log.e(TwilioVideo.TAG, String.format("onDataTrackSubscribed: " +
                                 "[RemoteParticipant: identity=%s], " +
                                 "[RemoteDataTrack: enabled=%b, name=%s]",
                         remoteParticipant.getIdentity(),
@@ -698,7 +1386,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onDataTrackUnsubscribed(RemoteParticipant remoteParticipant, RemoteDataTrackPublication remoteDataTrackPublication, RemoteDataTrack remoteDataTrack) {
-                Log.i(TwilioVideo.TAG, String.format("onDataTrackUnsubscribed: " +
+                Log.e(TwilioVideo.TAG, String.format("onDataTrackUnsubscribed: " +
                                 "[RemoteParticipant: identity=%s], " +
                                 "[RemoteDataTrack: enabled=%b, name=%s]",
                         remoteParticipant.getIdentity(),
@@ -708,22 +1396,22 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onAudioTrackEnabled(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication) {
-
+                Log.e(TAG, "onAudioTrackEnabled: CALLED" );
             }
 
             @Override
             public void onAudioTrackDisabled(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication) {
-
+                Log.e(TAG, "onAudioTrackDisabled: CALLED" );
             }
 
             @Override
             public void onVideoTrackEnabled(RemoteParticipant remoteParticipant, RemoteVideoTrackPublication remoteVideoTrackPublication) {
-
+                Log.e(TAG, "onVideoTrackEnabled: CALLED" );
             }
 
             @Override
             public void onVideoTrackDisabled(RemoteParticipant remoteParticipant, RemoteVideoTrackPublication remoteVideoTrackPublication) {
-
+                Log.e(TAG, "onVideoTrackDisabled: CALLED" );
             }
         };
     }
@@ -742,80 +1430,23 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         };
     }
 
+
     private View.OnClickListener switchCameraClickListener() {
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                //------------------------------------------------------------------------------------------
-                android.widget.FrameLayout video_container = findViewById(FAKE_R.getId("video_container"));
-                ViewGroup.LayoutParams layoutParams = ((ViewGroup) video_container).getLayoutParams();
-                //setMargins not found - you need to cast it
-                Log.e(TAG, "onClick: layoutParams:" + layoutParams);
+                Log.e(TAG, "onClick: switchCameraClickListener" );
 
-                int screen_width_pixels = Resources.getSystem().getDisplayMetrics().widthPixels;
-                int screen_height_pixels = Resources.getSystem().getDisplayMetrics().heightPixels;
-
-                Log.e(TAG, "onClick: screen_width_pixels:" + screen_width_pixels + ",screen_height_pixels:"+ screen_height_pixels );
-                //1080, 2076
-
-                int preview_mini_width = 350;
-                int preview_mini_height = 650;
-                int margin = 64;
-
-
-                if (layoutParams instanceof ViewGroup.MarginLayoutParams) {
-                    ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) layoutParams;
-
-
-                    int leftMargin = screen_width_pixels - preview_mini_width - margin;
-                    int topMargin  = screen_height_pixels - preview_mini_height - margin;
-
-                    //OK but sets all
-                    marginLayoutParams.setMargins(leftMargin, topMargin, margin, margin * 6); // left, top, right, bottom
-
-//// TODO: 27/11/2020 MAY NEED TO CALC margins
-//                    call this first
-//                        the mic button sets height/width and thsi code does unset it
-//                            i pasted this into the plugin
-                    //https://developer.android.com/reference/android/view/ViewGroup.MarginLayoutParams
-                    //((ViewGroup.MarginLayoutParams) layoutParams).topMargin = 0;
-                    //((ViewGroup.MarginLayoutParams) layoutParams).leftMargin = 0;
-                    //((ViewGroup.MarginLayoutParams) layoutParams).bottomMargin = 0;
-                    //((ViewGroup.MarginLayoutParams) layoutParams).rightMargin = 0;
-
-                    
-                    video_container.requestLayout();
-                } else{
-                    Log.e("MyApp", "Attempted to set the margins on a class that doesn't support margins: video_container");
+                if (cameraCapturer != null) {
+                    CameraSource cameraSource = cameraCapturer.getCameraSource();
+                    cameraCapturer.switchCamera();
+                    if (thumbnailVideoView.getVisibility() == View.VISIBLE) {
+                        thumbnailVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
+                    } else {
+                        primaryVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
+                    }
                 }
-                //------------------------------------------------------------------------------------------
-
-                //java.lang.ClassCastException: androidx.coordinatorlayout.widget.CoordinatorLayout$LayoutParams cannot be cast to android.widget.FrameLayout$LayoutParams
-
-//                if (thumbnailVideoView != null) {
-//                    ViewGroup.LayoutParams thumbnailVideoView_layoutParams = thumbnailVideoView.getLayoutParams();
-//
-//                    //thumbnailVideoView_layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
-//                    //thumbnailVideoView_layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
-//                    thumbnailVideoView_layoutParams.width = 100;
-//                    thumbnailVideoView_layoutParams.height = 200;
-//
-//                    //layoutParams.setMargins(10, 20, 30, 40);
-//
-//                    thumbnailVideoView.setLayoutParams(thumbnailVideoView_layoutParams);
-//
-//                    thumbnailVideoView.requestLayout();
-//                } else {
-//                    Log.e(TAG, "onClick: thumbnailVideoView is null");
-//                }
-                //------------------------------------------------------------------------------------------
-
-                //------------------------------------------------------------------------------------------
-                //                ViewGroup.LayoutParams layoutParams = video_container.getLayoutParams();
-
-                //                layoutParams.setMargins(10, 20, 30, 40);
-
 
             }//onclick
 
@@ -826,28 +1457,17 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                if (audioManager.isSpeakerphoneOn()) {
-//                    audioManager.setSpeakerphoneOn(false);
-//                } else {
-//                    audioManager.setSpeakerphoneOn(true);
-//
-//                }
-//                int icon = audioManager.isSpeakerphoneOn() ?
-//                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
-//                switchAudioActionFab.setImageDrawable(ContextCompat.getDrawable(
-//                        TwilioVideoActivity.this, icon));
+                Log.e(TAG, "switchAudioClickListener.onClick: ");
+                if (audioManager.isSpeakerphoneOn()) {
+                    audioManager.setSpeakerphoneOn(false);
+                } else {
+                    audioManager.setSpeakerphoneOn(true);
 
-
-
-
-                if(thumbnailVideoView != null){
-                    ViewGroup.LayoutParams layoutParams = thumbnailVideoView.getLayoutParams();
-                    layoutParams.width = 96;
-                    layoutParams.height = 96;
-                    thumbnailVideoView.setLayoutParams(layoutParams);
-                }else{
-                    Log.e(TAG, "onClick: thumbnailVideoView is null");
                 }
+                int icon = audioManager.isSpeakerphoneOn() ?
+                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
+                switchAudioActionFab.setImageDrawable(ContextCompat.getDrawable(
+                        TwilioVideoActivity.this, icon));
 
             }
         };
@@ -857,6 +1477,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Log.e(TAG, "switchAudioClickListener.onClick: ");
                 /*
                  * Enable/disable the local video track
                  */
@@ -875,6 +1496,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     localVideoActionFab.setImageDrawable(
                             ContextCompat.getDrawable(TwilioVideoActivity.this, icon));
                 }
+
             }
         };
     }
@@ -883,6 +1505,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Log.e(TAG, "muteClickListener.onClick: ");
+                
                 /*
                  * Enable/disable the local audio track. The results of this operation are
                  * signaled to other Participants in the same Room. When an audio track is
@@ -895,7 +1519,11 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                             FAKE_R.getDrawable("ic_mic_green_24px") : FAKE_R.getDrawable("ic_mic_off_red_24px");
                     muteActionFab.setImageDrawable(ContextCompat.getDrawable(
                             TwilioVideoActivity.this, icon));
+                }else{
+                    Log.e(TAG, "onClick: localAudioTrack is null");
                 }
+
+
             }
         };
     }

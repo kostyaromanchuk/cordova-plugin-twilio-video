@@ -92,6 +92,8 @@ public class TwilioVideo extends CordovaPlugin {
                     intentTwilioVideo.putExtra("token", token);
                     intentTwilioVideo.putExtra("roomId", roomId);
                     intentTwilioVideo.putExtra("config", config);
+                    intentTwilioVideo.putExtra("remote_user_name", remote_user_name);
+                    intentTwilioVideo.putExtra("remote_user_photo_url", remote_user_photo_url);
                     that.cordova.getActivity().startActivity(intentTwilioVideo);
                 }
 
