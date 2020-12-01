@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
+import android.content.res.Resources;
 import android.graphics.Color;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
@@ -102,6 +103,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private boolean previousMicrophoneMute;
     private boolean disconnectedFromOnDestroy;
     private VideoRenderer localVideoView;
+
 
 
     @Override
@@ -749,15 +751,34 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 android.widget.FrameLayout video_container = findViewById(FAKE_R.getId("video_container"));
                 ViewGroup.LayoutParams layoutParams = ((ViewGroup) video_container).getLayoutParams();
                 //setMargins not found - you need to cast it
+                Log.e(TAG, "onClick: layoutParams:" + layoutParams);
+
+                int screen_width_pixels = Resources.getSystem().getDisplayMetrics().widthPixels;
+                int screen_height_pixels = Resources.getSystem().getDisplayMetrics().heightPixels;
+
+                Log.e(TAG, "onClick: screen_width_pixels:" + screen_width_pixels + ",screen_height_pixels:"+ screen_height_pixels );
+                //1080, 2076
+
+                int preview_mini_width = 350;
+                int preview_mini_height = 650;
+                int margin = 64;
+
 
                 if (layoutParams instanceof ViewGroup.MarginLayoutParams) {
                     ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) layoutParams;
-                    //OK but sets all
-                    marginLayoutParams.setMargins(50, 50, 16, 80); // left, top, right, bottom
 
-// TODO: 27/11/2020 MAY NEED TO CALC margins
-                    call this first
-                        the mic button sets height/width and thsi code does unset it
+
+                    int leftMargin = screen_width_pixels - preview_mini_width - margin;
+                    int topMargin  = screen_height_pixels - preview_mini_height - margin;
+
+                    //OK but sets all
+                    marginLayoutParams.setMargins(leftMargin, topMargin, margin, margin * 6); // left, top, right, bottom
+
+//// TODO: 27/11/2020 MAY NEED TO CALC margins
+//                    call this first
+//                        the mic button sets height/width and thsi code does unset it
+//                            i pasted this into the plugin
+                    //https://developer.android.com/reference/android/view/ViewGroup.MarginLayoutParams
                     //((ViewGroup.MarginLayoutParams) layoutParams).topMargin = 0;
                     //((ViewGroup.MarginLayoutParams) layoutParams).leftMargin = 0;
                     //((ViewGroup.MarginLayoutParams) layoutParams).bottomMargin = 0;
@@ -770,16 +791,21 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 }
                 //------------------------------------------------------------------------------------------
 
+                //java.lang.ClassCastException: androidx.coordinatorlayout.widget.CoordinatorLayout$LayoutParams cannot be cast to android.widget.FrameLayout$LayoutParams
 
 //                if (thumbnailVideoView != null) {
-//                    ViewGroup.LayoutParams layoutParams = thumbnailVideoView.getLayoutParams();
+//                    ViewGroup.LayoutParams thumbnailVideoView_layoutParams = thumbnailVideoView.getLayoutParams();
 //
-//                    layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
-//                    layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
+//                    //thumbnailVideoView_layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
+//                    //thumbnailVideoView_layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
+//                    thumbnailVideoView_layoutParams.width = 100;
+//                    thumbnailVideoView_layoutParams.height = 200;
 //
 //                    //layoutParams.setMargins(10, 20, 30, 40);
 //
-//                    thumbnailVideoView.setLayoutParams(layoutParams);
+//                    thumbnailVideoView.setLayoutParams(thumbnailVideoView_layoutParams);
+//
+//                    thumbnailVideoView.requestLayout();
 //                } else {
 //                    Log.e(TAG, "onClick: thumbnailVideoView is null");
 //                }
@@ -810,6 +836,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 //                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
 //                switchAudioActionFab.setImageDrawable(ContextCompat.getDrawable(
 //                        TwilioVideoActivity.this, icon));
+
+
+
 
                 if(thumbnailVideoView != null){
                     ViewGroup.LayoutParams layoutParams = thumbnailVideoView.getLayoutParams();

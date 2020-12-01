@@ -13,12 +13,9 @@
         app:tviOverlaySurface="true"
         app:tviMirror="true"
         android:visibility="gone"
-        android:layout_width="96dp"
-        android:layout_height="96dp"
-        android:layout_marginBottom="80dp"
-        android:layout_marginRight="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:layout_gravity="bottom|end"/>
-
 
     <com.twilio.video.VideoView
         android:id="@+id/primary_video_view"
