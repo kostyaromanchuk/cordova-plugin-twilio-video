@@ -6,4 +6,11 @@ dependencies {
     implementation 'com.twilio:video-android:5.8.0'
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'com.google.android.material:material:1.1.0-rc02'
+    
+    //----------------------------------------------------------------------------------------------
+    //SQUARE / PICASSO IMAGE / OKHTTP - to download user photo
+    implementation 'com.squareup.okhttp3:okhttp:4.2.2'
+    implementation 'com.squareup.picasso:picasso:2.71828'
+    //----------------------------------------------------------------------------------------------
+
 }
