@@ -49,7 +49,7 @@
         <resource-file src="src/ios/Resources/switch_camera@3x.png" target="Resources/switch_camera@3x.png" />
         <resource-file src="src/ios/Resources/ringing.mp3" target="Resources/ringing.mp3" />
         
-        <framework src="TwilioVideo" type="podspec" spec="3.7.0"/>
+        <framework src="TwilioVideo" type="podspec" spec="3.7.2"/>
         <podspec>
             <config>
                 <source url="https://cdn.cocoapods.org/"/>
