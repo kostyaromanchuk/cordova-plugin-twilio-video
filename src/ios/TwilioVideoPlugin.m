@@ -1,6 +1,19 @@
 #import "TwilioVideoPlugin.h"
 #import <AVFoundation/AVFoundation.h>
 
+
+#pragma mark -
+#pragma mark private ivars
+#pragma mark -
+@interface TwilioVideoPlugin(){
+}
+@property (nonatomic, strong) TwilioVideoViewController *tvc;
+@end
+
+#pragma mark -
+#pragma mark implementation
+#pragma mark -
+
 @implementation TwilioVideoPlugin
 
 #pragma mark - Plugin Initialization
@@ -42,37 +55,170 @@
     //--------------------------------------------------------------------------
 
     dispatch_async(dispatch_get_main_queue(), ^{
-        UIStoryboard *sb = [UIStoryboard storyboardWithName:@"TwilioVideo" bundle:nil];
-        TwilioVideoViewController *vc = [sb instantiateViewControllerWithIdentifier:@"TwilioVideoViewController"];
         
-        vc.config = config;
-
-        //----------------------------------------------------------------------
-        //not required - needed when the Leave Room was in the cordova WebView
-        //behind this TwilioVideoViewController.view
-        //vc.view.backgroundColor = [UIColor clearColor];
-        //vc.view.backgroundColor = [UIColor redColor];
-        //----------------------------------------------------------------------
-        //Sea/ grey - if you comment this out it will use the color set in TwilioVideo.storyboard
-        vc.view.backgroundColor = [UIColor colorWithRed: 17.0/255.0
-                                                  green: 37.0/255.0
-                                                   blue: 57.0/255.0
-                                                  alpha:1.0];
-        //----------------------------------------------------------------------
-        vc.modalPresentationStyle = UIModalPresentationOverFullScreen;
-        
-        [self.viewController presentViewController:vc animated:NO completion:^{
+        if (NULL == self.tvc) {
             //------------------------------------------------------------------
-            //remoteUserName and remoteUserPhotoURL ADDED BY BC
-            [vc connectToRoom:room
-                        token:token
-               remoteUserName:remote_user_name
-           remoteUserPhotoURL:remote_user_photo_url];
+            [self instantiate_TwilioVideoViewController_withConfig:config];
             //------------------------------------------------------------------
-        }];
+            if (NULL != self.tvc) {
+                //------------------------------------------------------------------
+                [self.viewController presentViewController:self.tvc animated:NO completion:^{
+                    //------------------------------------------------------------------
+                    //remoteUserName and remoteUserPhotoURL ADDED BY BC
+                    [self.tvc openRoom:room
+                                 token:token
+                        remoteUserName:remote_user_name
+                    remoteUserPhotoURL:remote_user_photo_url];
+                    //------------------------------------------------------------------
+                }];
+                //------------------------------------------------------------------
+            }else{
+                NSLog(@"ERROR instantiate_TwilioVideoViewController FAILED");
+            }
+            //------------------------------------------------------------------
+        }else{
+            //------------------------------------------------------------------
+            //TwilioVideoViewController OK
+            //------------------------------------------------------------------
+            [self.tvc openRoom:room
+                         token:token
+                remoteUserName:remote_user_name
+            remoteUserPhotoURL:remote_user_photo_url];
+            //------------------------------------------------------------------
+        }
     });
 }
+-(void) instantiate_TwilioVideoViewController_withConfig:(TwilioVideoConfig *) config{
+    UIStoryboard *sb = [UIStoryboard storyboardWithName:@"TwilioVideo" bundle:nil];
+    self.tvc = [sb instantiateViewControllerWithIdentifier:@"TwilioVideoViewController"];
+    
+    self.tvc.config = config;
+    
+    //----------------------------------------------------------------------
+    //not required - needed when the Leave Room was in the cordova WebView
+    //behind this TwilioVideoViewController.view
+    //vc.view.backgroundColor = [UIColor clearColor];
+    //vc.view.backgroundColor = [UIColor redColor];
+    //----------------------------------------------------------------------
+    //Sea/ grey - if you comment this out it will use the color set in TwilioVideo.storyboard
+    self.tvc.view.backgroundColor = [UIColor colorWithRed: 17.0/255.0
+                                                    green: 37.0/255.0
+                                                     blue: 57.0/255.0
+                                                    alpha:1.0];
+    //----------------------------------------------------------------------
+    self.tvc.modalPresentationStyle = UIModalPresentationOverFullScreen;
+    
+}
 
+- (void)startCall:(CDVInvokedUrlCommand*)command {
+    self.listenerCallbackID = command.callbackId;
+    NSArray *args = command.arguments;
+    
+    //--------------------------------------------------------------------------
+    //EXTRACT ARGUMENTS - START
+    //--------------------------------------------------------------------------
+    NSString* token = args[0];
+    
+    //--------------------------------------------------------------------------
+    NSString* room = args[1];
+    
+    //--------------------------------------------------------------------------
+    //args[4] - config dictionary
+    TwilioVideoConfig *config = [[TwilioVideoConfig alloc] init];
+
+    if ([args count] > 2) {
+        [config parse: command.arguments[2]];
+    }
+    //--------------------------------------------------------------------------
+    //ARGUMENTS - END
+    //--------------------------------------------------------------------------
+    
+    //Dont instantiate TwilioVideoViewController twice - done once in openRoom
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (NULL == self.tvc) {
+            NSLog(@"[TwilioVideoPlugin.m startCall:] self.tvc is NUL should not happen tvc init in openRoom:");
+        }else{
+            [self.tvc startCall:room
+                    token:token];
+        }
+    });
+}
+- (void)answerCall:(CDVInvokedUrlCommand*)command {
+    self.listenerCallbackID = command.callbackId;
+    NSArray *args = command.arguments;
+    
+    //--------------------------------------------------------------------------
+    //EXTRACT ARGUMENTS - START
+    //--------------------------------------------------------------------------
+    NSString* token = args[0];
+    //--------------------------------------------------------------------------
+    NSString* room = args[1];
+    //--------------------------------------------------------------------------
+    //args[4] - config dictionary
+    TwilioVideoConfig *config = [[TwilioVideoConfig alloc] init];
+
+    if ([args count] > 2) {
+        [config parse: command.arguments[2]];
+    }
+    //--------------------------------------------------------------------------
+    //ARGUMENTS - END
+    //--------------------------------------------------------------------------
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+//        UIStoryboard *sb = [UIStoryboard storyboardWithName:@"TwilioVideo" bundle:nil];
+//        TwilioVideoViewController *vc = [sb instantiateViewControllerWithIdentifier:@"TwilioVideoViewController"];
+//
+//        vc.config = config;
+//
+//        //----------------------------------------------------------------------
+//        //not required - needed when the Leave Room was in the cordova WebView
+//        //behind this TwilioVideoViewController.view
+//        //vc.view.backgroundColor = [UIColor clearColor];
+//        //vc.view.backgroundColor = [UIColor redColor];
+//        //----------------------------------------------------------------------
+//        //Sea/ grey - if you comment this out it will use the color set in TwilioVideo.storyboard
+//        vc.view.backgroundColor = [UIColor colorWithRed: 17.0/255.0
+//                                                  green: 37.0/255.0
+//                                                   blue: 57.0/255.0
+//                                                  alpha:1.0];
+//        //----------------------------------------------------------------------
+//        vc.modalPresentationStyle = UIModalPresentationOverFullScreen;
+//
+//        [self.viewController presentViewController:vc animated:NO completion:^{
+//            //------------------------------------------------------------------
+//            //remoteUserName and remoteUserPhotoURL ADDED BY BC
+//            [vc answerCall:room
+//                     token:token];
+//            //------------------------------------------------------------------
+//        }];
+        
+        if (NULL == self.tvc) {
+            //------------------------------------------------------------------
+            [self instantiate_TwilioVideoViewController_withConfig:config];
+            //------------------------------------------------------------------
+            if (NULL != self.tvc) {
+                //------------------------------------------------------------------
+                [self.viewController presentViewController:self.tvc animated:NO completion:^{
+                    //------------------------------------------------------------------
+                    [self.tvc answerCall:room
+                              token:token];
+                    //------------------------------------------------------------------
+                }];
+                //------------------------------------------------------------------
+            }else{
+                NSLog(@"ERROR instantiate_TwilioVideoViewController FAILED");
+            }
+            //------------------------------------------------------------------
+        }else{
+            //------------------------------------------------------------------
+            //TwilioVideoViewController OK
+            //------------------------------------------------------------------
+            [self.tvc answerCall:room
+                           token:token];
+            //------------------------------------------------------------------
+        }
+    });
+}
 - (void)closeRoom:(CDVInvokedUrlCommand*)command {
     if ([[TwilioVideoManager getInstance] publishDisconnection]) {
         [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];

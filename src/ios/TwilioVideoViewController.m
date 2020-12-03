@@ -366,9 +366,9 @@ NSString *const CLOSED = @"CLOSED";
 
 
 
-#pragma mark -
-#pragma mark PUBLIC - connectToRoom
-#pragma mark -
+//#pragma mark -
+//#pragma mark PUBLIC - connectToRoom
+//#pragma mark -
 
 //- (void)connectToRoom:(NSString*)room token:(NSString *)token {
 //    #pragma mark TODO - NOW - HARDCODED NEEDS TO BE PASSED IN FROM CORDOVA
@@ -378,13 +378,18 @@ NSString *const CLOSED = @"CLOSED";
 //     remoteUserPhotoURL:@"https://sealogin-trfm-prd-cdn.azureedge.net/API/1_3/User/picture?imageUrl=673623fdc8b39b5b05b3167765019398.jpg"];
 //}
 
-- (void)connectToRoom:(NSString*)room
-                token:(NSString *)token
+#pragma mark -
+#pragma mark LOCAL part 1 - openRoom
+#pragma mark -
+- (void)openRoom:(NSString*)room
+           token:(NSString *)token
        remoteUserName:(NSString *)remoteUserName
    remoteUserPhotoURL:(NSString *)remoteUserPhotoURL
 {
     
     [self log_debug:@"[TwilioVideoViewController.m - connectToRoom]"];
+    
+    [self.buttonDebugStartACall setHidden:FALSE];
     
     self.roomName = room;
     self.accessToken = token;
@@ -400,7 +405,14 @@ NSString *const CLOSED = @"CLOSED";
     [TwilioVideoPermissions requestRequiredPermissions:^(BOOL grantedPermissions) {
          if (grantedPermissions) {
              [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions:OK > doConnect"];
-             [self doConnect];
+             //[self doConnect];
+             //we connect later with startCall
+             [self startCamera];
+             dispatch_async(dispatch_get_main_queue(), ^{
+                 [self displayCallWaiting];
+             });
+             
+             
          } else {
              [self log_error:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions: grantedPermissions:FALSE > send PERMISSIONS_REQUIRED"];
              [[TwilioVideoManager getInstance] publishEvent: PERMISSIONS_REQUIRED];
@@ -408,7 +420,77 @@ NSString *const CLOSED = @"CLOSED";
          }
     }];
 }
+#pragma mark -
+#pragma mark LOCAL part 2 - startCall
+#pragma mark -
 
+- (void)startCall:(NSString*)room
+            token:(NSString *)token
+{
+    
+    [self log_debug:@"[TwilioVideoViewController.m - startCall:]"];
+    
+    [self.buttonDebugStartACall setHidden:TRUE];
+    
+    self.roomName = room;
+    self.accessToken = token;
+    
+    [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> [self showRoomUI:YES]"];
+    
+    [self showRoomUI:YES];
+    
+    [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions"];
+    [TwilioVideoPermissions requestRequiredPermissions:^(BOOL grantedPermissions) {
+        if (grantedPermissions) {
+            [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions:OK > doConnect"];
+            [self connectToRoom];
+            //we connect later with startCall
+            //[self startCamera];
+            
+        } else {
+            [self log_error:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions: grantedPermissions:FALSE > send PERMISSIONS_REQUIRED"];
+            [[TwilioVideoManager getInstance] publishEvent: PERMISSIONS_REQUIRED];
+            [self handleConnectionError: [self.config i18nConnectionError]];
+        }
+    }];
+}
+
+#pragma mark -
+#pragma mark LOCAL part 2 - answerCall
+#pragma mark -
+//CONNECT TO THE
+- (void)answerCall:(NSString*)room
+             token:(NSString *)token
+{
+    
+    [self log_debug:@"[TwilioVideoViewController.m - answerCall:]"];
+    
+    [self.buttonDebugStartACall setHidden:TRUE];
+    
+    self.roomName = room;
+    self.accessToken = token;
+    
+    [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> [self showRoomUI:YES]"];
+    
+    [self showRoomUI:YES];
+    
+    [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions"];
+    [TwilioVideoPermissions requestRequiredPermissions:^(BOOL grantedPermissions) {
+        if (grantedPermissions) {
+            [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions:OK > doConnect"];
+            [self startCamera];
+            
+            [self connectToRoom];
+            //we connect later with answerCall
+            //[self startCamera];
+            
+        } else {
+            [self log_error:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions: grantedPermissions:FALSE > send PERMISSIONS_REQUIRED"];
+            [[TwilioVideoManager getInstance] publishEvent: PERMISSIONS_REQUIRED];
+            [self handleConnectionError: [self.config i18nConnectionError]];
+        }
+    }];
+}
 #pragma mark -
 #pragma mark BUTTONS
 #pragma mark -
@@ -525,6 +607,8 @@ NSString *const CLOSED = @"CLOSED";
                          [self show_viewRemoteParticipantInfoWithState:@""];
                          //preview can be inserted in front - if full screen can hide the viewRemoteParticipantInfo
                          [self.view bringSubviewToFront:self.viewRemoteParticipantInfo];
+                         
+                       //WRONG startPreview calls always  [self displayCallWaiting];
                      }
             }];
         }
@@ -533,13 +617,14 @@ NSString *const CLOSED = @"CLOSED";
    }
 }
 
--(void)didConnectToRoom_StartACall{
-    [self log_info:@"[didConnectToRoom_StartACall] START"];
+//called after startCamera > startCaptureWithDevice
+-(void)displayCallWaiting{
+    [self log_info:@"[displayCallWaiting] START"];
     
     if(self.previewIsFullScreen){
         //----------------------------------------------------------------------
         //Show the dialing panel
-    
+        
         [self fillIn_viewRemoteParticipantInfo];
         
         [self show_viewRemoteParticipantInfoWithState:@"Calling..."];
@@ -563,15 +648,22 @@ NSString *const CLOSED = @"CLOSED";
 //On the ANSWERING PHONE it will trigger
 //didConnectToRoom_AnswerACall only
 -(void)didConnectToRoom_AnswerACall{
-    [self log_info:@"[didConnectToRoom_AnswerACall] START"];
+    [self log_info:@"[didConnectToRoom_AnswerACall] START REMOTE USER in Room - show Waiting... till caller enters room"];
     
     if(self.previewIsFullScreen){
-        //REMOTE USER CONNECTED
-        //Hide the dialing screen
-        [self hide_viewRemoteParticipantInfo];
+        //------------------------------------------------------------------------------
+        //CLEANUP
+        //        REMOTE USER CONNECTED
+        //        //Hide the dialing screen
+        //        [self hide_viewRemoteParticipantInfo];
+        //
+        //        //Zoom the preview from FULL SCREEN to MINI
+        //        [self updateConstraints_PreviewView_toFullScreen: FALSE animated:TRUE];
         
-        //Zoom the preview from FULL SCREEN to MINI
-        [self updateConstraints_PreviewView_toFullScreen: FALSE animated:TRUE];
+        //------------------------------------------------------------------------------
+        //REMOTE USER CONNECTED.. waiting for CALLER to enter room
+        [self show_viewRemoteParticipantInfoWithState:@"Waiting..."];
+        
     }else{
         [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
     }
@@ -584,7 +676,25 @@ NSString *const CLOSED = @"CLOSED";
 //Remote hasnt joined the room yet so hasnt answered so show 'Dialing..'
 //On the CALLING PHONE it will trigger
 //didConnectToRoom_StartACall >> participantDidConnect_RemoteUserHasAnswered
--(void)participantDidConnect_RemoteUserHasAnswered{
+-(void)participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom{
+    [self log_info:@"[participantDidConnect_StartACall] START"];
+
+    [self dialingSound_stop];
+
+    if(self.previewIsFullScreen){
+        //hide Waiting...
+        [self hide_viewRemoteParticipantInfo];
+
+        //REMOTE user is visible in full screen
+        //shrink PREVIEW from FULL SCREEN to MINI to show REMOTE user behind
+        [self updateConstraints_PreviewView_toFullScreen: FALSE animated:FALSE];
+
+    }else{
+        [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
+    }
+}
+
+-(void)participantDidConnect_LocalUserAndCallerHasConnectedToRoom{
     [self log_info:@"[participantDidConnect_StartACall] START"];
     
     [self dialingSound_stop];
@@ -682,7 +792,7 @@ NSString *const CLOSED = @"CLOSED";
     }
 }
 
-- (void)doConnect {
+- (void)startCamera {
     [self log_debug:@"[TwilioVideoViewController.m - doConnect] START"];
     
     if ([self.accessToken isEqualToString:@"TWILIO_ACCESS_TOKEN"]) {
@@ -696,13 +806,33 @@ NSString *const CLOSED = @"CLOSED";
     // Prepare local media which we will share with Room Participants.
     [self prepareLocalMedia];
     //--------------------------------------------------------------------------
+    
+}
+
+- (void)connectToRoom {
+    [self log_debug:@"[TwilioVideoViewController.m - doConnect] START"];
+    
+    if ([self.accessToken isEqualToString:@"TWILIO_ACCESS_TOKEN"]) {
+        [self log_info:@"Please provide a valid token to connect to a room"];
+        return;
+    }
+    
+    //--------------------------------------------------------------------------
+    [self log_debug:@"[TwilioVideoViewController.m - doConnect] >> prepareLocalMedia"];
+    
+    // Prepare local media which we will share with Room Participants.
+//    [self prepareLocalMedia];
+    
+    //--------------------------------------------------------------------------
+    
+    //--------------------------------------------------------------------------
     TVIConnectOptions *connectOptions = [TVIConnectOptions optionsWithToken:self.accessToken
                                                                       block:^(TVIConnectOptionsBuilder * _Nonnull builder) {
-                                                                          builder.roomName = self.roomName;
-                                                                          // Use the local media that we prepared earlier.
-                                                                          builder.audioTracks = self.localAudioTrack ? @[ self.localAudioTrack ] : @[ ];
-                                                                          builder.videoTracks = self.localVideoTrack ? @[ self.localVideoTrack ] : @[ ];
-                                                                      }];
+        builder.roomName = self.roomName;
+        // Use the local media that we prepared earlier.
+        builder.audioTracks = self.localAudioTrack ? @[ self.localAudioTrack ] : @[ ];
+        builder.videoTracks = self.localVideoTrack ? @[ self.localVideoTrack ] : @[ ];
+    }];
     //--------------------------------------------------------------------------
     // Connect to the Room using the options we provided.
     
@@ -857,17 +987,18 @@ NSString *const CLOSED = @"CLOSED";
         [self log_info:[NSString stringWithFormat:@"[didConnectToRoom] room.remoteParticipants count:%lu >> LOCAL USER is STARTING A 1..1 CALL",
                         (unsigned long)[room.remoteParticipants count]]];
         //----------------------------------------------------------------------
-        [self didConnectToRoom_StartACall];
+        [self didConnectToRoom_AnswerACall];
+        //does nothing Dialing.. moved to displayCallWaiting
         //----------------------------------------------------------------------
     }
     else if([room.remoteParticipants count] == 1){
         //----------------------------------------------------------------------
-        //1..1 CALL - 1 remote user in room so LOCAL USER is ANSWERING a CALL
+        //1..1 CALL - 1 remote user in room so LOCAL USER(Caller))
         //----------------------------------------------------------------------
-        [self log_info:[NSString stringWithFormat:@"[didConnectToRoom] room.remoteParticipants count:%lu >> REMOTE USER is ANSWERING A 1..1 CALL",
+        [self log_info:[NSString stringWithFormat:@"[didConnectToRoom] room.remoteParticipants count:%lu >> LOCAL USER is CONNECTING TO ROOM AFTER REMOTE for A 1..1 CALL",
                         (unsigned long)[room.remoteParticipants count]]];
         //----------------------------------------------------------------------
-        [self didConnectToRoom_AnswerACall];
+        [self participantDidConnect_LocalUserAndCallerHasConnectedToRoom];
         //----------------------------------------------------------------------
     }
     else{
@@ -947,7 +1078,9 @@ NSString *const CLOSED = @"CLOSED";
         [self log_info:[NSString stringWithFormat:@"[room:participantDidConnect:] room.remoteParticipants count:%lu >> REMOTE USER is ANSWERING A 1..1 CALL",
                         (unsigned long)[room.remoteParticipants count]]];
         //----------------------------------------------------------------------
-        [self participantDidConnect_RemoteUserHasAnswered];
+        //1 LOCAL  - PERSON BEING CALLED
+        //1 REMOTE - CALLER
+        [self participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom];
         //----------------------------------------------------------------------
     }
     else{
@@ -1394,4 +1527,11 @@ NSString *const CLOSED = @"CLOSED";
         NSLog(@"[ERROR] %@", msg);
     }
 }
+
+
+- (IBAction)buttonDebugStartACall_action:(id)sender {
+    [[TwilioVideoManager getInstance] publishEvent: @"DEBUGSTARTACALL"];
+}
+
+
 @end

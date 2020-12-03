@@ -181,6 +181,17 @@
                                     <constraint firstItem="uVW-zg-aXt" firstAttribute="centerX" secondItem="l3a-7A-hrE" secondAttribute="centerX" id="on9-Ia-Pjg"/>
                                 </constraints>
                             </view>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="aXX-R8-WN1">
+                                <rect key="frame" x="300" y="318.5" width="67" height="30"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="30" id="Aew-vt-y0O"/>
+                                    <constraint firstAttribute="width" constant="67" id="tKv-IN-FtU"/>
+                                </constraints>
+                                <state key="normal" title="startACall"/>
+                                <connections>
+                                    <action selector="buttonDebugStartACall_action:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="TYg-Kw-SRo"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" red="0.067076466979999999" green="0.1435638964" blue="0.222487241" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
@@ -190,13 +201,16 @@
                             <constraint firstAttribute="trailing" secondItem="l3a-7A-hrE" secondAttribute="trailing" id="XOY-T0-gzf"/>
                             <constraint firstAttribute="trailing" secondItem="hJ3-NM-pz1" secondAttribute="trailing" constant="16" id="Y4t-3f-0e6" userLabel="nsLayoutConstraint_previewView_trailing"/>
                             <constraint firstItem="hJ3-NM-pz1" firstAttribute="top" secondItem="3Bh-pO-6uY" secondAttribute="top" constant="399" id="Yku-8X-yFb" userLabel="nsLayoutConstraint_previewView_top"/>
+                            <constraint firstAttribute="trailing" secondItem="aXX-R8-WN1" secondAttribute="trailing" constant="8" id="a44-59-t5u"/>
                             <constraint firstItem="r4p-h9-xiA" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leadingMargin" id="dKs-U1-o7T"/>
+                            <constraint firstItem="aXX-R8-WN1" firstAttribute="centerY" secondItem="3Bh-pO-6uY" secondAttribute="centerY" id="mxS-d3-oyt"/>
                             <constraint firstAttribute="bottom" secondItem="hJ3-NM-pz1" secondAttribute="bottom" constant="108" id="qJb-Zx-oKk" userLabel="nsLayoutConstraint_previewView_bottom"/>
                             <constraint firstItem="tZu-uw-hgi" firstAttribute="top" secondItem="l3a-7A-hrE" secondAttribute="bottom" id="vBu-Z0-1Ki"/>
                             <constraint firstItem="r4p-h9-xiA" firstAttribute="trailing" secondItem="3Bh-pO-6uY" secondAttribute="trailingMargin" id="zTK-8d-idS"/>
                         </constraints>
                     </view>
                     <connections>
+                        <outlet property="buttonDebugStartACall" destination="aXX-R8-WN1" id="l9Z-vv-qjC"/>
                         <outlet property="cameraSwitchButton" destination="XKU-af-eTc" id="jTc-4v-uIt"/>
                         <outlet property="disconnectButton" destination="krA-sT-Z3g" id="uQu-1U-Ree"/>
                         <outlet property="imageViewRemoteParticipant" destination="4rw-7g-hOA" id="4Og-as-WqN"/>

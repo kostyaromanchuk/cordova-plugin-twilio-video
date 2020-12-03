@@ -35,11 +35,20 @@
 @property (nonatomic, weak) IBOutlet UILabel *roomLine;
 @property (nonatomic, weak) IBOutlet UIButton *cameraSwitchButton;
 @property (nonatomic, weak) IBOutlet UIButton *videoButton;
+@property (nonatomic, weak) IBOutlet UIButton *buttonDebugStartACall;
+
 
 //- (void)connectToRoom:(NSString*)room token: (NSString *)token;
-- (void)connectToRoom:(NSString*)room
-                token:(NSString *)token
-       remoteUserName:(NSString *)remoteUserName
+
+//LOCAL - part 1
+- (void)openRoom:(NSString*)room
+           token:(NSString *)token
+    remoteUserName:(NSString *)remoteUserName
    remoteUserPhotoURL:(NSString *)remoteUserName;
+//LOCAL - part 2
+- (void)startCall:(NSString*)room token: (NSString *)token;
+
+//REMOTE - Part 1/1
+- (void)answerCall:(NSString*)room token: (NSString *)token;
 
 @end
