@@ -38,8 +38,7 @@
 
             android:layout_marginLeft="16dp"
             android:layout_marginTop="16dp"
-
-            android:background="#03A9F4" />
+            />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -57,7 +56,6 @@
                 android:layout_marginTop="16dp"
 
                 android:textSize="17sp"
-                android:background="#03A9F4"
                 android:text="" />
             <TextView
                 android:id="@+id/textViewRemoteParticipantConnectionState"
@@ -68,7 +66,6 @@
                 android:layout_marginTop="8dp"
 
                 android:textSize="12sp"
-                android:background="#03A9F4"
                 android:text="" />
 
         </LinearLayout>

@@ -8,7 +8,11 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
@@ -20,12 +24,16 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.drawable.RoundedBitmapDrawable;
+import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
+
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.squareup.picasso.Callback;
 import com.twilio.video.CameraCapturer;
 import com.twilio.video.CameraCapturer.CameraSource;
 import com.twilio.video.ConnectOptions;
@@ -262,12 +270,101 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //"https://sealogin-trfm-prd-cdn.azureedge.net/API/1_3/User/picture?imageUrl=673623fdc8b39b5b05b3167765019398.jpg"
         //------------------------------------------------------------------------------------------
         if (this.remote_user_photo_url != null) {
-            Picasso.get().load(this.remote_user_photo_url).into(imageViewRemoteParticipant);
+            //Picasso.get().load(this.remote_user_photo_url).into(imageViewRemoteParticipant);
+
+            Picasso.get().load(this.remote_user_photo_url)
+                    .resize(96, 96)
+                    .into(imageViewRemoteParticipant, new Callback() {
+                        @Override
+                        public void onSuccess() {
+                            Bitmap imageBitmap = ((BitmapDrawable) imageViewRemoteParticipant.getDrawable()).getBitmap();
+
+                            //v1 circular image
+                            RoundedBitmapDrawable imageDrawable = RoundedBitmapDrawableFactory.create(getResources(), imageBitmap);
+                            imageDrawable.setCircular(true);
+                            imageDrawable.setCornerRadius(Math.max(imageBitmap.getWidth(), imageBitmap.getHeight()) / 2.0f);
+
+                            Canvas canvas = new Canvas(imageBitmap);
+                            canvas.drawBitmap(imageBitmap, 0, 0, null);
+                            int borderWidth = 5;
+                            Paint borderPaint = new Paint();
+                            borderPaint.setStyle(Paint.Style.STROKE);
+                            borderPaint.setStrokeWidth(borderWidth);
+                            borderPaint.setAntiAlias(true);
+                            borderPaint.setColor(Color.WHITE);
+                            //https://stackoverflow.com/questions/24878740/how-to-use-roundedbitmapdrawable
+                            //int circleDelta = (borderWidth / 2) - DisplayUtility.dp2px(context, 1);
+                            int radius = (canvas.getWidth() / 2);  // - circleDelta;
+                            canvas.drawCircle(canvas.getWidth() / 2, canvas.getHeight() / 2, radius, borderPaint);
+
+
+
+                            imageViewRemoteParticipant.setImageDrawable(imageDrawable);
+
+                            //v2 with border
+                            //RoundedBitmapDrawable rbd = createRoundedBitmapDrawableWithBorder(imageBitmap);
+                            //imageViewRemoteParticipant.setImageDrawable(rbd);
+
+
+                        }
+                        @Override
+                        public void onError(Exception e) {
+                            //imageViewRemoteParticipant.setImageResource(R.drawable.default_image);
+                        }
+                    });
+
         }else{
             Log.e(TAG, "onCreate: imageViewRemoteParticipant is null");
         }
     }
 
+    //Rounded Image - with border
+    //https://android--examples.blogspot.com/2015/11/android-how-to-create-circular.html
+    private RoundedBitmapDrawable createRoundedBitmapDrawableWithBorder(Bitmap bitmap){
+        int bitmapWidth = bitmap.getWidth();
+        int bitmapHeight = bitmap.getHeight();
+        int borderWidthHalf = 10; // In pixels
+        //Toast.makeText(mContext,""+bitmapWidth+"|"+bitmapHeight,Toast.LENGTH_SHORT).show();
+
+        // Calculate the bitmap radius
+        int bitmapRadius = Math.min(bitmapWidth,bitmapHeight)/2;
+
+        int bitmapSquareWidth = Math.min(bitmapWidth,bitmapHeight);
+        //Toast.makeText(mContext,""+bitmapMin,Toast.LENGTH_SHORT).show();
+
+        int newBitmapSquareWidth = bitmapSquareWidth+borderWidthHalf;
+        //Toast.makeText(mContext,""+newBitmapMin,Toast.LENGTH_SHORT).show();
+
+        Bitmap roundedBitmap = Bitmap.createBitmap(newBitmapSquareWidth,newBitmapSquareWidth,Bitmap.Config.ARGB_8888);
+
+        // Initialize a new Canvas to draw empty bitmap
+        Canvas canvas = new Canvas(roundedBitmap);
+
+        //fill canvas
+        canvas.drawColor(Color.RED);
+
+        // Calculation to draw bitmap at the circular bitmap center position
+        int x = borderWidthHalf + bitmapSquareWidth - bitmapWidth;
+        int y = borderWidthHalf + bitmapSquareWidth - bitmapHeight;
+
+        canvas.drawBitmap(bitmap, x, y, null);
+
+        // Initializing a new Paint instance to draw circular border
+        Paint borderPaint = new Paint();
+        borderPaint.setStyle(Paint.Style.STROKE);
+        //borderPaint.setStrokeWidth(borderWidthHalf*2);//too thick
+        borderPaint.setStrokeWidth(5.0f);
+        borderPaint.setColor(Color.WHITE);
+
+        canvas.drawCircle(canvas.getWidth()/2, canvas.getWidth()/2, newBitmapSquareWidth/2, borderPaint);
+
+        RoundedBitmapDrawable roundedBitmapDrawable = RoundedBitmapDrawableFactory.create(getResources(),roundedBitmap);
+
+        roundedBitmapDrawable.setCornerRadius(bitmapRadius);
+        roundedBitmapDrawable.setAntiAlias(true);
+
+        return roundedBitmapDrawable;
+    }
 
     //------------------------------------------------------------------------------------------
     //SHOW REMOTE USER PANEL with image name and state e.g. Dialing..
@@ -1604,6 +1701,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         if (room != null) {
             room.disconnect();
         }
+        //if user pressed RED disconnect button while mp3 is playing it will keep playing till app killed
+        dialing_sound_stop();
 
         finish();
     }

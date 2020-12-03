@@ -11,6 +11,9 @@ dependencies {
     //SQUARE / PICASSO IMAGE / OKHTTP - to download user photo
     implementation 'com.squareup.okhttp3:okhttp:4.2.2'
     implementation 'com.squareup.picasso:picasso:2.71828'
+    
     //----------------------------------------------------------------------------------------------
-
+    //CircularView with border
+    implementation 'de.hdodenhof:circleimageview:3.1.0'
+    //----------------------------------------------------------------------------------------------
 }
