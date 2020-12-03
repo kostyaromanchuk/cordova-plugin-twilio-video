@@ -270,48 +270,48 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //"https://sealogin-trfm-prd-cdn.azureedge.net/API/1_3/User/picture?imageUrl=673623fdc8b39b5b05b3167765019398.jpg"
         //------------------------------------------------------------------------------------------
         if (this.remote_user_photo_url != null) {
-            //Picasso.get().load(this.remote_user_photo_url).into(imageViewRemoteParticipant);
-
-            Picasso.get().load(this.remote_user_photo_url)
-                    .resize(96, 96)
-                    .into(imageViewRemoteParticipant, new Callback() {
-                        @Override
-                        public void onSuccess() {
-                            Bitmap imageBitmap = ((BitmapDrawable) imageViewRemoteParticipant.getDrawable()).getBitmap();
-
-                            //v1 circular image
-                            RoundedBitmapDrawable imageDrawable = RoundedBitmapDrawableFactory.create(getResources(), imageBitmap);
-                            imageDrawable.setCircular(true);
-                            imageDrawable.setCornerRadius(Math.max(imageBitmap.getWidth(), imageBitmap.getHeight()) / 2.0f);
-
-                            Canvas canvas = new Canvas(imageBitmap);
-                            canvas.drawBitmap(imageBitmap, 0, 0, null);
-                            int borderWidth = 5;
-                            Paint borderPaint = new Paint();
-                            borderPaint.setStyle(Paint.Style.STROKE);
-                            borderPaint.setStrokeWidth(borderWidth);
-                            borderPaint.setAntiAlias(true);
-                            borderPaint.setColor(Color.WHITE);
-                            //https://stackoverflow.com/questions/24878740/how-to-use-roundedbitmapdrawable
-                            //int circleDelta = (borderWidth / 2) - DisplayUtility.dp2px(context, 1);
-                            int radius = (canvas.getWidth() / 2);  // - circleDelta;
-                            canvas.drawCircle(canvas.getWidth() / 2, canvas.getHeight() / 2, radius, borderPaint);
-
-
-
-                            imageViewRemoteParticipant.setImageDrawable(imageDrawable);
-
-                            //v2 with border
-                            //RoundedBitmapDrawable rbd = createRoundedBitmapDrawableWithBorder(imageBitmap);
-                            //imageViewRemoteParticipant.setImageDrawable(rbd);
-
-
-                        }
-                        @Override
-                        public void onError(Exception e) {
-                            //imageViewRemoteParticipant.setImageResource(R.drawable.default_image);
-                        }
-                    });
+            Picasso.get().load(this.remote_user_photo_url).into(imageViewRemoteParticipant);
+//CLEANUP after more testing of CircleView library
+//            Picasso.get().load(this.remote_user_photo_url)
+//                    .resize(96, 96)
+//                    .into(imageViewRemoteParticipant, new Callback() {
+//                        @Override
+//                        public void onSuccess() {
+//                            Bitmap imageBitmap = ((BitmapDrawable) imageViewRemoteParticipant.getDrawable()).getBitmap();
+//
+//                            //v1 circular image
+//                            RoundedBitmapDrawable imageDrawable = RoundedBitmapDrawableFactory.create(getResources(), imageBitmap);
+//                            imageDrawable.setCircular(true);
+//                            imageDrawable.setCornerRadius(Math.max(imageBitmap.getWidth(), imageBitmap.getHeight()) / 2.0f);
+//
+//                            Canvas canvas = new Canvas(imageBitmap);
+//                            canvas.drawBitmap(imageBitmap, 0, 0, null);
+//                            int borderWidth = 5;
+//                            Paint borderPaint = new Paint();
+//                            borderPaint.setStyle(Paint.Style.STROKE);
+//                            borderPaint.setStrokeWidth(borderWidth);
+//                            borderPaint.setAntiAlias(true);
+//                            borderPaint.setColor(Color.WHITE);
+//                            //https://stackoverflow.com/questions/24878740/how-to-use-roundedbitmapdrawable
+//                            //int circleDelta = (borderWidth / 2) - DisplayUtility.dp2px(context, 1);
+//                            int radius = (canvas.getWidth() / 2);  // - circleDelta;
+//                            canvas.drawCircle(canvas.getWidth() / 2, canvas.getHeight() / 2, radius, borderPaint);
+//
+//
+//
+//                            imageViewRemoteParticipant.setImageDrawable(imageDrawable);
+//
+//                            //v2 with border
+//                            //RoundedBitmapDrawable rbd = createRoundedBitmapDrawableWithBorder(imageBitmap);
+//                            //imageViewRemoteParticipant.setImageDrawable(rbd);
+//
+//
+//                        }
+//                        @Override
+//                        public void onError(Exception e) {
+//                            //imageViewRemoteParticipant.setImageResource(R.drawable.default_image);
+//                        }
+//                    });
 
         }else{
             Log.e(TAG, "onCreate: imageViewRemoteParticipant is null");
