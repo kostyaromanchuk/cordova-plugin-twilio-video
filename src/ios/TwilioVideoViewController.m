@@ -521,6 +521,9 @@ NSString *const CLOSED = @"CLOSED";
 - (IBAction)cameraSwitchButtonPressed:(id)sender {
     [self flipCamera];
 }
+#pragma mark -
+#pragma mark BUTTON DISCONECT
+#pragma mark -
 
 - (IBAction)disconnectButtonPressed:(id)sender {
     if ([self.config hangUpInApp]) {
@@ -957,6 +960,12 @@ NSString *const CLOSED = @"CLOSED";
     [self log_debug:@"[TwilioVideoViewController.m - TwilioVideoActionProducerDelegate.onDisconnect] >> [self.room disconnect]"];
     if (self.room != NULL) {
         [self.room disconnect];
+    }else{
+        NSLog(@"self.room is NULL - OK if LOCAL/STAGE1/");
+        
+        //NOTE - if LOCAL USER hasnt connected to Room this isnt called
+        //onDiconnect needs to manually
+        [self disconnectFromUIAndSend_DISCONNECTED:nil];
     }
 }
 
@@ -1024,6 +1033,13 @@ NSString *const CLOSED = @"CLOSED";
     [self cleanupRemoteParticipant];
     self.room = nil;
     
+    //NOTE - if LOCAL USER hasnt connected to Room this isnt called
+    //onDiconnect needs to manually
+    [self disconnectFromUIAndSend_DISCONNECTED:error];
+}
+
+//called by disconnectButtonpressed (if room is nil) or by  didDisconnectWithError:
+-(void)disconnectFromUIAndSend_DISCONNECTED:(nullable NSError *)error{
     [self showRoomUI:NO];
     if (error != NULL) {
         [[TwilioVideoManager getInstance] publishEvent:DISCONNECTED_WITH_ERROR with:[TwilioVideoUtils convertErrorToDictionary:error]];

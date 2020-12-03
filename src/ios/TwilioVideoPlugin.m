@@ -136,7 +136,23 @@
     //Dont instantiate TwilioVideoViewController twice - done once in openRoom
     dispatch_async(dispatch_get_main_queue(), ^{
         if (NULL == self.tvc) {
-            NSLog(@"[TwilioVideoPlugin.m startCall:] self.tvc is NUL should not happen tvc init in openRoom:");
+            //------------------------------------------------------------------
+            [self instantiate_TwilioVideoViewController_withConfig:config];
+            //------------------------------------------------------------------
+            if (NULL != self.tvc) {
+                //------------------------------------------------------------------
+                [self.viewController presentViewController:self.tvc animated:NO completion:^{
+                    //------------------------------------------------------------------
+                    //remoteUserName and remoteUserPhotoURL ADDED BY BC
+                    [self.tvc startCall:room
+                                  token:token];
+                    //------------------------------------------------------------------
+                }];
+                //------------------------------------------------------------------
+            }else{
+                NSLog(@"ERROR instantiate_TwilioVideoViewController FAILED");
+            }
+            //------------------------------------------------------------------
         }else{
             [self.tvc startCall:room
                     token:token];
