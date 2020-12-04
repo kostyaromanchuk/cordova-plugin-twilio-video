@@ -26,6 +26,9 @@ NSString *const CLOSED = @"CLOSED";
     BOOL _log_debug_on;
     BOOL _log_error_on;
     
+    //Alexay said turn them off Sea/chat will display them not plugin
+    BOOL showNativeUIAlerts;
+
     //Dialing... tone
     AVAudioPlayer *audioPlayer;
 
@@ -63,6 +66,9 @@ NSString *const CLOSED = @"CLOSED";
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    //hide UIAlerts in plgugin - will be displayed by Sea/chat main app
+    showNativeUIAlerts = FALSE;
     
     //---------------------------------------------------------
     //REMOTE USER PANEL
@@ -156,38 +162,46 @@ NSString *const CLOSED = @"CLOSED";
 
 - (void)loadUserImageInBackground
 {
+    //NOT THE SAME AS self.remoteUserPhotoURL = NULL;
+    //TO TRIGGER - let global_remote_user_photo_url = null;
+    // self.remoteUserPhotoURL is not null it's [NSNull null] description :'<null>'
     
-    if(self.remoteUserPhotoURL){
-        NSURL * url = [NSURL URLWithString:self.remoteUserPhotoURL];
-        //remoteUserPhotoURL is passed in from cordova - check is valid url
-        if(url){
-            NSData * data = [NSData dataWithContentsOfURL:url];
-            if(data){
-                UIImage * image = [UIImage imageWithData:data];
-                if (image)
-                {
-                    // Success use the image
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        self.imageViewRemoteParticipant.image = image;
-                    });
-                }
-                else
-                {
-                    // Failed (load an error image?)
-                    [self log_error:[NSString stringWithFormat:@"[loadImage] imageWithData failed to load from self.remoteUserPhotoURL:'%@'", self.remoteUserPhotoURL]];
-                    
-                    //if no image show blank circle else name an Disconnected look off center
-                    //self.imageViewRemoteParticipant.layer.borderWidth = 0.0f;
-                    
-                }
-            }else{
-                [self log_error:[NSString stringWithFormat:@"[loadImage] dataWithContentsOfURL failed to load from self.remoteUserPhotoURL:'%@'", self.remoteUserPhotoURL]];
-            }
-            
-        }else{
-            [self log_error:[NSString stringWithFormat:@"[loadImage] URLWithString failed to load from self.remoteUserPhotoURL:'%@'", self.remoteUserPhotoURL]];
-        }
+    if(NULL != self.remoteUserPhotoURL){
         
+        if([self.remoteUserPhotoURL isEqual:[NSNull null]]){
+            [self log_error:@"[loadImage] [self.remoteUserPhotoURL isEqual:[NSNull null]] - JS param is nil somewhere"];
+        }else{
+            //not obj-C null or JS nil ()
+            NSURL * url = [NSURL URLWithString:self.remoteUserPhotoURL];
+            //remoteUserPhotoURL is passed in from cordova - check is valid url
+            if(url){
+                NSData * data = [NSData dataWithContentsOfURL:url];
+                if(data){
+                    UIImage * image = [UIImage imageWithData:data];
+                    if (image)
+                    {
+                        // set image on main thread
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            self.imageViewRemoteParticipant.image = image;
+                        });
+                    }
+                    else
+                    {
+                        // Failed (load an error image?)
+                        [self log_error:[NSString stringWithFormat:@"[loadImage] imageWithData failed to load from self.remoteUserPhotoURL:'%@'", self.remoteUserPhotoURL]];
+                        
+                        //if no image show blank circle else name an Disconnected look off center
+                        //self.imageViewRemoteParticipant.layer.borderWidth = 0.0f;
+                        
+                    }
+                }else{
+                    [self log_error:[NSString stringWithFormat:@"[loadImage] dataWithContentsOfURL failed to load from self.remoteUserPhotoURL:'%@'", self.remoteUserPhotoURL]];
+                }
+                
+            }else{
+                [self log_error:[NSString stringWithFormat:@"[loadImage] URLWithString failed to load from self.remoteUserPhotoURL:'%@'", self.remoteUserPhotoURL]];
+            }
+        }
     }else{
         [self log_error:@"[loadUserImageInBackground] self.remoteUserPhotoURL is NULL"];
     }
@@ -931,22 +945,35 @@ NSString *const CLOSED = @"CLOSED";
     }
     
     [self log_info: @"Connection error handled by the plugin"];
-    UIAlertController * alert = [UIAlertController
-                                 alertControllerWithTitle:NULL
-                                 message: message
-                                 preferredStyle:UIAlertControllerStyleAlert];
-    
-    //Add Buttons
-    
-    UIAlertAction* yesButton = [UIAlertAction
-                                actionWithTitle:[self.config i18nAccept]
-                                style:UIAlertActionStyleDefault
-                                handler: ^(UIAlertAction * action) {
-                                    [self dismiss];
-                                }];
-    
-    [alert addAction:yesButton];
-    [self presentViewController:alert animated:YES completion:nil];
+    if(showNativeUIAlerts){
+        UIAlertController * alert = [UIAlertController
+                                     alertControllerWithTitle:NULL
+                                     message: message
+                                     preferredStyle:UIAlertControllerStyleAlert];
+        
+        //Add Buttons
+        
+        UIAlertAction* yesButton = [UIAlertAction
+                                    actionWithTitle:[self.config i18nAccept]
+                                    style:UIAlertActionStyleDefault
+                                    handler: ^(UIAlertAction * action) {
+            //------------------------------------------------------------------
+            [self dismiss];
+            //------------------------------------------------------------------
+        }];
+        
+        [alert addAction:yesButton];
+        [self presentViewController:alert animated:YES completion:nil];
+    }else{
+        NSString * messageToLog = [NSString stringWithFormat:@"showNativeUIAlerts is FALSE: ALERT('%@') HIDDEN - to be handled by Sea/chat not plugin", message];
+        [self log_info: messageToLog];
+        
+        //must have same code here as above in OK/ Accept button
+        //------------------------------------------------------------------
+        [self dismiss];
+        //------------------------------------------------------------------
+        
+    }
 }
 
 - (void) dismiss {
@@ -1018,7 +1045,7 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 - (void)room:(nonnull TVIRoom *)room didFailToConnectWithError:(nonnull NSError *)error {
-    [self log_info:[NSString stringWithFormat:@"Failed to connect to room, error = %@", error]];
+    [self log_info:[NSString stringWithFormat:@"[didFailToConnectWithError:] Failed to connect to room, error = %@", error]];
     [[TwilioVideoManager getInstance] publishEvent: CONNECT_FAILURE with:[TwilioVideoUtils convertErrorToDictionary:error]];
     
     self.room = nil;
@@ -1465,6 +1492,17 @@ NSString *const CLOSED = @"CLOSED";
    // [audioPlayer setVolume:0.6];
 }
 -(void) dialingSound_start{
+    
+    //viewDidLoad only called once - even if you press red disconnect and UI disappears
+    //2nd time it will jump into openRoom: or answerCall
+    if (audioPlayer) {
+        [self log_info:@"[dialingSound_start] audioPlayer is not NULL - ok to start/restart"];
+    }else{
+        [self log_error:@"[dialingSound_start] audioPlayer is NULL calling setup"];
+        [self dialingSound_setup];
+    }
+    
+    
     if (audioPlayer) {
         
         if([audioPlayer isPlaying]){
