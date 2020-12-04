@@ -269,13 +269,25 @@
         NSLog(@"Listener callback unavailable.  event %@", event);
         return;
     }
-    
+    //--------------------------------------------------------------------------
     if (data != NULL) {
         NSLog(@"[TwilioVideoPlugin.m][onCallEvent] Event received %@ with data %@", event, data);
+        
     } else {
-        NSLog(@"ERROR [TwilioVideoPlugin.m][onCallEvent] Event received %@ BUT data is nil - ok for openRoom", event);
+        NSLog(@"ERROR [TwilioVideoPlugin.m][onCallEvent] Event received %@ BUT data is nil - ok for events with no data e.g. CLOSED", event);
     }
     
+    //--------------------------------------------------------------------------
+    //had issues with reopening TVC answerCall > disconnectAnswerCall - other video wont appear
+    //note DISCONNECTED_WITH_ERROR is usually also followed by CLOSED
+    if([event isEqual:@"CLOSED"]){
+        NSLog(@"[TwilioVideoPlugin.m][onCallEvent] Event is closed set self.tvc = nil");
+        self.tvc = nil;
+        
+    }else{
+        NSLog(@"[TwilioVideoPlugin.m][onCallEvent] Event is not 'CLOSED' dont set self.tvc to nil");
+    }
+    //--------------------------------------------------------------------------
     NSMutableDictionary *message = [NSMutableDictionary dictionary];
     [message setValue:event forKey:@"event"];
     [message setValue:data != NULL ? data : [NSNull null] forKey:@"data"];
@@ -285,5 +297,6 @@
     
     [self.commandDelegate sendPluginResult:result callbackId:self.listenerCallbackID];
 }
+
 
 @end

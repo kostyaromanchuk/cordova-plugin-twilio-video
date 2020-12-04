@@ -48,6 +48,7 @@
         <resource-file src="src/ios/Resources/switch_camera@2x.png" target="Resources/switch_camera@2x.png" />
         <resource-file src="src/ios/Resources/switch_camera@3x.png" target="Resources/switch_camera@3x.png" />
         <resource-file src="src/ios/Resources/ringing.mp3" target="Resources/ringing.mp3" />
+        <resource-file src="src/ios/Resources/baseline_account_circle_black_18dp.png" target="Resources/" />
         
         <framework src="TwilioVideo" type="podspec" spec="3.7.2"/>
         <podspec>
