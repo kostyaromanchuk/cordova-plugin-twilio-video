@@ -96,16 +96,34 @@
             //ALWAYS PRSENTVC > THEN OPEN
             //------------------------------------------------------------------
             //if you only openRoom: then 2nd time it may not appear
-            [self.viewController presentViewController:self.tvc animated:NO completion:^{
-                //------------------------------------------------------------------
-                //remoteUserName and remoteUserPhotoURL ADDED BY BC
+//            [self.viewController presentViewController:self.tvc animated:NO completion:^{
+//                //--------------------------------------------------------------
+//                [self.tvc openRoom:room
+//                             token:token
+//                    remoteUserName:remote_user_name
+//                remoteUserPhotoURL:remote_user_photo_url];
+//                //--------------------------------------------------------------
+//            }];
+            //------------------------------------------------------------------
+            //Sergey asked for this can happen on double tap
+            if(self.viewController.presentedViewController == self.tvc){
+                NSLog(@"ERROR TwilioVideoViewController already visible - just call [tvc openRoom:...] directly");
+                //----------------------------------------------------------
                 [self.tvc openRoom:room
                              token:token
                     remoteUserName:remote_user_name
                 remoteUserPhotoURL:remote_user_photo_url];
-                //------------------------------------------------------------------
-            }];
-            //------------------------------------------------------------------
+                //----------------------------------------------------------
+            }else{
+                [self.viewController presentViewController:self.tvc animated:NO completion:^{
+                    //----------------------------------------------------------
+                    [self.tvc openRoom:room
+                                 token:token
+                        remoteUserName:remote_user_name
+                    remoteUserPhotoURL:remote_user_photo_url];
+                    //----------------------------------------------------------
+                }];
+            }
         }else{
             NSLog(@"ERROR instantiate_TwilioVideoViewController FAILED");
         }
@@ -220,18 +238,22 @@
         }
         //----------------------------------------------------------------------
         if (NULL != self.tvc) {
-            //------------------------------------------------------------------
-            //ALWAYS PRSENTVC > THEN OPEN
-            //------------------------------------------------------------------
-            //if you only startCall: then 2nd time VC wont appear
-            [self.viewController presentViewController:self.tvc animated:NO completion:^{
-                //------------------------------------------------------------------
-                //remoteUserName and remoteUserPhotoURL ADDED BY BC
+            //alexey asked for this to prvent double tap
+            //i had used it for startCall: as TVC already opened by joinRoom/openRoom
+            if(self.viewController.presentedViewController == self.tvc){
+                NSLog(@"ERROR TwilioVideoViewController already visible - just call [tvc answerCall:...] directly");
+                //--------------------------------------------------------------
                 [self.tvc answerCall:room
                                token:token];
-                //------------------------------------------------------------------
-            }];
-            //------------------------------------------------------------------
+                //--------------------------------------------------------------
+            }else{
+                [self.viewController presentViewController:self.tvc animated:NO completion:^{
+                    //----------------------------------------------------------
+                    [self.tvc answerCall:room
+                                   token:token];
+                    //----------------------------------------------------------
+                }];
+            }
         }else{
             NSLog(@"ERROR instantiate_TwilioVideoViewController FAILED");
         }
@@ -274,7 +296,8 @@
         NSLog(@"[TwilioVideoPlugin.m][onCallEvent] Event received %@ with data %@", event, data);
         
     } else {
-        NSLog(@"ERROR [TwilioVideoPlugin.m][onCallEvent] Event received %@ BUT data is nil - ok for events with no data e.g. CLOSED", event);
+        //NSLog(@"[TwilioVideoPlugin.m][onCallEvent] Event received %@ BUT data is nil - ok for events with no data e.g. CLOSED", event);
+        NSLog(@"[TwilioVideoPlugin.m][onCallEvent] Event received %@", event);
     }
     
     //--------------------------------------------------------------------------
@@ -285,7 +308,7 @@
         self.tvc = nil;
         
     }else{
-        NSLog(@"[TwilioVideoPlugin.m][onCallEvent] Event is not 'CLOSED' dont set self.tvc to nil");
+        //NOISY NSLog(@"[TwilioVideoPlugin.m][onCallEvent] Event is not 'CLOSED' dont set self.tvc to nil - reuse TwilioVideoViewController");
     }
     //--------------------------------------------------------------------------
     NSMutableDictionary *message = [NSMutableDictionary dictionary];

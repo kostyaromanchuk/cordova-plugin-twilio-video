@@ -1,3 +1,4 @@
+cordova.define("cordova-plugin-twilio-video.twiliovideo", function(require, exports, module) { 
 var exec = require('cordova/exec');
 
 var TwilioVideo = function() {};
@@ -9,17 +10,14 @@ TwilioVideo.openRoom = function(token, room,
     {
     config = config != null ? config : null;
     exec(function(e) {
-        console.log("Twilio openRoom event fired: " + e);
+        //----------------------------------------------------------------------
+        //console.log("Twilio openRoom event fired: " + e);
         //just logs [log] - Twilio video event fired: [object Object]
         //then passes to index.js
         //[log] - [index.js] window.twiliovideo.openRoom(token,room)
-        
-        
+
         //----------------------------------------------------------------------
-        //just logs [log] - Twilio startCall event fired: [object Object]
-        //then passes to index.js
-        //[log] - [index.js] window.twiliovideo.startRoom(token,room)
-        console.log("[twilio.js][Twilio.openRoom][EVENT NAME:'" + e.event + "'] Twilio.startCall returned]");
+        console.log("[twilio.js][Twilio.openRoom][EVENT NAME:'" + e.event + "'] Twilio.openRoom() has returned]");
         //----------------------------------------------------------------------
         //eventCallback(e.event, e.data)
         //    data {
@@ -40,13 +38,31 @@ TwilioVideo.openRoom = function(token, room,
                 console.log("[twilio.js][Twilio.openRoom][EVENT NAME:'" + e.event + "'] [ERROR DESC - e.data.description is nil");
             }
         }else{
-            console.log("[twilio.js][Twilio.openRoom][EVENT NAME:'" + e.event + "']  e.data is nil - ok if not error");
+            //console.log("[twilio.js][Twilio.openRoom][EVENT NAME:'" + e.event + "']  e.data is nil - ok if not error");
+            console.log("[twilio.js][Twilio.openRoom][EVENT NAME:'" + e.event + "']");
         }
         //----------------------------------------------------------------------
-
+        if(config){
+            console.log("[twilio.js][Twilio.openRoom]config:'" + config + "'");
+            if(config.startWithVideoOff){
+                console.log("[twilio.js][Twilio.openRoom][config.startWithVideoOff:" + config.startWithVideoOff + "]");
+            }else{
+                console.log("[twilio.js][Twilio.openRoom][config.startWithVideoOff is undefined or false?");
+            }
+            if(config.startWithAudioOff){
+                console.log("[twilio.js][Twilio.openRoom][config.startWithAudioOff:" + config.startWithAudioOff + "]");
+            }else{
+                console.log("[twilio.js][Twilio.openRoom][config.startWithAudioOff is undefined or false?");
+            }
+        }else{
+            console.log("[twilio.js][Twilio.openRoom] config is nil");
+        }
+        //----------------------------------------------------------------------
         if (eventCallback) {
             eventCallback(e.event, e.data);
         }
+        //----------------------------------------------------------------------
+        
     }, null, 'TwilioVideoPlugin', 'openRoom', [token, room, remote_user_name, remote_user_photo_url, config]);
 };
 
@@ -59,7 +75,7 @@ TwilioVideo.startCall = function(token, room,
         //just logs [log] - Twilio startCall event fired: [object Object]
         //then passes to index.js
         //[log] - [index.js] window.twiliovideo.startRoom(token,room)
-        console.log("[twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "'] Twilio.startCall returned]");
+        console.log("[twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "'] Twilio.startCall() has returned]");
         //----------------------------------------------------------------------
         //eventCallback(e.event, e.data)
         //    data {
@@ -80,7 +96,8 @@ TwilioVideo.startCall = function(token, room,
                 console.log("[twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "'] [ERROR DESC - e.data.description is nil");
             }
         }else{
-            console.log("[twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "']  e.data is nil - ok if not error");
+            //console.log("[twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "']  e.data is nil - ok if not error");
+            console.log("[twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "']");
         }
         //----------------------------------------------------------------------
         if (eventCallback) {
@@ -103,7 +120,7 @@ TwilioVideo.answerCall = function(token, room,
         //just logs [log] - Twilio startCall event fired: [object Object]
         //then passes to index.js
         //[log] - [index.js] window.twiliovideo.startRoom(token,room)
-        console.log("[twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "'] Twilio.startCall returned]");
+        console.log("[twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "'] Twilio.answerCall() returned]");
         //----------------------------------------------------------------------
         //eventCallback(e.event, e.data)
         //    data {
@@ -124,7 +141,8 @@ TwilioVideo.answerCall = function(token, room,
                 console.log("[twilio.js][Twilio.answerCall][EVENT NAME:'" + e.event + "'] [ERROR DESC - e.data.description is nil");
             }
         }else{
-            console.log("[twilio.js][Twilio.answerCall][EVENT NAME:'" + e.event + "']  e.data is nil - ok if not error");
+            //console.log("[twilio.js][Twilio.answerCall][EVENT NAME:'" + e.event + "']  e.data is nil - ok if not error");
+            console.log("[twilio.js][Twilio.answerCall][EVENT NAME:'" + e.event + "']");
         }
         //----------------------------------------------------------------------
         
@@ -165,3 +183,4 @@ TwilioVideo.requestPermissions = function() {
 };
 
 module.exports = TwilioVideo;
+});

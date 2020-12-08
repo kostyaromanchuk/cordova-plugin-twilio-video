@@ -8,6 +8,11 @@
 #define HANDLE_ERROR_IN_APP                 @"handleErrorInApp"
 #define HANG_UP_IN_APP                      @"hangUpInApp"
 
+//BC - asked for by Alexey
+#define START_WITH_VIDEO_OFF                @"startWithVideoOff"
+#define START_WITH_AUDIO_OFF                @"startWithAudioOff"
+
+
 @implementation TwilioVideoConfig
 -(void) parse:(NSDictionary*)config {
     if (config == NULL || config == (id)[NSNull null]) { return; }
@@ -27,6 +32,28 @@
     }
     self.handleErrorInApp = [config objectForKey:HANDLE_ERROR_IN_APP];
     self.hangUpInApp = [config objectForKey:HANG_UP_IN_APP];
+    
+    //BC asked for by Alexey
+    
+//    self.startWithVideoOff = [config :START_WITH_VIDEO_OFF];
+//    self.startWithAudioOff = [config objectForKey:START_WITH_AUDIO_OFF];
+//
+    if ([config valueForKey: START_WITH_VIDEO_OFF] == [NSNumber numberWithBool:YES]) {
+        self.startWithVideoOff = TRUE;
+    }else{
+        self.startWithVideoOff = FALSE;
+    }
+    if ([config valueForKey: START_WITH_AUDIO_OFF] == [NSNumber numberWithBool:YES]) {
+        self.startWithAudioOff = TRUE;
+    }else{
+        self.startWithAudioOff = FALSE;
+    }
+    
+    
+    
+    NSLog(@"[TwilioVideoConfig] self.startWithVideoOff:%d", self.startWithVideoOff);
+    NSLog(@"[TwilioVideoConfig] self.startWithAudioOff:%d", self.startWithAudioOff);
+
 }
 
 + (UIColor *)colorFromHexString:(NSString *)hexString {

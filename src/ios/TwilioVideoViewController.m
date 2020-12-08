@@ -148,8 +148,19 @@ NSString *const CLOSED = @"CLOSED";
     view.layer.borderColor = [color CGColor];
     view.layer.borderWidth = 1.0f;
 }
+-(void)loadUserImage_default{
+    NSString *imageName = @"baseline_account_circle_black_18dp.png";
+    UIImage * defaultImage = [UIImage imageNamed:imageName];
+    if(defaultImage){
+        self.imageViewRemoteParticipant.image = defaultImage;
+    }else{
+        self.imageViewRemoteParticipant.image = nil;
+    }
+}
 
 -(void)loadUserImageInBackground_async{
+   
+    [self loadUserImage_default];
     
     self.imageViewRemoteParticipant.backgroundColor = [UIColor whiteColor];
     self.imageViewRemoteParticipant.layer.cornerRadius = self.imageViewRemoteParticipant.frame.size.height / 2.0;
@@ -192,6 +203,8 @@ NSString *const CLOSED = @"CLOSED";
                         
                         //if no image show blank circle else name an Disconnected look off center
                         //self.imageViewRemoteParticipant.layer.borderWidth = 0.0f;
+                        
+                        [self loadUserImage_default];
                         
                     }
                 }else{
@@ -403,7 +416,10 @@ NSString *const CLOSED = @"CLOSED";
     
     [self log_debug:@"[TwilioVideoViewController.m - connectToRoom]"];
     
+    //DEBUG - shows a button to trigger startCall() - NEVER RELEASE
     [self.buttonDebugStartACall setHidden:FALSE];
+    //RELEASE
+    //[self.buttonDebugStartACall setHidden:TRUE];
     
     self.roomName = room;
     self.accessToken = token;
@@ -509,24 +525,53 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark BUTTONS
 #pragma mark -
 
+//MUTE VIDEO BUTTON
+-(void)videoButton_changeIconTo_on{
+    [self.videoButton setSelected: FALSE];
+}
+-(void)videoButton_changeIconTo_off{
+    [self.videoButton setSelected: TRUE];
+}
+
 - (IBAction)videoButtonPressed:(id)sender {
     if(self.localVideoTrack){
         self.localVideoTrack.enabled = !self.localVideoTrack.isEnabled;
-        [self.videoButton setSelected: !self.localVideoTrack.isEnabled];
+        //changes icon
+        //[self.videoButton setSelected: !self.localVideoTrack.isEnabled];
+        if(self.localVideoTrack.isEnabled){
+            [self videoButton_changeIconTo_on];
+        }else{
+            [self videoButton_changeIconTo_off];
+        }
     }
     //DEBUG [self updateConstraints_PreviewView_toFullScreen: TRUE animated:TRUE];
     
     //DEBUG [self dialingSound_start];
 }
 
-
+//MUTE VIDEO BUTTON
+-(void)micButton_changeIconTo_on{
+    [self.micButton setSelected: FALSE];
+}
+-(void)micButton_changeIconTo_off{
+    [self.micButton setSelected: TRUE];
+}
 - (IBAction)micButtonPressed:(id)sender {
     // We will toggle the mic to mute/unmute and change the title according to the user action.
     
     if (self.localAudioTrack) {
         self.localAudioTrack.enabled = !self.localAudioTrack.isEnabled;
+        
         // If audio not enabled, mic is muted and button crossed out
-        [self.micButton setSelected: !self.localAudioTrack.isEnabled];
+        //[self.micButton setSelected: !self.localAudioTrack.isEnabled];
+        
+        if(self.localAudioTrack.isEnabled){
+            [self micButton_changeIconTo_on];
+        }else{
+            [self micButton_changeIconTo_off];
+        }
+        
+        
     }
     //[self updateConstraints_PreviewView_toFullScreen: FALSE animated:TRUE];
     //DEBUG [self dialingSound_stop];
@@ -577,8 +622,19 @@ NSString *const CLOSED = @"CLOSED";
         [self log_debug:@"[startPreview] localVideoTrack set to self.camera which is frontCamera or backCamera"];
         
         self.camera = [[TVICameraSource alloc] initWithDelegate:self];
+        
+        //BC - startWithVideoOff - alexey asked for this - passed in via config
+        //SEE also startWithAudioOff
+        BOOL localVideoTrack_enabled = NO;
+        
+        if ([self.config startWithVideoOff]) {
+            localVideoTrack_enabled = NO;
+        } else {
+            localVideoTrack_enabled = YES;
+        }
+        
         self.localVideoTrack = [TVILocalVideoTrack trackWithSource:self.camera
-                                                             enabled:YES
+                                                             enabled:localVideoTrack_enabled
                                                                 name:@"Camera"];
         if (!self.localVideoTrack) {
             [self log_error:@"[startPreview] Failed to add video track - self.localVideoTrack is NULL"];
@@ -605,6 +661,16 @@ NSString *const CLOSED = @"CLOSED";
             //UNHIDE video button(so user can turn it off if needed)
             self.videoButton.hidden = NO;
             
+            //change icon
+            //audio was on background thread - adding this for safety
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if(self.localVideoTrack.isEnabled){
+                    [self videoButton_changeIconTo_on];
+                }else{
+                    [self videoButton_changeIconTo_off];
+                }
+            });
+
             [self log_debug:@"[startPreview][self.camera startCaptureWithDevice: FROM current camera frontCamera OR backCamera"];
             
             [self.camera startCaptureWithDevice:frontCamera != nil ? frontCamera : backCamera
@@ -792,13 +858,32 @@ NSString *const CLOSED = @"CLOSED";
     if (!self.localAudioTrack) {
         //
         //https://twilio.github.io/twilio-video-ios/docs/2.8.1/index.html
+        
+        //BC - startWithVideoOff - alexey asked for this - passed in via config
+        //SEE also startWithAudioOff
+        BOOL localAudioTrack_enabled = NO;
+        
+        if ([self.config startWithAudioOff]) {
+            localAudioTrack_enabled = NO;
+        } else {
+            localAudioTrack_enabled = YES;
+        }
+        
         //----------------------------------------------------------------------
         self.localAudioTrack = [TVILocalAudioTrack trackWithOptions:nil
-                                                            enabled:YES
+                                                            enabled:localAudioTrack_enabled
                                                                name:@"Microphone"];
         //----------------------------------------------------------------------
         if (!self.localAudioTrack) {
             [self log_info:@"Failed to add audio track"];
+        }else{
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if(self.localAudioTrack.isEnabled){
+                    [self micButton_changeIconTo_on];
+                }else{
+                    [self micButton_changeIconTo_off];
+                }
+            });
         }
         //----------------------------------------------------------------------
     }
@@ -810,7 +895,7 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 - (void)startCamera {
-    [self log_debug:@"[TwilioVideoViewController.m - doConnect] START"];
+    [self log_debug:@"[TwilioVideoViewController.m - startCamera] START"];
     
     if ([self.accessToken isEqualToString:@"TWILIO_ACCESS_TOKEN"]) {
         [self log_info:@"Please provide a valid token to connect to a room"];
@@ -1423,18 +1508,19 @@ NSString *const CLOSED = @"CLOSED";
     //i think maybe multiple players?
     audioPlayer = NULL;
     
-    [self log_info:@"[TwilioVideoViewController.m] viewWillDisappear >> stopCaptureWithCompletion"];
+    [self log_debug:@"[TwilioVideoViewController.m] viewWillDisappear >> stopCaptureWithCompletion"];
     [self.camera stopCaptureWithCompletion:^(NSError * _Nullable error) {
         if(error){
-            [self log_info:[NSString stringWithFormat:@"[TwilioVideoViewController.m] stopCaptureWithCompletion >> stopCaptureWithCompletion: error:%@", error]];
+            [self log_debug:[NSString stringWithFormat:@"[TwilioVideoViewController.m] stopCaptureWithCompletion: >> error:%@", error]];
         }else{
-            [self log_info:@"[TwilioVideoViewController.m] stopCaptureWithCompletion >> stopCaptureWithCompletion: OK"];
+            [self log_debug:@"[TwilioVideoViewController.m] stopCaptureWithCompletion: OK"];
         }
     }];
       
-    [self log_info:@"[TwilioVideoViewController.m] viewWillDisappear >> stopProximitySensor"];
+    [self log_debug:@"[TwilioVideoViewController.m] viewWillDisappear >> stopProximitySensor"];
     [self stopProximitySensor];
     
+    [self log_info:@"[TwilioVideoViewController.m] viewWillDisappear - VIEW CONTROLLER closed"];
 }
 
 -(void)stopProximitySensor
@@ -1457,7 +1543,7 @@ NSString *const CLOSED = @"CLOSED";
     if (NULL != audioPlayer) {
         NSLog(@"ERROR: audioPlayer is NOT NULL - dont call dialingSound_setup TWICE youll get same sound played twice sounds VERY LOUD");
     }else{
-        NSError *setCategoryError = nil;
+        //NSError *setCategoryError = nil;
         
      //   [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&setCategoryError];
         //[[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategorySoloAmbient error:&setCategoryError];
@@ -1562,8 +1648,8 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark -
 
 -(void) configureLogging{
+    _log_debug_on = FALSE; //turn off on release
     _log_info_on = TRUE;
-    _log_debug_on = TRUE; //turn off on release
     _log_error_on = TRUE; //leave on
 }
 - (void)log_info:(NSString *)msg {
@@ -1587,5 +1673,11 @@ NSString *const CLOSED = @"CLOSED";
     [[TwilioVideoManager getInstance] publishEvent: @"DEBUGSTARTACALL"];
 }
 
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    
+    NSLog(@"[ERROR] didReceiveMemoryWarning");
+    
+}
 
 @end
