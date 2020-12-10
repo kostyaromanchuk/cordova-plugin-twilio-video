@@ -19,7 +19,7 @@ NSString *const PERMISSIONS_REQUIRED = @"PERMISSIONS_REQUIRED";
 NSString *const HANG_UP = @"HANG_UP";
 NSString *const CLOSED = @"CLOSED";
 
-#pragma mark - private
+#pragma mark - private 
 
 @interface TwilioVideoViewController()<AVAudioPlayerDelegate>{
     BOOL _log_info_on;
