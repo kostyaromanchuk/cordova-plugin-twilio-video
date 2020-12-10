@@ -80,9 +80,8 @@
                                     <constraint firstItem="DbX-Yg-QbD" firstAttribute="top" secondItem="byJ-I9-Kp8" secondAttribute="bottom" constant="16" id="zja-Nx-cJo"/>
                                 </constraints>
                             </view>
-                            <view contentMode="scaleAspectFit" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hJ3-NM-pz1" customClass="TVIVideoView">
-                                <rect key="frame" x="1239" y="399" width="120" height="160"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                            <view contentMode="scaleAspectFit" translatesAutoresizingMaskIntoConstraints="NO" id="hJ3-NM-pz1" customClass="TVIVideoView">
+                                <rect key="frame" x="239" y="399" width="120" height="160"/>
                                 <color key="backgroundColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
                             </view>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="r4p-h9-xiA">
@@ -138,9 +137,8 @@
                                     <constraint firstItem="aqP-iA-exF" firstAttribute="leading" secondItem="Sr9-om-6LZ" secondAttribute="trailing" constant="8" symbolic="YES" id="w63-pm-40L"/>
                                 </constraints>
                             </view>
-                            <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="l3a-7A-hrE" userLabel="viewButtonOuter">
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="l3a-7A-hrE" userLabel="viewButtonOuter">
                                 <rect key="frame" x="0.0" y="567" width="375" height="100"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <subviews>
                                     <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="uVW-zg-aXt" userLabel="View[ButtonsInner]">
                                         <rect key="frame" x="17.5" y="0.0" width="340" height="100"/>
@@ -213,6 +211,9 @@
                                     </view>
                                 </subviews>
                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="100" id="rNz-0I-5Ij"/>
+                                </constraints>
                             </view>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MOz-y7-RXA">
                                 <rect key="frame" x="16" y="152" width="82" height="30"/>
@@ -234,8 +235,15 @@
                             <constraint firstItem="r4p-h9-xiA" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leadingMargin" id="Dxm-al-38m"/>
                             <constraint firstItem="qSc-QC-8BN" firstAttribute="top" secondItem="MOz-y7-RXA" secondAttribute="bottom" constant="16" id="EUE-ZH-A2q"/>
                             <constraint firstItem="Mof-LL-MfS" firstAttribute="top" secondItem="3Bh-pO-6uY" secondAttribute="top" id="Gr8-Jb-Fjl"/>
+                            <constraint firstAttribute="trailing" secondItem="hJ3-NM-pz1" secondAttribute="trailing" constant="16" id="KtB-hI-T7f"/>
+                            <constraint firstItem="hJ3-NM-pz1" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leading" constant="239" id="M7E-Gc-MWk"/>
                             <constraint firstAttribute="trailing" secondItem="r4p-h9-xiA" secondAttribute="trailing" constant="8" id="QEd-vK-reu"/>
+                            <constraint firstItem="tZu-uw-hgi" firstAttribute="top" secondItem="l3a-7A-hrE" secondAttribute="bottom" id="V8p-ba-Vit"/>
+                            <constraint firstItem="l3a-7A-hrE" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leading" id="bTm-oi-Lbg"/>
+                            <constraint firstItem="hJ3-NM-pz1" firstAttribute="top" secondItem="3Bh-pO-6uY" secondAttribute="top" constant="399" id="bY7-IZ-adY"/>
+                            <constraint firstAttribute="bottom" secondItem="hJ3-NM-pz1" secondAttribute="bottom" constant="108" id="dgs-ti-JgC"/>
                             <constraint firstItem="MOz-y7-RXA" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leadingMargin" id="gqL-ZH-vHm"/>
+                            <constraint firstAttribute="trailing" secondItem="l3a-7A-hrE" secondAttribute="trailing" id="lZ3-lj-wT5"/>
                             <constraint firstItem="Mof-LL-MfS" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leading" id="ndP-es-mED"/>
                             <constraint firstAttribute="trailing" secondItem="Mof-LL-MfS" secondAttribute="trailing" id="p5v-Bl-uKJ"/>
                             <constraint firstAttribute="bottom" secondItem="Mof-LL-MfS" secondAttribute="bottom" id="pjG-gi-Uar"/>
@@ -249,6 +257,10 @@
                         <outlet property="disconnectButton" destination="krA-sT-Z3g" id="uQu-1U-Ree"/>
                         <outlet property="imageViewRemoteParticipant" destination="4rw-7g-hOA" id="4Og-as-WqN"/>
                         <outlet property="micButton" destination="rwp-9E-VzS" id="SW4-po-OHw"/>
+                        <outlet property="nsLayoutConstraint_previewView_bottom" destination="dgs-ti-JgC" id="4Ja-5U-dRA"/>
+                        <outlet property="nsLayoutConstraint_previewView_leading" destination="M7E-Gc-MWk" id="3ZX-H9-hVO"/>
+                        <outlet property="nsLayoutConstraint_previewView_top" destination="bY7-IZ-adY" id="NbZ-mo-iyk"/>
+                        <outlet property="nsLayoutConstraint_previewView_trailing" destination="KtB-hI-T7f" id="erY-B0-2Gb"/>
                         <outlet property="previewView" destination="hJ3-NM-pz1" id="1kY-rd-tEJ"/>
                         <outlet property="textFieldAlertSubtitle" destination="weU-jh-Fgv" id="5uh-QF-0i9"/>
                         <outlet property="textFieldAlertTitle" destination="DbX-Yg-QbD" id="qlt-Zo-KdW"/>

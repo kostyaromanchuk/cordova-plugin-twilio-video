@@ -424,10 +424,10 @@ NSString *const CLOSED = @"CLOSED";
     
     [self log_debug:@"[TwilioVideoViewController.m - connectToRoom]"];
     
-    //DEBUG - shows a button to trigger startCall() - NEVER RELEASE
-    [self.buttonDebugStartACall setHidden:FALSE];
     //RELEASE
-    //[self.buttonDebugStartACall setHidden:TRUE];
+    [self show_buttonDebugStartACall];
+    
+    
     
     self.roomName = room;
     self.accessToken = token;
@@ -1036,6 +1036,14 @@ NSString *const CLOSED = @"CLOSED";
     [self.viewAlert setHidden:TRUE];
  
 }
+-(void)show_buttonDebugStartACall{
+    //DEBUG - shows a button to trigger startCall() - NEVER RELEASE
+    [self.buttonDebugStartACall setHidden:FALSE];
+    [self.view bringSubviewToFront:self.buttonDebugStartACall];
+    
+    //RELEASE
+    //[self.buttonDebugStartACall setHidden:TRUE];
+}
 
 - (IBAction)buttonDebug_showOffline_Action:(id)sender {
     [self showOffline];
@@ -1047,6 +1055,7 @@ NSString *const CLOSED = @"CLOSED";
     //[self.buttonDebugStartACall setHidden:FALSE];
     [self.view bringSubviewToFront:self.buttonDebugStartACall];
 }
+
 - (IBAction)buttonDebug_showOnline_Action:(id)sender {
     [self showOnline];
     
