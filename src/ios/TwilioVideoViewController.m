@@ -57,6 +57,12 @@ NSString *const CLOSED = @"CLOSED";
 
 @property (nonatomic, strong) NSString * remoteUserName;
 @property (nonatomic, strong) NSString * remoteUserPhotoURL;
+@property (unsafe_unretained, nonatomic) IBOutlet UIView *viewAlert;
+@property (unsafe_unretained, nonatomic) IBOutlet UILabel *textFieldAlertTitle;
+@property (unsafe_unretained, nonatomic) IBOutlet UILabel *textFieldAlertSubtitle;
+
+@property (unsafe_unretained, nonatomic) IBOutlet UIButton *buttonDebug_showOffline;
+@property (unsafe_unretained, nonatomic) IBOutlet UIButton *buttonDebug_showOnline;
 
 @end
 
@@ -66,6 +72,8 @@ NSString *const CLOSED = @"CLOSED";
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    [self.viewAlert setHidden:TRUE];
     
     //hide UIAlerts in plgugin - will be displayed by Sea/chat main app
     showNativeUIAlerts = FALSE;
@@ -1015,12 +1023,38 @@ NSString *const CLOSED = @"CLOSED";
 
 //internet gone - seachat tells plugin to show alert
 - (void)showOffline{
+    [self.viewAlert setHidden:FALSE];
+    [self.view bringSubviewToFront:self.viewAlert];
     
+    [self.buttonDebug_showOnline setHidden:FALSE];
+    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
+
 }
 
 //internet returned - seachat tells plugin to hide alert
 - (void)showOnline{
+    [self.viewAlert setHidden:TRUE];
+ 
+}
+
+- (IBAction)buttonDebug_showOffline_Action:(id)sender {
+    [self showOffline];
     
+    [self.buttonDebug_showOnline setHidden:FALSE];
+    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
+    
+    //its hidden in answercall  for REMOTE user just bring to front may stil be hidden
+    //[self.buttonDebugStartACall setHidden:FALSE];
+    [self.view bringSubviewToFront:self.buttonDebugStartACall];
+}
+- (IBAction)buttonDebug_showOnline_Action:(id)sender {
+    [self showOnline];
+    
+    [self.buttonDebug_showOnline setHidden:TRUE];
+    
+    //its hidden in answercall  for REMOTE user just bring to front may stil be hidden
+    //[self.buttonDebugStartACall setHidden:FALSE];
+    [self.view bringSubviewToFront:self.buttonDebugStartACall];
 }
 
 
