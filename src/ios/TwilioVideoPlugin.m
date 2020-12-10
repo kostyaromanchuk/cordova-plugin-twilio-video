@@ -262,6 +262,34 @@
         
     });
 }
+
+
+- (void)showOffline:(CDVInvokedUrlCommand*)command {
+    self.listenerCallbackID = command.callbackId;
+    //No args NSArray *args = command.arguments;
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (NULL != self.tvc) {
+            [self.tvc showOffline];
+        }else{
+            NSLog(@"ERROR [self.tvc showOffline] FAILED");
+        }
+    });
+}
+
+- (void)showOnline:(CDVInvokedUrlCommand*)command {
+    self.listenerCallbackID = command.callbackId;
+    //No args NSArray *args = command.arguments;
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (NULL != self.tvc) {
+            [self.tvc showOnline];
+        }else{
+            NSLog(@"ERROR [self.tvc showOffline] FAILED");
+        }
+    });
+}
+
 - (void)closeRoom:(CDVInvokedUrlCommand*)command {
     if ([[TwilioVideoManager getInstance] publishDisconnection]) {
         [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];

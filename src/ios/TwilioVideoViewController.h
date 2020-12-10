@@ -38,17 +38,26 @@
 @property (nonatomic, weak) IBOutlet UIButton *buttonDebugStartACall;
 
 
-//- (void)connectToRoom:(NSString*)room token: (NSString *)token;
-
+//------------------------------------------------------------------------------
 //LOCAL - part 1
 - (void)openRoom:(NSString*)room
            token:(NSString *)token
     remoteUserName:(NSString *)remoteUserName
    remoteUserPhotoURL:(NSString *)remoteUserName;
+
 //LOCAL - part 2
 - (void)startCall:(NSString*)room token: (NSString *)token;
 
+//---------------------------------------------------------
 //REMOTE - Part 1/1
 - (void)answerCall:(NSString*)room token: (NSString *)token;
 
+//------------------------------------------------------------------------------
+//internet gone - seachat tells plugin to show alert
+- (void)showOffline;
+
+//internet returned - seachat tells plugin to hide alert
+- (void)showOnline;
+
+//------------------------------------------------------------------------------
 @end

@@ -1009,6 +1009,25 @@ NSString *const CLOSED = @"CLOSED";
     [UIApplication sharedApplication].idleTimerDisabled = inRoom;
 }
 
+#pragma mark -
+#pragma mark - OFFLINE ALERT
+#pragma mark -
+
+//internet gone - seachat tells plugin to show alert
+- (void)showOffline{
+    
+}
+
+//internet returned - seachat tells plugin to hide alert
+- (void)showOnline{
+    
+}
+
+
+#pragma mark -
+#pragma mark - cleanupRemoteParticipant
+#pragma mark -
+
 - (void)cleanupRemoteParticipant {
     [self log_debug:@"[TwilioVideoViewController.m - cleanupRemoteParticipant]"];
     if (self.remoteParticipant) {
