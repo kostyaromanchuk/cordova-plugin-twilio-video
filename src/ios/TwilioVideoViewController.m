@@ -45,14 +45,20 @@ NSString *const CLOSED = @"CLOSED";
 
 //we animate preview to be above this
 @property (unsafe_unretained, nonatomic) IBOutlet UIView *viewButtonOuter;
-
+//------------------------------------------------------------------------------------------
+//CALLING PANEL - photo and name and Calling.../Disconnected....
 @property (unsafe_unretained, nonatomic) IBOutlet UIImageView *imageViewRemoteParticipant;
 @property (unsafe_unretained, nonatomic) IBOutlet UILabel *textViewRemoteParticipantName;
 //Calling.../Disconnected
 @property (unsafe_unretained, nonatomic) IBOutlet UILabel *textViewRemoteParticipantConnectionState;
 
 @property (unsafe_unretained, nonatomic) IBOutlet UIView *viewRemoteParticipantInfo;
+//------------------------------------------------------------------------------------------
+//DURING CALl REMOTE USERS name and muted icon is above buttons
+@property (unsafe_unretained, nonatomic) IBOutlet UIImageView *imageViewInCallRemoteMicMuteState;
+@property (unsafe_unretained, nonatomic) IBOutlet UILabel *textViewInCallRemoteName;
 
+//------------------------------------------------------------------------------------------
 @property (nonatomic, assign) BOOL previewIsFullScreen;
 
 @property (nonatomic, strong) NSString * localUserName;
@@ -66,6 +72,8 @@ NSString *const CLOSED = @"CLOSED";
 
 @property (unsafe_unretained, nonatomic) IBOutlet UIButton *buttonDebug_showOffline;
 @property (unsafe_unretained, nonatomic) IBOutlet UIButton *buttonDebug_showOnline;
+
+
 
 @end
 
@@ -87,6 +95,8 @@ NSString *const CLOSED = @"CLOSED";
     self.textViewRemoteParticipantName.text = @"";
     
     [self textViewRemoteParticipantConnectionState_setText:@""];
+    
+    [self hide_inCall_remoteUserNameAndMic];
     
     //---------------------------------------------------------
     [self configureLogging];
@@ -252,7 +262,10 @@ NSString *const CLOSED = @"CLOSED";
 -(void)fillIn_viewRemoteParticipantInfo{
 
     if (self.remoteUserName) {
+        //shown with photo when calling
         self.textViewRemoteParticipantName.text = self.remoteUserName;
+        //shown above buttons when call active
+        self.textViewInCallRemoteName.text = self.remoteUserName;
     }else{
         [self log_error:@"[fillIn_viewRemoteParticipantInfo] self.remoteUserName is NULL"];
         self.textViewRemoteParticipantName.text = @"";
@@ -263,10 +276,9 @@ NSString *const CLOSED = @"CLOSED";
     }else{
         [self log_error:@"[fillIn_viewRemoteParticipantInfo] self.remoteUserPhotoURL is NULL"];
     }
-
 }
 
--(void)show_viewRemoteParticipantInfoWithState1:(NSString *) state{
+-(void)show_viewRemoteParticipantInfoWithState:(NSString *) state{
     
     [self.viewRemoteParticipantInfo setHidden:FALSE];
     [self.textViewRemoteParticipantName setHidden:FALSE];
@@ -293,6 +305,55 @@ NSString *const CLOSED = @"CLOSED";
     [self textViewRemoteParticipantConnectionState_setText: @""];
 }
 
+#pragma mark -
+#pragma mark In Call - NAME and MIC state
+#pragma mark -
+-(void)hide_inCall_remoteUserNameAndMic{
+    
+    [self.imageViewInCallRemoteMicMuteState setHidden:TRUE];
+    [self.textViewInCallRemoteName setHidden:TRUE];
+    
+}
+
+-(void)show_inCall_remoteUserNameAndMic_isMuted: (BOOL) micIsMuted{
+    
+    [self.imageViewInCallRemoteMicMuteState setHidden:FALSE];
+    [self.textViewInCallRemoteName setHidden:FALSE];
+    
+    [self update_imageViewInCallRemoteMicMuteState_isMuted:micIsMuted];
+}
+
+-(void)update_imageViewInCallRemoteMicMuteState_isMuted: (BOOL) micIsMuted{
+    if(micIsMuted){
+        [self update_imageViewInCallRemoteMicMuteState:@"no_mic.png"];
+    }else{
+        [self update_imageViewInCallRemoteMicMuteState:@"mic.png"];
+    }
+}
+
+//@"mic.png"
+//@"no_mic.png
+-(void)update_imageViewInCallRemoteMicMuteState:(NSString *) imageName{
+    
+    if(imageName){
+        //NSString * imageName = @"mic.png";
+        UIImage * image = [UIImage imageNamed:imageName];
+        if(image){
+            self.imageViewInCallRemoteMicMuteState.image = image;
+        }else{
+            [self log_error:[NSString stringWithFormat:@"imageNamed:'%@' is null",imageName]];
+        }
+    }else{
+        [self log_error:@"[update_imageView_RemoteParticipant_MicState_DuringCall] imageName is null"];
+    }
+    
+}
+
+
+
+#pragma mark -
+#pragma mark setupPreview
+#pragma mark -
 -(void)setupPreviewView{
 
     //HIDE till my camera connected
@@ -492,7 +553,7 @@ NSString *const CLOSED = @"CLOSED";
                       borderWidth: 1.0f];
             //--------------------------------------------------------------------------------------
         }else{
-            [self log_debug:@"[TwilioVideoViewController.m - addBorderToPreview] viewBorderFor_previewView is null"];
+            [self log_debug:@"[TwilioVideoViewController] [ addBorderToPreview] viewBorderFor_previewView is null"];
         }
         //------------------------------------------------------------------------------------------
     });
@@ -510,7 +571,7 @@ NSString *const CLOSED = @"CLOSED";
                       remoteUserPhotoURL:(NSString *)remoteUserPhotoURL
 {
     
-    [self log_debug:@"[TwilioVideoViewController.m - connectToRoom]"];
+    [self log_debug:@"[TwilioVideoViewController] [ connectToRoom]"];
     
     //RELEASE
     [self show_buttonDebugStartACall];
@@ -571,14 +632,14 @@ NSString *const CLOSED = @"CLOSED";
     
     
     //----------------------------------------------------------------------------------------------
-    [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> [self showRoomUI:YES]"];
+    [self log_debug:@"[TwilioVideoViewController] [ connectToRoom] >> [self showRoomUI:YES]"];
     
     [self showRoomUI:YES];
 
-    [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions"];
+    [self log_debug:@"[TwilioVideoViewController] [ connectToRoom] >> requestRequiredPermissions"];
     [TwilioVideoPermissions requestRequiredPermissions:^(BOOL grantedPermissions) {
          if (grantedPermissions) {
-             [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions:OK > doConnect"];
+             [self log_debug:@"[TwilioVideoViewController] [ connectToRoom] >> requestRequiredPermissions:OK > doConnect"];
              //[self doConnect];
              //we connect later with startCall
              [self startCamera];
@@ -588,7 +649,7 @@ NSString *const CLOSED = @"CLOSED";
              
              
          } else {
-             [self log_error:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions: grantedPermissions:FALSE > send PERMISSIONS_REQUIRED"];
+             [self log_error:@"[TwilioVideoViewController] [ connectToRoom] >> requestRequiredPermissions: grantedPermissions:FALSE > send PERMISSIONS_REQUIRED"];
              [[TwilioVideoManager getInstance] publishEvent: PERMISSIONS_REQUIRED];
              [self handleConnectionError: [self.config i18nConnectionError]];
          }
@@ -602,27 +663,27 @@ NSString *const CLOSED = @"CLOSED";
             token:(NSString *)token
 {
     
-    [self log_debug:@"[TwilioVideoViewController.m - startCall:]"];
+    [self log_debug:@"[TwilioVideoViewController] [ startCall:]"];
     
     [self.buttonDebugStartACall setHidden:TRUE];
     
     self.roomName = room;
     self.accessToken = token;
     
-    [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> [self showRoomUI:YES]"];
+    [self log_debug:@"[TwilioVideoViewController] [ connectToRoom] >> [self showRoomUI:YES]"];
     
     [self showRoomUI:YES];
     
-    [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions"];
+    [self log_debug:@"[TwilioVideoViewController] [ connectToRoom] >> requestRequiredPermissions"];
     [TwilioVideoPermissions requestRequiredPermissions:^(BOOL grantedPermissions) {
         if (grantedPermissions) {
-            [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions:OK > doConnect"];
+            [self log_debug:@"[TwilioVideoViewController] [ connectToRoom] >> requestRequiredPermissions:OK > doConnect"];
             [self connectToRoom];
             //we connect later with startCall
             //[self startCamera];
             
         } else {
-            [self log_error:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions: grantedPermissions:FALSE > send PERMISSIONS_REQUIRED"];
+            [self log_error:@"[TwilioVideoViewController] [ connectToRoom] >> requestRequiredPermissions: grantedPermissions:FALSE > send PERMISSIONS_REQUIRED"];
             [[TwilioVideoManager getInstance] publishEvent: PERMISSIONS_REQUIRED];
             [self handleConnectionError: [self.config i18nConnectionError]];
         }
@@ -641,7 +702,7 @@ NSString *const CLOSED = @"CLOSED";
                       remoteUserPhotoURL:(NSString *)remoteUserPhotoURL
 {
     
-    [self log_debug:@"[TwilioVideoViewController.m - answerCall:]"];
+    [self log_debug:@"[TwilioVideoViewController] [ answerCall:]"];
     
     [self.buttonDebugStartACall setHidden:TRUE];
     
@@ -700,14 +761,14 @@ NSString *const CLOSED = @"CLOSED";
     
     //----------------------------------------------------------------------------------------------
     
-    [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> [self showRoomUI:YES]"];
+    [self log_debug:@"[TwilioVideoViewController] [ connectToRoom] >> [self showRoomUI:YES]"];
     
     [self showRoomUI:YES];
     
-    [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions"];
+    [self log_debug:@"[TwilioVideoViewController] [ connectToRoom] >> requestRequiredPermissions"];
     [TwilioVideoPermissions requestRequiredPermissions:^(BOOL grantedPermissions) {
         if (grantedPermissions) {
-            [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions:OK > doConnect"];
+            [self log_debug:@"[TwilioVideoViewController] [ connectToRoom] >> requestRequiredPermissions:OK > doConnect"];
             [self startCamera];
             
             [self connectToRoom];
@@ -715,7 +776,7 @@ NSString *const CLOSED = @"CLOSED";
             //[self startCamera];
             
         } else {
-            [self log_error:@"[TwilioVideoViewController.m - connectToRoom] >> requestRequiredPermissions: grantedPermissions:FALSE > send PERMISSIONS_REQUIRED"];
+            [self log_error:@"[TwilioVideoViewController] [ connectToRoom] >> requestRequiredPermissions: grantedPermissions:FALSE > send PERMISSIONS_REQUIRED"];
             [[TwilioVideoManager getInstance] publishEvent: PERMISSIONS_REQUIRED];
             [self handleConnectionError: [self.config i18nConnectionError]];
         }
@@ -887,8 +948,6 @@ NSString *const CLOSED = @"CLOSED";
                          //---------------------------------------------------------
                          //preview is inserted o
                          //---------------------------------------------------------
-// displayCallWaiting                        //[self show_viewRemoteParticipantInfoWithState1:@"Calling..."];
-                         
                          //preview can be inserted in front - if full screen can hide the viewRemoteParticipantInfo
                          [self.view bringSubviewToFront:self.viewRemoteParticipantInfo];
                          
@@ -909,7 +968,8 @@ NSString *const CLOSED = @"CLOSED";
         //----------------------------------------------------------------------
         //Show the dialing panel
         
-        [self show_viewRemoteParticipantInfoWithState1:@"Calling..."];
+        [self show_viewRemoteParticipantInfoWithState:@"Calling..."];
+        
         
         //----------------------------------------------------------------------
         //show LOCAL USER full screen while waiting for othe ruser to answer
@@ -945,7 +1005,7 @@ NSString *const CLOSED = @"CLOSED";
         //------------------------------------------------------------------------------
         //REMOTE USER CONNECTED.. waiting for CALLER to enter room
        
-        [self show_viewRemoteParticipantInfoWithState1:@"Connecting..."];
+        [self show_viewRemoteParticipantInfoWithState:@"Connecting..."];
         
     }else{
         [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
@@ -960,14 +1020,23 @@ NSString *const CLOSED = @"CLOSED";
 //On the CALLING PHONE it will trigger
 //didConnectToRoom_StartACall >> participantDidConnect_RemoteUserHasAnswered
 -(void)participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom{
-    [self log_info:@"[participantDidConnect_StartACall] START"];
+    [self log_info:@"[participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom] START"];
 
     [self dialingSound_stop];
 
     if(self.previewIsFullScreen){
         //hide Waiting...
         [self hide_viewRemoteParticipantInfo];
-
+        
+        //------------------------------------------------------------------------------------------
+        //INCALL remote users name and muted icon
+        //------------------------------------------------------------------------------------------
+        //default ot muted - AUDIO_TRACK_ADDED will set it to unmuted
+        [self show_inCall_remoteUserNameAndMic_isMuted:TRUE];
+       
+     
+        //------------------------------------------------------------------------------------------
+        
         //REMOTE user is visible in full screen
         //shrink PREVIEW from FULL SCREEN to MINI to show REMOTE user behind
         [self update_PreviewView_showInFullScreen: FALSE animated:FALSE];
@@ -978,7 +1047,7 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 -(void)participantDidConnect_LocalUserAndCallerHaveConnectedToRoom_StartTalking{
-    [self log_info:@"[participantDidConnect_StartACall] START"];
+    [self log_info:@"[participantDidConnect_LocalUserAndCallerHaveConnectedToRoom_StartTalking] START"];
     
     [self dialingSound_stop];
     
@@ -986,9 +1055,18 @@ NSString *const CLOSED = @"CLOSED";
         
         [self hide_viewRemoteParticipantInfo];
         
+        //------------------------------------------------------------------------------------------
+        //INCALL remote users name and muted icon
+        //------------------------------------------------------------------------------------------
+        //default ot muted - AUDIO_TRACK_ADDED will set it to unmuted
+        [self show_inCall_remoteUserNameAndMic_isMuted:TRUE];
+        //------------------------------------------------------------------------------------------
+        
+        
         //REMOTE user is visible in full screen
         //shrink PREVIEW from FULL SCREEN to MINI to show REMOTE user behind
         [self update_PreviewView_showInFullScreen: FALSE animated:FALSE];
+        
         
     }else{
         [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
@@ -1000,7 +1078,7 @@ NSString *const CLOSED = @"CLOSED";
 //1 local + 1 remote - REMOTE user in room is the other person who started the call
 //LOCAL USER is answering a call so dont show 'Dialing..'
 -(void)participantDidConnect{
-    [self log_info:@"[participantDidConnect_AnswerACall] Unused in 1..1 - use for GROUP"];
+    [self log_info:@"[participantDidConnect] Unused in 1..1 - use for GROUP"];
 }
 
 -(void)participantDidDisconnect:(NSString *)remoteParticipant_identity;{
@@ -1028,7 +1106,7 @@ NSString *const CLOSED = @"CLOSED";
 //            [self log_error:@"[participantDidDisconnect:] remoteParticipant_identity is NULL - if LOCAL hangs up before REMOTE then no photo or name just 'Disconnected may show'"];
 //        }
         
-        [self show_viewRemoteParticipantInfoWithState1:@"Disconnected"];
+        [self show_viewRemoteParticipantInfoWithState:@"Disconnected"];
         
         //Zoom the preview from MINI to FULL SCREEN
         [self update_PreviewView_showInFullScreen:TRUE animated:TRUE];
@@ -1102,7 +1180,7 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 - (void)startCamera {
-    [self log_debug:@"[TwilioVideoViewController.m - startCamera] START"];
+    [self log_debug:@"[TwilioVideoViewController] [ startCamera] START"];
     
     if ([self.accessToken isEqualToString:@"TWILIO_ACCESS_TOKEN"]) {
         [self log_info:@"Please provide a valid token to connect to a room"];
@@ -1110,7 +1188,7 @@ NSString *const CLOSED = @"CLOSED";
     }
     
     //--------------------------------------------------------------------------
-    [self log_debug:@"[TwilioVideoViewController.m - doConnect] >> prepareLocalMedia"];
+    [self log_debug:@"[TwilioVideoViewController] [ doConnect] >> prepareLocalMedia"];
     
     // Prepare local media which we will share with Room Participants.
     [self prepareLocalMedia];
@@ -1119,7 +1197,7 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 - (void)connectToRoom {
-    [self log_debug:@"[TwilioVideoViewController.m - doConnect] START"];
+    [self log_debug:@"[TwilioVideoViewController] [ doConnect] START"];
     
     if ([self.accessToken isEqualToString:@"TWILIO_ACCESS_TOKEN"]) {
         [self log_info:@"Please provide a valid token to connect to a room"];
@@ -1127,7 +1205,7 @@ NSString *const CLOSED = @"CLOSED";
     }
     
     //--------------------------------------------------------------------------
-    [self log_debug:@"[TwilioVideoViewController.m - doConnect] >> prepareLocalMedia"];
+    [self log_debug:@"[TwilioVideoViewController] [ doConnect] >> prepareLocalMedia"];
     
     // Prepare local media which we will share with Room Participants.
 //    [self prepareLocalMedia];
@@ -1145,7 +1223,7 @@ NSString *const CLOSED = @"CLOSED";
     //--------------------------------------------------------------------------
     // Connect to the Room using the options we provided.
     
-    [self log_debug:@"[TwilioVideoViewController.m - doConnect] >> connectWithOptions:connectOptions (LOCAL VIDEO AUDIO) >> ROOM"];
+    [self log_debug:@"[TwilioVideoViewController] [ doConnect] >> connectWithOptions:connectOptions (LOCAL VIDEO AUDIO) >> ROOM"];
     self.room = [TwilioVideoSDK connectWithOptions:connectOptions delegate:self];
     
     [self log_info:@"Attempting to connect to room"];
@@ -1156,7 +1234,7 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark -
 
 - (void)setupRemoteView {
-    [self log_debug:@"[TwilioVideoViewController.m - setupRemoteView] MAKE TVIVideoView *remoteView"];
+    [self log_debug:@"[TwilioVideoViewController] [ setupRemoteView] MAKE TVIVideoView *remoteView"];
 
     // Creating `TVIVideoView` programmatically
     TVIVideoView *remoteView = [[TVIVideoView alloc] init];
@@ -1210,7 +1288,7 @@ NSString *const CLOSED = @"CLOSED";
 
 // Reset the client ui status
 - (void)showRoomUI:(BOOL)inRoom {
-    [self log_debug:@"[TwilioVideoViewController.m - showRoomUI] hide mic/ show spinner"];
+    [self log_debug:@"[TwilioVideoViewController] [ showRoomUI] hide mic/ show spinner"];
 
     self.micButton.hidden = !inRoom;
     [UIApplication sharedApplication].idleTimerDisabled = inRoom;
@@ -1274,7 +1352,7 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark -
 
 - (void)cleanupRemoteParticipant {
-    [self log_debug:@"[TwilioVideoViewController.m - cleanupRemoteParticipant]"];
+    [self log_debug:@"[TwilioVideoViewController] [ cleanupRemoteParticipant]"];
     if (self.remoteParticipant) {
         if ([self.remoteParticipant.videoTracks count] > 0) {
             TVIRemoteVideoTrack *videoTrack = self.remoteParticipant.remoteVideoTracks[0].remoteTrack;
@@ -1333,7 +1411,7 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark - TwilioVideoActionProducerDelegate
 
 - (void)onDisconnect {
-    [self log_debug:@"[TwilioVideoViewController.m - TwilioVideoActionProducerDelegate.onDisconnect] >> [self.room disconnect]"];
+    [self log_debug:@"[TwilioVideoViewController] [ TwilioVideoActionProducerDelegate.onDisconnect] >> [self.room disconnect]"];
     if (self.room != NULL) {
         [self.room disconnect];
     }else{
@@ -1349,7 +1427,7 @@ NSString *const CLOSED = @"CLOSED";
 
 - (void)didConnectToRoom:(nonnull TVIRoom *)room {
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self log_debug:@"[TwilioVideoViewController.m - TVIRoomDelegate.didConnectToRoom] >> GET FIRST room.remoteParticipants[0]"];
+        [self log_debug:@"[TwilioVideoViewController] [ TVIRoomDelegate.didConnectToRoom] >> GET FIRST room.remoteParticipants[0]"];
         
         // At the moment, this example only supports rendering one Participant at a time.
         [self log_info:[NSString stringWithFormat:@"[didConnectToRoom] Connected to room %@ as %@", room.name, room.localParticipant.identity]];
@@ -1429,29 +1507,30 @@ NSString *const CLOSED = @"CLOSED";
 
 - (void)room:(nonnull TVIRoom *)room isReconnectingWithError:(nonnull NSError *)error {
     
-    [self log_debug:[NSString stringWithFormat:@"[TwilioVideoViewController.m - TVIRoomDelegate.room:isReconnectingWithError:%@ >> publishEvent: RECONNECTING with Error:", error]];
+    [self log_debug:[NSString stringWithFormat:@"[TwilioVideoViewController] [ TVIRoomDelegate.room:isReconnectingWithError:%@ >> publishEvent: RECONNECTING with Error:", error]];
     
     [[TwilioVideoManager getInstance] publishEvent: RECONNECTING with:[TwilioVideoUtils convertErrorToDictionary:error]];
 }
 
 - (void)didReconnectToRoom:(nonnull TVIRoom *)room {
-    [self log_debug:[NSString stringWithFormat:@"[TwilioVideoViewController.m - TVIRoomDelegate.room:didReconnectToRoom:%@ >> publishEvent: RECONNECTED", room.name]];
+    [self log_debug:[NSString stringWithFormat:@"[TwilioVideoViewController] [ TVIRoomDelegate.room:didReconnectToRoom:%@ >> publishEvent: RECONNECTED", room.name]];
 
     [[TwilioVideoManager getInstance] publishEvent: RECONNECTED];
 }
 
 - (void)room:(nonnull TVIRoom *)room participantDidConnect:(nonnull TVIRemoteParticipant *)participant {
     
-    [self log_debug:@"[TwilioVideoViewController.m - TVIRoomDelegate.participantDidConnect] "];
     
+    #pragma mark FUTURE GROUP CALLS - MORE THAN 1 REMOTE USER
     if (!self.remoteParticipant) {
         self.remoteParticipant = participant;
         self.remoteParticipant.delegate = self;
     }
-    [self log_info:[NSString stringWithFormat:@"[room:participantDidConnect:] Participant '%@' connected with %lu audio and %lu video tracks",
+    [self log_info:[NSString stringWithFormat:@"[participantDidConnect][TwilioVideoViewController] [ TVIRoomDelegate.participantDidConnect][room:participantDidConnect:] Participant '%@' connected with %lu audio and %lu video tracks >> publishEvent: PARTICIPANT_CONNECTED",
                       participant.identity,
                       (unsigned long)[participant.audioTracks count],
                       (unsigned long)[participant.videoTracks count]]];
+    
     [[TwilioVideoManager getInstance] publishEvent: PARTICIPANT_CONNECTED];
     
     
@@ -1460,7 +1539,7 @@ NSString *const CLOSED = @"CLOSED";
         //----------------------------------------------------------------------
         //1..1 CALL - no remote users so I an STARTING A CALL
         //----------------------------------------------------------------------
-        [self log_info:[NSString stringWithFormat:@"[room:participantDidConnect:] room.remoteParticipants count:%lu >> LOCAL USER is STARTING A 1..1 CALL",
+        [self log_info:[NSString stringWithFormat:@"[participantDidConnect][TwilioVideoViewController] [ TVIRoomDelegate.participantDidConnect][room:participantDidConnect:] room.remoteParticipants count:%lu >> LOCAL USER is STARTING A 1..1 CALL >> do nothing",
                         (unsigned long)[room.remoteParticipants count]]];
         //----------------------------------------------------------------------
         //[self participantDidConnect_AnswerACall];
@@ -1473,7 +1552,7 @@ NSString *const CLOSED = @"CLOSED";
         //----------------------------------------------------------------------
         //1..1 CALL - 1 remote user in room so LOCAL USER is ANSWERING a CALL
         //----------------------------------------------------------------------
-        [self log_info:[NSString stringWithFormat:@"[room:participantDidConnect:] room.remoteParticipants count:%lu >> REMOTE USER is ANSWERING A 1..1 CALL",
+        [self log_info:[NSString stringWithFormat:@"[participantDidConnect][TwilioVideoViewController] [ TVIRoomDelegate.participantDidConnect][room:participantDidConnect:] room.remoteParticipants count:%lu >> REMOTE USER is ANSWERING A 1..1 CALL >> participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom",
                         (unsigned long)[room.remoteParticipants count]]];
         //----------------------------------------------------------------------
         //1 LOCAL  - PERSON BEING CALLED
@@ -1482,7 +1561,7 @@ NSString *const CLOSED = @"CLOSED";
         //----------------------------------------------------------------------
     }
     else{
-        [self log_error:[NSString stringWithFormat:@"[room:participantDidConnect:] room.remoteParticipants count:%lu >> UNHANDLED MORE THAN 2 USERS in room 1 LOCAL + %lu REMOTE - TODO IN FUTURE GROUP CALLS",
+        [self log_error:[NSString stringWithFormat:@"[participantDidConnect][TwilioVideoViewController] room.remoteParticipants count:%lu >> UNHANDLED MORE THAN 2 USERS in room 1 LOCAL + %lu REMOTE - TODO IN FUTURE GROUP CALLS",
                         (unsigned long)[room.remoteParticipants count],
                          (unsigned long)[room.remoteParticipants count]]];
     }
@@ -1490,13 +1569,13 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 - (void)room:(nonnull TVIRoom *)room participantDidDisconnect:(nonnull TVIRemoteParticipant *)participant {
-    [self log_debug:@"[TwilioVideoViewController.m - TVIRoomDelegate.participantDidDisconnect] "];
-    
     
     if (self.remoteParticipant == participant) {
         [self cleanupRemoteParticipant];
     }
-    [self log_info:[NSString stringWithFormat:@"Room %@ participant %@ disconnected", room.name, participant.identity]];
+    
+    [self log_info:[NSString stringWithFormat:@"[TwilioVideoViewController] [ TVIRoomDelegate.participantDidDisconnect] Room %@ participant %@ disconnected >> publishEvent: PARTICIPANT_DISCONNECTED", room.name, participant.identity]];
+    
     [[TwilioVideoManager getInstance] publishEvent: PARTICIPANT_DISCONNECTED];
     // if LOCAL caller hangs up first the REMOTE phone will show 'Disconnected'
     // but self.remoteUserName is NULL on REMOTE side so no IMAGE or NAME
@@ -1510,36 +1589,31 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark - TVIRemoteParticipantDelegate
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didPublishVideoTrack:(nonnull TVIRemoteVideoTrackPublication *)publication {
-    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.remoteParticipant:didPublishVideoTrack] DO NOTHING JUST LOG"];
-    
     // Remote Participant has offered to share the video Track.
     
-    [self log_info:[NSString stringWithFormat:@"Participant '%@' published video track:'%@' .",
+    [self log_info:[NSString stringWithFormat:@"[TwilioVideoViewController] [remoteParticipant:didPublishVideoTrack] Participant '%@' published video track:'%@' .",
                       participant.identity, publication.trackName]];
 }
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didUnpublishVideoTrack:(nonnull TVIRemoteVideoTrackPublication *)publication {
-    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.remoteParticipant:didUnpublishVideoTrack] DO NOTHING JUST LOG"];
     // Remote Participant has stopped sharing the video Track.
     
-    [self log_info:[NSString stringWithFormat:@"Participant '%@' unpublished video track:'%@'.",
+    [self log_info:[NSString stringWithFormat:@"[TwilioVideoViewController] [remoteParticipant:didUnpublishVideoTrack]Participant '%@' unpublished video track:'%@'.",
                       participant.identity, publication.trackName]];
 }
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didPublishAudioTrack:(nonnull TVIRemoteAudioTrackPublication *)publication {
-    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.remoteParticipant:didPublishAudioTrack] DO NOTHING JUST LOG"];
     // Remote Participant has offered to share the audio Track.
     
-    [self log_info:[NSString stringWithFormat:@"Participant '%@' published audio track:'%@'.",
+    [self log_info:[NSString stringWithFormat:@"[TwilioVideoViewController] [remoteParticipant:didPublishAudioTrack]Participant '%@' published audio track:'%@' >> DO NOTHING JUST LOG",
                       participant.identity, publication.trackName]];
 }
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didUnpublishAudioTrack:(nonnull TVIRemoteAudioTrackPublication *)publication {
-    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.remoteParticipant:didUnpublishAudioTrack] DO NOTHING JUST LOG"];
 
     // Remote Participant has stopped sharing the audio Track.
     
-    [self log_info:[NSString stringWithFormat:@"Participant '%@' unpublished audio track:'%@'.",
+    [self log_info:[NSString stringWithFormat:@"[TwilioVideoViewController] [remoteParticipant:didUnpublishAudioTrack]Participant '%@' unpublished audio track:'%@' >> DO NOTHING JUST LOG",
                       participant.identity, publication.trackName]];
 }
 
@@ -1547,13 +1621,10 @@ NSString *const CLOSED = @"CLOSED";
                      publication:(nonnull TVIRemoteVideoTrackPublication *)publication
                   forParticipant:(nonnull TVIRemoteParticipant *)participant {
     
-    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.didSubscribeToVideoTrack:publication: forParticipant] send VIDEO_TRACK_ADDED swap REMOTE VIDEO to new TRACK"];
-
-    
     // We are subscribed to the remote Participant's audio Track. We will start receiving the
     // remote Participant's video frames now.
     
-    [self log_info:[NSString stringWithFormat:@"Subscribed to video track:'%@' for Participant '%@'",
+    [self log_info:[NSString stringWithFormat:@"[TwilioVideoViewController] [TVIRemoteParticipantDelegate.didSubscribeToVideoTrack:publication:forParticipant:]Subscribed to video track:'%@' for Participant '%@'",
                       publication.trackName, participant.identity]];
     [[TwilioVideoManager getInstance] publishEvent: VIDEO_TRACK_ADDED];
 
@@ -1567,7 +1638,7 @@ NSString *const CLOSED = @"CLOSED";
                          publication:(nonnull TVIRemoteVideoTrackPublication *)publication
                       forParticipant:(nonnull TVIRemoteParticipant *)participant {
 
-    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.didUNSUBSCRIBEFromVideoTrack:publication: forParticipant] send VIDEO_TRACK_REMOVED remove REMOTE VIDEO"];
+    [self log_debug:@"[TwilioVideoViewController] [TVIRemoteParticipantDelegate.didUNSUBSCRIBEFromVideoTrack:publication:forParticipant:] send VIDEO_TRACK_REMOVED remove REMOTE VIDEO"];
 
     // We are unsubscribed from the remote Participant's video Track. We will no longer receive the
     // remote Participant's video.
@@ -1586,7 +1657,7 @@ NSString *const CLOSED = @"CLOSED";
                      publication:(nonnull TVIRemoteAudioTrackPublication *)publication
                   forParticipant:(nonnull TVIRemoteParticipant *)participant {
 
-    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.didSubscribeToAudioTrack:publication: forParticipant] send AUDIO_TRACK_ADDED swap REMOTE AUDIO to new TRACK"];
+    [self log_debug:@"[didSubscribeToAudioTrack][TwilioVideoViewController] [TVIRemoteParticipantDelegate.didSubscribeToAudioTrack:publication:forParticipant:] send AUDIO_TRACK_ADDED swap REMOTE AUDIO to new TRACK"];
 
  
     // We are subscribed to the remote Participant's audio Track. We will start receiving the
@@ -1601,7 +1672,7 @@ NSString *const CLOSED = @"CLOSED";
                          publication:(nonnull TVIRemoteAudioTrackPublication *)publication
                       forParticipant:(nonnull TVIRemoteParticipant *)participant {
 
-    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.didUnsubscribeFromAudioTrack:publication: forParticipant] send AUDIO_TRACK_REMOVED remove REMOTE AUDIO"];
+    [self log_debug:@"[TwilioVideoViewController] [TVIRemoteParticipantDelegate.didUnsubscribeFromAudioTrack:publication:forParticipant:] send AUDIO_TRACK_REMOVED remove REMOTE AUDIO"];
 
     // We are unsubscribed from the remote Participant's audio Track. We will no longer receive the
     // remote Participant's audio.
@@ -1616,9 +1687,9 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark -
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didEnableVideoTrack:(nonnull TVIRemoteVideoTrackPublication *)publication {
-    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.remoteParticipant:didEnableVideoTrack] >> UNHIDE self.remoteView"];
+    [self log_debug:@"[didEnableVideoTrack][TwilioVideoViewController] [remoteParticipant:didEnableVideoTrack] >> UNHIDE self.remoteView"];
 
-    [self log_info:[NSString stringWithFormat:@"Participant '%@' enabled video track:'%@' >> remoteView.isHidden = FALSE",
+    [self log_info:[NSString stringWithFormat:@"[TwilioVideoViewController] [remoteParticipant:didEnableVideoTrack] Participant '%@' enabled video track:'%@' >> remoteView.isHidden = FALSE",
                       participant.identity, publication.trackName]];
     
     [self.remoteView setHidden: FALSE];
@@ -1626,10 +1697,7 @@ NSString *const CLOSED = @"CLOSED";
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didDisableVideoTrack:(nonnull TVIRemoteVideoTrackPublication *)publication {
    
-    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.remoteParticipant:didDisableVideoTrack] >> HIDE self.remoteView"];
-
-    
-    [self log_info:[NSString stringWithFormat:@"Participant '%@' disabled video track:'%@' >> remoteView.isHidden = TRUE",
+    [self log_debug:[NSString stringWithFormat:@"[didDisableVideoTrack][TwilioVideoViewController] [remoteParticipant:didDisableVideoTrack]Participant '%@' disabled video track:'%@' >> remoteView.isHidden = TRUE",
                       participant.identity, publication.trackName]];
     
     //main view is now frozen need to turn it off
@@ -1641,30 +1709,33 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark -
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didEnableAudioTrack:(nonnull TVIRemoteAudioTrackPublication *)publication {
-    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.remoteParticipant:didEnableAudioTrack] >> do nothing"];
-    
-    [self log_info:[NSString stringWithFormat:@"Participant '%@' enabled %@ audio track.",
+    [self log_debug:[NSString stringWithFormat:@"[TwilioVideoViewController] [remoteParticipant:didEnableAudioTrack] Participant '%@' enabled %@ audio track.",
                       participant.identity, publication.trackName]];
+    
+    [self show_inCall_remoteUserNameAndMic_isMuted:FALSE];
+    
 }
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didDisableAudioTrack:(nonnull TVIRemoteAudioTrackPublication *)publication {
-    [self log_debug:@"[TwilioVideoViewController.m - TVIRemoteParticipantDelegate.remoteParticipant:didDisableAudioTrack] >> do nothing"];
-    
-    [self log_info:[NSString stringWithFormat:@"Participant '%@' disabled %@ audio track.",
+    [self log_info:[NSString stringWithFormat:@"[TwilioVideoViewController] [remoteParticipant:didDisableAudioTrack] Participant '%@' disabled %@ audio track.",
                       participant.identity, publication.trackName]];
+    
+    [self show_inCall_remoteUserNameAndMic_isMuted:TRUE];
 }
 
 - (void)didFailToSubscribeToAudioTrack:(nonnull TVIRemoteAudioTrackPublication *)publication
                                  error:(nonnull NSError *)error
                         forParticipant:(nonnull TVIRemoteParticipant *)participant {
-    [self log_info:[NSString stringWithFormat:@"Participant '%@' failed to subscribe to audio track:'%@'.",
+    
+    [self log_info:[NSString stringWithFormat:@"[TwilioVideoViewController] [didFailToSubscribeToAudioTrack:] Participant '%@' failed to subscribe to audio track:'%@'.",
                       participant.identity, publication.trackName]];
 }
 
 - (void)didFailToSubscribeToVideoTrack:(nonnull TVIRemoteVideoTrackPublication *)publication
                                  error:(nonnull NSError *)error
                         forParticipant:(nonnull TVIRemoteParticipant *)participant {
-    [self log_info:[NSString stringWithFormat:@"Participant '%@' failed to subscribe to video track:'%@'.",
+    
+    [self log_info:[NSString stringWithFormat:@"[TwilioVideoViewController] [didFailToSubscribeToVideoTrack] Participant '%@' failed to subscribe to video track:'%@'.",
                       participant.identity, publication.trackName]];
 }
 
@@ -1673,7 +1744,7 @@ NSString *const CLOSED = @"CLOSED";
 
 - (void)videoView:(nonnull TVIVideoView *)view videoDimensionsDidChange:(CMVideoDimensions)dimensions {
     
-    [self log_debug:[NSString stringWithFormat:@"Dimensions changed to: %d x %d", dimensions.width, dimensions.height]];
+    [self log_debug:[NSString stringWithFormat:@"[TwilioVideoViewController] [videoDimensionsDidChange] Dimensions changed to: %d x %d", dimensions.width, dimensions.height]];
     
     [self.view setNeedsLayout];
 }
@@ -1681,7 +1752,7 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark - TVICameraSourceDelegate
 
 - (void)cameraSource:(nonnull TVICameraSource *)source didFailWithError:(nonnull NSError *)error {
-    [self log_info:[NSString stringWithFormat:@"Capture failed with error.\ncode = %lu error = %@", error.code, error.localizedDescription]];
+    [self log_info:[NSString stringWithFormat:@"[TwilioVideoViewController] [cameraSource:didFailWithError:] Capture failed with error.\ncode = %lu error = %@", error.code, error.localizedDescription]];
 }
 
 
@@ -1689,7 +1760,7 @@ NSString *const CLOSED = @"CLOSED";
 
 -(BOOL)startProximitySensor
 {
-    [self log_info:@"[TwilioVideoViewController.m] startProximitySensor"];
+    [self log_info:@"[TwilioVideoViewController] startProximitySensor"];
     
     if([UIDevice currentDevice].proximityMonitoringEnabled == FALSE)
         [UIDevice currentDevice].proximityMonitoringEnabled = TRUE;
@@ -1918,7 +1989,7 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark -
 
 -(void) configureLogging{
-    _log_debug_on = FALSE; //turn off on release
+    _log_debug_on = TRUE; //turn off on release
     _log_info_on = TRUE;
     _log_error_on = TRUE; //leave on
 }

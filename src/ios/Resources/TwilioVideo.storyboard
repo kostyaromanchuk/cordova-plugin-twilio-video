@@ -150,12 +150,42 @@
                                     <constraint firstItem="aqP-iA-exF" firstAttribute="leading" secondItem="Sr9-om-6LZ" secondAttribute="trailing" constant="8" symbolic="YES" id="w63-pm-40L"/>
                                 </constraints>
                             </view>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="XQ5-Rc-4OJ" userLabel="View[inCall_remoteUserNameAndMic]">
+                                <rect key="frame" x="36" y="541" width="200" height="18"/>
+                                <subviews>
+                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="mic.png" translatesAutoresizingMaskIntoConstraints="NO" id="Odv-KL-7KR" userLabel="imageViewRemoteUserMicState">
+                                        <rect key="frame" x="0.0" y="0.0" width="18" height="18"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="18" id="KEI-SF-K1e"/>
+                                            <constraint firstAttribute="width" constant="18" id="ToU-Lj-2Cq"/>
+                                        </constraints>
+                                    </imageView>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="RemoteUserName" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="10" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="nMo-w9-F3W" userLabel="textFieldRemoteUserName">
+                                        <rect key="frame" x="26" y="0.0" width="174" height="18"/>
+                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <fontDescription key="fontDescription" style="UICTFontTextStyleSubhead"/>
+                                        <color key="textColor" red="1" green="0.99311947410000001" blue="0.90725500079999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                </subviews>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <constraints>
+                                    <constraint firstAttribute="bottom" secondItem="Odv-KL-7KR" secondAttribute="bottom" id="00o-4T-6aR"/>
+                                    <constraint firstItem="Odv-KL-7KR" firstAttribute="top" secondItem="XQ5-Rc-4OJ" secondAttribute="top" id="ErO-77-nlz"/>
+                                    <constraint firstAttribute="bottom" secondItem="nMo-w9-F3W" secondAttribute="bottom" id="P3O-Yr-fiC"/>
+                                    <constraint firstItem="nMo-w9-F3W" firstAttribute="leading" secondItem="Odv-KL-7KR" secondAttribute="trailing" constant="8" id="T3X-CA-ebt"/>
+                                    <constraint firstAttribute="height" constant="18" id="UAK-Ln-ji4"/>
+                                    <constraint firstAttribute="width" constant="200" id="f5j-u7-d4s"/>
+                                    <constraint firstItem="nMo-w9-F3W" firstAttribute="top" secondItem="XQ5-Rc-4OJ" secondAttribute="top" id="fKn-yw-dbp"/>
+                                    <constraint firstItem="Odv-KL-7KR" firstAttribute="leading" secondItem="XQ5-Rc-4OJ" secondAttribute="leading" id="rky-L6-HLU"/>
+                                    <constraint firstAttribute="trailing" secondItem="nMo-w9-F3W" secondAttribute="trailing" id="uZ0-bg-Hsg"/>
+                                </constraints>
+                            </view>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="l3a-7A-hrE" userLabel="viewButtonOuter">
                                 <rect key="frame" x="0.0" y="567" width="375" height="100"/>
                                 <subviews>
-                                    <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="uVW-zg-aXt" userLabel="View[ButtonsInner]">
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="uVW-zg-aXt" userLabel="View[ButtonsInner]">
                                         <rect key="frame" x="17.5" y="0.0" width="340" height="100"/>
-                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <subviews>
                                             <button hidden="YES" opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="7bK-Tc-zw5" userLabel="videobutton">
                                                 <rect key="frame" x="20" y="20" width="60" height="60"/>
@@ -221,11 +251,17 @@
                                             </button>
                                         </subviews>
                                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="100" id="6RL-BA-hE0"/>
+                                            <constraint firstAttribute="width" constant="340" id="jSA-Ew-gSF"/>
+                                        </constraints>
                                     </view>
                                 </subviews>
                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <constraints>
+                                    <constraint firstItem="uVW-zg-aXt" firstAttribute="centerX" secondItem="l3a-7A-hrE" secondAttribute="centerX" id="TAy-Ct-X35"/>
                                     <constraint firstAttribute="height" constant="100" id="rNz-0I-5Ij"/>
+                                    <constraint firstItem="uVW-zg-aXt" firstAttribute="centerY" secondItem="l3a-7A-hrE" secondAttribute="centerY" id="yiM-nN-QfP"/>
                                 </constraints>
                             </view>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MOz-y7-RXA">
@@ -248,10 +284,12 @@
                             <constraint firstItem="r4p-h9-xiA" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leadingMargin" id="Dxm-al-38m"/>
                             <constraint firstItem="qSc-QC-8BN" firstAttribute="top" secondItem="MOz-y7-RXA" secondAttribute="bottom" constant="16" id="EUE-ZH-A2q"/>
                             <constraint firstItem="Mof-LL-MfS" firstAttribute="top" secondItem="3Bh-pO-6uY" secondAttribute="top" id="Gr8-Jb-Fjl"/>
+                            <constraint firstItem="XQ5-Rc-4OJ" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leadingMargin" constant="20" id="K3d-ne-lEn"/>
                             <constraint firstAttribute="trailing" secondItem="r4p-h9-xiA" secondAttribute="trailing" constant="8" id="QEd-vK-reu"/>
                             <constraint firstItem="tZu-uw-hgi" firstAttribute="top" secondItem="l3a-7A-hrE" secondAttribute="bottom" id="V8p-ba-Vit"/>
                             <constraint firstItem="l3a-7A-hrE" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leading" id="bTm-oi-Lbg"/>
                             <constraint firstItem="7RT-Bo-1q4" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leading" constant="239" id="dcc-Xw-QGP"/>
+                            <constraint firstItem="l3a-7A-hrE" firstAttribute="top" secondItem="XQ5-Rc-4OJ" secondAttribute="bottom" constant="8" symbolic="YES" id="fEr-wB-O7Z"/>
                             <constraint firstItem="MOz-y7-RXA" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leadingMargin" id="gqL-ZH-vHm"/>
                             <constraint firstAttribute="bottom" secondItem="7RT-Bo-1q4" secondAttribute="bottom" constant="108" id="jTx-oS-ZoI"/>
                             <constraint firstAttribute="trailing" secondItem="l3a-7A-hrE" secondAttribute="trailing" id="lZ3-lj-wT5"/>
@@ -268,6 +306,7 @@
                         <outlet property="buttonDebug_showOnline" destination="qSc-QC-8BN" id="qm5-3e-D1f"/>
                         <outlet property="cameraSwitchButton" destination="XKU-af-eTc" id="jTc-4v-uIt"/>
                         <outlet property="disconnectButton" destination="krA-sT-Z3g" id="uQu-1U-Ree"/>
+                        <outlet property="imageViewInCallRemoteMicMuteState" destination="Odv-KL-7KR" id="D3d-lF-oLY"/>
                         <outlet property="imageViewRemoteParticipant" destination="4rw-7g-hOA" id="4Og-as-WqN"/>
                         <outlet property="micButton" destination="rwp-9E-VzS" id="SW4-po-OHw"/>
                         <outlet property="nsLayoutConstraint_previewView_bottom" destination="jTx-oS-ZoI" id="nG0-XT-QDQ"/>
@@ -277,6 +316,7 @@
                         <outlet property="previewView" destination="hJ3-NM-pz1" id="1kY-rd-tEJ"/>
                         <outlet property="textFieldAlertSubtitle" destination="weU-jh-Fgv" id="5uh-QF-0i9"/>
                         <outlet property="textFieldAlertTitle" destination="DbX-Yg-QbD" id="qlt-Zo-KdW"/>
+                        <outlet property="textViewInCallRemoteName" destination="nMo-w9-F3W" id="8YI-it-LyB"/>
                         <outlet property="textViewRemoteParticipantConnectionState" destination="jwj-CT-Sak" id="klk-uU-wRn"/>
                         <outlet property="textViewRemoteParticipantName" destination="aqP-iA-exF" id="jf0-PT-1kG"/>
                         <outlet property="videoButton" destination="7bK-Tc-zw5" id="WoD-99-cw1"/>
@@ -288,7 +328,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="JfB-JL-3y4" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="322.39999999999998" y="367.46626686656674"/>
+            <point key="canvasLocation" x="321.53846153846155" y="366.82464454976304"/>
         </scene>
     </scenes>
     <resources>

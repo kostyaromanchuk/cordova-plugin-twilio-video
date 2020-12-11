@@ -51,6 +51,15 @@
         <resource-file src="src/ios/Resources/baseline_account_circle_black_18dp.png" target="Resources/baseline_account_circle_black_18dp.png" />
         <resource-file src="src/ios/Resources/alert_in_circle.png" target="Resources/alert_in_circle.png" />
         
+		<resource-file src="src/ios/Resources/no_mic_grey.png" target="Resources/no_mic_grey.png" />
+		<resource-file src="src/ios/Resources/no_mic_grey@2x.png" target="Resources/no_mic_grey@2x.png" />
+		<resource-file src="src/ios/Resources/no_mic_grey@3x.png" target="Resources/no_mic_grey@3x.png" />
+		<resource-file src="src/ios/Resources/no_video_grey.png" target="Resources/no_video_grey.png" />
+		<resource-file src="src/ios/Resources/no_video_grey@2x.png" target="Resources/no_video_grey@2x.png" />
+		<resource-file src="src/ios/Resources/no_video_grey@3x.png" target="Resources/no_video_grey@3x.png" />
+        
+        
+        
         <framework src="TwilioVideo" type="podspec" spec="3.7.2"/>
         <podspec>
             <config>
