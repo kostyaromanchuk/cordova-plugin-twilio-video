@@ -40,17 +40,22 @@
 
 //------------------------------------------------------------------------------
 //LOCAL - part 1
-- (void)openRoom:(NSString*)room
-           token:(NSString *)token
-    remoteUserName:(NSString *)remoteUserName
-   remoteUserPhotoURL:(NSString *)remoteUserName;
+- (void)openRoom:(NSString*)room token:(NSString *)token
+                         localUserName:(NSString *)localUserName
+                     localUserPhotoURL:(NSString *)localUserPhotoURL
+                        remoteUserName:(NSString *)remoteUserName
+                    remoteUserPhotoURL:(NSString *)remoteUserName;
 
 //LOCAL - part 2
 - (void)startCall:(NSString*)room token: (NSString *)token;
 
 //---------------------------------------------------------
 //REMOTE - Part 1/1
-- (void)answerCall:(NSString*)room token: (NSString *)token;
+- (void)answerCall:(NSString*)room token:(NSString *)token
+     localUserName:(NSString *)localUserName
+ localUserPhotoURL:(NSString *)localUserPhotoURL
+    remoteUserName:(NSString *)localUserName
+remoteUserPhotoURL:(NSString *)localUserPhotoURL;
 
 //------------------------------------------------------------------------------
 //internet gone - seachat tells plugin to show alert

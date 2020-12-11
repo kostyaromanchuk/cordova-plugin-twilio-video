@@ -59,18 +59,16 @@
     NSString* room = args[1];
     
     //--------------------------------------------------------------------------
-    //args[2] - Added by BC
-    NSString* remote_user_name = args[2];
-    
-    //--------------------------------------------------------------------------
-    //args[3] - Added by BC
-    NSString* remote_user_photo_url = args[3];
-    
+    NSString* local_user_name = args[2];
+    NSString* local_user_photo_url = args[3];
+    NSString* remote_user_name = args[4];
+    NSString* remote_user_photo_url = args[5];
+
     //--------------------------------------------------------------------------
     //args[4] - was args[2]
     TwilioVideoConfig *config = [[TwilioVideoConfig alloc] init];
-    if ([args count] > 2) {
-        [config parse: command.arguments[4]];
+    if ([args count] > 6) {
+        [config parse: command.arguments[6]];
     }
     //--------------------------------------------------------------------------
     //ARGUMENTS - END
@@ -96,14 +94,6 @@
             //ALWAYS PRSENTVC > THEN OPEN
             //------------------------------------------------------------------
             //if you only openRoom: then 2nd time it may not appear
-//            [self.viewController presentViewController:self.tvc animated:NO completion:^{
-//                //--------------------------------------------------------------
-//                [self.tvc openRoom:room
-//                             token:token
-//                    remoteUserName:remote_user_name
-//                remoteUserPhotoURL:remote_user_photo_url];
-//                //--------------------------------------------------------------
-//            }];
             //------------------------------------------------------------------
             //Sergey asked for this can happen on double tap
             if(self.viewController.presentedViewController == self.tvc){
@@ -111,6 +101,8 @@
                 //----------------------------------------------------------
                 [self.tvc openRoom:room
                              token:token
+                     localUserName:local_user_name
+                 localUserPhotoURL:local_user_photo_url
                     remoteUserName:remote_user_name
                 remoteUserPhotoURL:remote_user_photo_url];
                 //----------------------------------------------------------
@@ -119,6 +111,8 @@
                     //----------------------------------------------------------
                     [self.tvc openRoom:room
                                  token:token
+                         localUserName:local_user_name
+                     localUserPhotoURL:local_user_photo_url
                         remoteUserName:remote_user_name
                     remoteUserPhotoURL:remote_user_photo_url];
                     //----------------------------------------------------------
@@ -209,14 +203,18 @@
     //EXTRACT ARGUMENTS - START
     //--------------------------------------------------------------------------
     NSString* token = args[0];
-    //--------------------------------------------------------------------------
     NSString* room = args[1];
+    NSString* local_user_name = args[2];
+    NSString* local_user_photo_url = args[3];
+    NSString* remote_user_name = args[4];
+    NSString* remote_user_photo_url = args[5];
+    
     //--------------------------------------------------------------------------
     //args[4] - config dictionary
     TwilioVideoConfig *config = [[TwilioVideoConfig alloc] init];
 
-    if ([args count] > 2) {
-        [config parse: command.arguments[2]];
+    if ([args count] > 6) {
+        [config parse: command.arguments[6]];
     }
     //--------------------------------------------------------------------------
     //ARGUMENTS - END
@@ -244,13 +242,21 @@
                 NSLog(@"ERROR TwilioVideoViewController already visible - just call [tvc answerCall:...] directly");
                 //--------------------------------------------------------------
                 [self.tvc answerCall:room
-                               token:token];
+                               token:token
+                       localUserName:local_user_name
+                   localUserPhotoURL:local_user_photo_url
+                      remoteUserName:remote_user_name
+                  remoteUserPhotoURL:remote_user_photo_url];
                 //--------------------------------------------------------------
             }else{
                 [self.viewController presentViewController:self.tvc animated:NO completion:^{
                     //----------------------------------------------------------
                     [self.tvc answerCall:room
-                                   token:token];
+                                   token:token
+                           localUserName:local_user_name
+                       localUserPhotoURL:local_user_photo_url
+                          remoteUserName:remote_user_name
+                      remoteUserPhotoURL:remote_user_photo_url];
                     //----------------------------------------------------------
                 }];
             }

@@ -55,8 +55,11 @@ NSString *const CLOSED = @"CLOSED";
 
 @property (nonatomic, assign) BOOL previewIsFullScreen;
 
+@property (nonatomic, strong) NSString * localUserName;
+@property (nonatomic, strong) NSString * localUserPhotoURL;
 @property (nonatomic, strong) NSString * remoteUserName;
 @property (nonatomic, strong) NSString * remoteUserPhotoURL;
+
 @property (unsafe_unretained, nonatomic) IBOutlet UIView *viewAlert;
 @property (unsafe_unretained, nonatomic) IBOutlet UILabel *textFieldAlertTitle;
 @property (unsafe_unretained, nonatomic) IBOutlet UILabel *textFieldAlertSubtitle;
@@ -147,15 +150,26 @@ NSString *const CLOSED = @"CLOSED";
     [self startProximitySensor];
 }
 
-
+#pragma mark -
+#pragma mark Borders
+#pragma mark -
 
 //DEBUG - draws line aroudn a UIView
 -(void)addBorderToView:(UIView *)view withColor:(UIColor *) color{
-    //view.layer.borderColor = [[UIColor colorWithRed:70.53/255.0 green:94.54/255.0 blue:107.50/255.0 alpha:1.00] CGColor];
-    //view.layer.borderColor = [[UIColor redColor] CGColor];
+    //DEBUG view.layer.borderColor = [[UIColor redColor] CGColor];
     view.layer.borderColor = [color CGColor];
     view.layer.borderWidth = 1.0f;
 }
+
+-(void)removeBorderFromView:(UIView *)view{
+    view.layer.borderWidth = 0.0f;
+    
+}
+
+#pragma mark -
+#pragma mark User Image - Default
+#pragma mark -
+
 -(void)loadUserImage_default{
     NSString *imageName = @"baseline_account_circle_black_18dp.png";
     UIImage * defaultImage = [UIImage imageNamed:imageName];
@@ -166,7 +180,9 @@ NSString *const CLOSED = @"CLOSED";
     }
 }
 
--(void)loadUserImageInBackground_async{
+//for P2 show whos calling P1
+//for P1 show whos is being called P2
+-(void)loadUserImageInBackground_async:(NSString *) userPhotoURL{
    
     [self loadUserImage_default];
     
@@ -175,24 +191,27 @@ NSString *const CLOSED = @"CLOSED";
     self.imageViewRemoteParticipant.layer.borderWidth = 4.f;
     self.imageViewRemoteParticipant.layer.borderColor = [[UIColor whiteColor] CGColor];
     
-    [self performSelectorInBackground:@selector(loadUserImageInBackground) withObject:nil];
+    [self performSelectorInBackground:@selector(loadUserImageInBackground:) withObject:userPhotoURL];
 
 }
 
-- (void)loadUserImageInBackground
+- (void)loadUserImageInBackground:(NSString *) userPhotoURL
 {
     //NOT THE SAME AS self.remoteUserPhotoURL = NULL;
     //TO TRIGGER - let global_remote_user_photo_url = null;
     // self.remoteUserPhotoURL is not null it's [NSNull null] description :'<null>'
     
-    if(NULL != self.remoteUserPhotoURL){
+    if(NULL != userPhotoURL){
         
-        if([self.remoteUserPhotoURL isEqual:[NSNull null]]){
-            [self log_error:@"[loadImage] [self.remoteUserPhotoURL isEqual:[NSNull null]] - JS param is nil somewhere"];
+        if([userPhotoURL isEqual:[NSNull null]]){
+            [self log_error:@"[loadImage] [self.userPhotoURL isEqual:[NSNull null]] - JS param is nil somewhere"];
         }else{
+            //--------------------------------------------------------------------------------------
             //not obj-C null or JS nil ()
-            NSURL * url = [NSURL URLWithString:self.remoteUserPhotoURL];
-            //remoteUserPhotoURL is passed in from cordova - check is valid url
+            //--------------------------------------------------------------------------------------
+            NSURL * url = [NSURL URLWithString:userPhotoURL];
+            //--------------------------------------------------------------------------------------
+            //remoteUserPhotoURL is passed in from cordova - check is valid url can be NSNull no NULL
             if(url){
                 NSData * data = [NSData dataWithContentsOfURL:url];
                 if(data){
@@ -207,7 +226,7 @@ NSString *const CLOSED = @"CLOSED";
                     else
                     {
                         // Failed (load an error image?)
-                        [self log_error:[NSString stringWithFormat:@"[loadImage] imageWithData failed to load from self.remoteUserPhotoURL:'%@'", self.remoteUserPhotoURL]];
+                        [self log_error:[NSString stringWithFormat:@"[loadImage] imageWithData failed to load from self.remoteUserPhotoURL:'%@'", userPhotoURL]];
                         
                         //if no image show blank circle else name an Disconnected look off center
                         //self.imageViewRemoteParticipant.layer.borderWidth = 0.0f;
@@ -216,29 +235,32 @@ NSString *const CLOSED = @"CLOSED";
                         
                     }
                 }else{
-                    [self log_error:[NSString stringWithFormat:@"[loadImage] dataWithContentsOfURL failed to load from self.remoteUserPhotoURL:'%@'", self.remoteUserPhotoURL]];
+                    [self log_error:[NSString stringWithFormat:@"[loadImage] dataWithContentsOfURL failed to load from userPhotoURL:'%@'", userPhotoURL]];
                 }
                 
             }else{
-                [self log_error:[NSString stringWithFormat:@"[loadImage] URLWithString failed to load from self.remoteUserPhotoURL:'%@'", self.remoteUserPhotoURL]];
+                [self log_error:[NSString stringWithFormat:@"[loadImage] URLWithString failed to load from userPhotoURL:'%@'", userPhotoURL]];
             }
         }
     }else{
-        [self log_error:@"[loadUserImageInBackground] self.remoteUserPhotoURL is NULL"];
+        [self log_error:@"[loadUserImageInBackground] userPhotoURL is NULL"];
     }
 }
 
 -(void)fillIn_viewRemoteParticipantInfo{
+    
     if (self.remoteUserName) {
         self.textViewRemoteParticipantName.text = self.remoteUserName;
     }else{
         [self log_error:@"[fillIn_viewRemoteParticipantInfo] self.remoteUserName is NULL"];
         self.textViewRemoteParticipantName.text = @"";
     }
-   
     
-    //TODO - url is hard codes should be passed in from cordova
-    [self loadUserImageInBackground_async];
+    if(self.remoteUserPhotoURL){
+        [self loadUserImageInBackground_async: self.remoteUserPhotoURL];
+    }else{
+        [self log_error:@"[fillIn_viewRemoteParticipantInfo] self.remoteUserPhotoURL is NULL"];
+    }
     
     //text set in didConnectToRoom_StartACall*
     self.textViewRemoteParticipantConnectionState.text = @"";
@@ -264,15 +286,15 @@ NSString *const CLOSED = @"CLOSED";
     //HIDE till my camera connected
     [self hide_viewRemoteParticipantInfo];
     
-    //set it always to Fill so it looks ok in fullscreen
+    //when video is full screen is may have wrong AspectFit or AspectFil
+    //I set it always to Fill so it looks ok in fullscreen
     //I tried changing it to Fit/Fill but jumps at the end when it zooms in
     self.previewView.contentMode = UIViewContentModeScaleAspectFill;
     
-    //DEBUG - when video is full screen is may have wrong AspectFit or AspectFil
-   [self updateConstraints_PreviewView_toFullScreen: TRUE animated:FALSE];
+    [self update_PreviewView_toFullScreen: TRUE animated:FALSE];
 }
 
--(void)updateConstraints_PreviewView_toFullScreen:(BOOL)fullScreen{
+-(void)update_PreviewView_toFullScreen:(BOOL)fullScreen{
     if(fullScreen){
 
         //THESE are linked to SuperView not Layoutguide - may go behind nav bar
@@ -285,6 +307,9 @@ NSString *const CLOSED = @"CLOSED";
         //self.previewView.contentMode = UIViewContentModeScaleAspectFill;
         
         self.previewIsFullScreen = TRUE;
+        
+        
+        [self removeBorderFromView:self.previewView];
     }else{
         
         //----------------------------------------------------------------------
@@ -328,11 +353,13 @@ NSString *const CLOSED = @"CLOSED";
         //self.previewView.contentMode = UIViewContentModeScaleAspectFit;
         
         self.previewIsFullScreen = FALSE;
+        
+        [self addBorderToView:self.previewView withColor:[UIColor blackColor]];
     }
 }
 
 
--(void)updateConstraints_PreviewView_toFullScreen:(BOOL)fullScreen animated:(BOOL)isAnimated{
+-(void)update_PreviewView_toFullScreen:(BOOL)fullScreen animated:(BOOL)isAnimated{
 
     //animation in and out should be same number of secs
     NSTimeInterval duration = 0.3;
@@ -347,7 +374,7 @@ NSString *const CLOSED = @"CLOSED";
                                 options:UIViewAnimationOptionCurveEaseInOut
                              animations:^{
                                 //--------------------------------------------------
-                                [self updateConstraints_PreviewView_toFullScreen: TRUE];
+                                [self update_PreviewView_toFullScreen: TRUE];
                                 //--------------------------------------------------
                                 //will resize but animate without this
                                 [self.view layoutIfNeeded];
@@ -363,7 +390,7 @@ NSString *const CLOSED = @"CLOSED";
             //------------------------------------------------------------------
             //FULL SCREEN + UNANIMATED (when app starts)
             //------------------------------------------------------------------
-            [self updateConstraints_PreviewView_toFullScreen: TRUE];
+            [self update_PreviewView_toFullScreen: TRUE];
             
         }
     }else{
@@ -376,7 +403,7 @@ NSString *const CLOSED = @"CLOSED";
                                 options:UIViewAnimationOptionCurveEaseInOut
                              animations:^{
                 //--------------------------------------------------
-                [self updateConstraints_PreviewView_toFullScreen: FALSE];
+                [self update_PreviewView_toFullScreen: FALSE];
                 //--------------------------------------------------
                 //will resize but animate without this
                 [self.view layoutIfNeeded];
@@ -391,7 +418,7 @@ NSString *const CLOSED = @"CLOSED";
             //------------------------------------------------------------------
             //NOT FULL SCREEN + UNANIMATED (preview size jumps to bottom right - unused)
             //------------------------------------------------------------------
-            [self updateConstraints_PreviewView_toFullScreen: FALSE];
+            [self update_PreviewView_toFullScreen: FALSE];
             
         }
     }
@@ -416,10 +443,11 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark -
 #pragma mark LOCAL part 1 - openRoom
 #pragma mark -
-- (void)openRoom:(NSString*)room
-           token:(NSString *)token
-       remoteUserName:(NSString *)remoteUserName
-   remoteUserPhotoURL:(NSString *)remoteUserPhotoURL
+- (void)openRoom:(NSString *)room token:(NSString *)token
+                          localUserName:(NSString *)localUserName
+                      localUserPhotoURL:(NSString *)localUserPhotoURL
+                         remoteUserName:(NSString *)remoteUserName
+                      remoteUserPhotoURL:(NSString *)remoteUserPhotoURL
 {
     
     [self log_debug:@"[TwilioVideoViewController.m - connectToRoom]"];
@@ -427,14 +455,61 @@ NSString *const CLOSED = @"CLOSED";
     //RELEASE
     [self show_buttonDebugStartACall];
     
-    
-    
+    //----------------------------------------------------------------------------------------------
+    //STORE PARAMS
     self.roomName = room;
     self.accessToken = token;
     
-    self.remoteUserName = remoteUserName;
-    self.remoteUserPhotoURL = remoteUserPhotoURL;
+    //----------------------------------------------------------------------------------------------
+    //JS nil > [NS null] not NULL
+    //----------------------------------------------------------------------------------------------
+    if(NULL != localUserName){
+        if([localUserName isEqual:[NSNull null]]){
+            [self log_error:@"[openRoom:] localUserName isEqual:[NSNull null]] - JS param is nil somewhere - set to NULL"];
+            self.localUserName = NULL;
+        }else{
+            self.localUserName = localUserName;
+        }
+    }else{
+        [self log_error:@"[openRoom:] localUserName is NULL"];
+    }
+    //----------------------------------------------------------------------------------------------
+    if(NULL != localUserPhotoURL){
+        if([localUserPhotoURL isEqual:[NSNull null]]){
+            [self log_error:@"[openRoom:] localUserPhotoURL isEqual:[NSNull null]] - JS param is nil somewhere - set to NULL"];
+            self.localUserPhotoURL = NULL;
+        }else{
+            self.localUserPhotoURL = localUserPhotoURL;
+        }
+    }else{
+        [self log_error:@"[openRoom:] localUserPhotoURL is NULL"];
+    }
+    //----------------------------------------------------------------------------------------------
+    if(NULL != remoteUserName){
+        if([remoteUserName isEqual:[NSNull null]]){
+            [self log_error:@"[openRoom:] remoteUserName isEqual:[NSNull null]] - JS param is nil somewhere - set to NULL"];
+            self.remoteUserName = NULL;
+        }else{
+            self.remoteUserName = remoteUserName;
+        }
+    }else{
+        [self log_error:@"[openRoom:] remoteUserName is NULL"];
+    }
+    //----------------------------------------------------------------------------------------------
+    if(NULL != remoteUserPhotoURL){
+        if([remoteUserPhotoURL isEqual:[NSNull null]]){
+            [self log_error:@"[openRoom:] remoteUserPhotoURL isEqual:[NSNull null]] - JS param is nil somewhere - set to NULL"];
+            self.remoteUserPhotoURL = NULL;
+        }else{
+            self.remoteUserPhotoURL = remoteUserPhotoURL;
+        }
+    }else{
+        [self log_error:@"[openRoom:] remoteUserPhotoURL is NULL"];
+    }
+    //----------------------------------------------------------------------------------------------
     
+    
+    //----------------------------------------------------------------------------------------------
     [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> [self showRoomUI:YES]"];
     
     [self showRoomUI:YES];
@@ -496,17 +571,73 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark -
 #pragma mark LOCAL part 2 - answerCall
 #pragma mark -
-//CONNECT TO THE
-- (void)answerCall:(NSString*)room
-             token:(NSString *)token
+
+//p2 answers call + connects to the room and waits for p1 to connect to room
+- (void)answerCall:(NSString*)room token:(NSString *)token
+                           localUserName:(NSString *)localUserName
+                       localUserPhotoURL:(NSString *)localUserPhotoURL
+                          remoteUserName:(NSString *)remoteUserName
+                      remoteUserPhotoURL:(NSString *)remoteUserPhotoURL
 {
     
     [self log_debug:@"[TwilioVideoViewController.m - answerCall:]"];
     
     [self.buttonDebugStartACall setHidden:TRUE];
     
+    //----------------------------------------------------------------------------------------------
+    //STORE PARAMS
     self.roomName = room;
     self.accessToken = token;
+    
+    //----------------------------------------------------------------------------------------------
+    //JS nil > [NS null] not NULL
+    //----------------------------------------------------------------------------------------------
+    if(NULL != localUserName){
+        if([localUserName isEqual:[NSNull null]]){
+            [self log_error:@"[openRoom:] localUserName isEqual:[NSNull null]] - JS param is nil somewhere - set to NULL"];
+            self.localUserName = NULL;
+        }else{
+            self.localUserName = localUserName;
+        }
+    }else{
+        [self log_error:@"[openRoom:] localUserName is NULL"];
+    }
+    //----------------------------------------------------------------------------------------------
+    if(NULL != localUserPhotoURL){
+        if([localUserPhotoURL isEqual:[NSNull null]]){
+            [self log_error:@"[openRoom:] localUserPhotoURL isEqual:[NSNull null]] - JS param is nil somewhere - set to NULL"];
+            self.localUserPhotoURL = NULL;
+        }else{
+            self.localUserPhotoURL = localUserPhotoURL;
+        }
+    }else{
+        [self log_error:@"[openRoom:] localUserPhotoURL is NULL"];
+    }
+    //----------------------------------------------------------------------------------------------
+    if(NULL != remoteUserName){
+        if([remoteUserName isEqual:[NSNull null]]){
+            [self log_error:@"[openRoom:] remoteUserName isEqual:[NSNull null]] - JS param is nil somewhere - set to NULL"];
+            self.remoteUserName = NULL;
+        }else{
+            self.remoteUserName = remoteUserName;
+        }
+    }else{
+        [self log_error:@"[openRoom:] remoteUserName is NULL"];
+    }
+    //----------------------------------------------------------------------------------------------
+    if(NULL != remoteUserPhotoURL){
+        if([remoteUserPhotoURL isEqual:[NSNull null]]){
+            [self log_error:@"[openRoom:] remoteUserPhotoURL isEqual:[NSNull null]] - JS param is nil somewhere - set to NULL"];
+            self.remoteUserPhotoURL = NULL;
+        }else{
+            self.remoteUserPhotoURL = remoteUserPhotoURL;
+        }
+    }else{
+        [self log_error:@"[openRoom:] remoteUserPhotoURL is NULL"];
+    }
+    //----------------------------------------------------------------------------------------------
+    
+    //----------------------------------------------------------------------------------------------
     
     [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> [self showRoomUI:YES]"];
     
@@ -722,7 +853,7 @@ NSString *const CLOSED = @"CLOSED";
         
         //----------------------------------------------------------------------
         //show LOCAL USER full screen while waiting for othe ruser to answer
-        [self updateConstraints_PreviewView_toFullScreen:TRUE animated:FALSE];
+        [self update_PreviewView_toFullScreen:TRUE animated:FALSE];
         
         //----------------------------------------------------------------------
         //FIRST TIME VERY LOUD - cant set volume to 0
@@ -753,7 +884,10 @@ NSString *const CLOSED = @"CLOSED";
         
         //------------------------------------------------------------------------------
         //REMOTE USER CONNECTED.. waiting for CALLER to enter room
-        [self show_viewRemoteParticipantInfoWithState:@"Waiting..."];
+       
+        [self fillIn_viewRemoteParticipantInfo];
+        
+        [self show_viewRemoteParticipantInfoWithState:@"Connecting..."];
         
     }else{
         [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
@@ -778,7 +912,7 @@ NSString *const CLOSED = @"CLOSED";
 
         //REMOTE user is visible in full screen
         //shrink PREVIEW from FULL SCREEN to MINI to show REMOTE user behind
-        [self updateConstraints_PreviewView_toFullScreen: FALSE animated:FALSE];
+        [self update_PreviewView_toFullScreen: FALSE animated:FALSE];
 
     }else{
         [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
@@ -796,7 +930,7 @@ NSString *const CLOSED = @"CLOSED";
         
         //REMOTE user is visible in full screen
         //shrink PREVIEW from FULL SCREEN to MINI to show REMOTE user behind
-        [self updateConstraints_PreviewView_toFullScreen: FALSE animated:FALSE];
+        [self update_PreviewView_toFullScreen: FALSE animated:FALSE];
         
     }else{
         [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
@@ -822,7 +956,13 @@ NSString *const CLOSED = @"CLOSED";
         
         //if app running on REMOTE photo will just show white circle no photo
         //this is so Disconnected isnt off center
-        [self loadUserImageInBackground_async];
+
+        if(self.remoteUserPhotoURL){
+            [self loadUserImageInBackground_async: self.remoteUserPhotoURL];
+        }else{
+            [self log_error:@"[fillIn_viewRemoteParticipantInfo] self.remoteUserPhotoURL is NULL"];
+        }
+        
         if(remoteParticipant_identity){
             self.textViewRemoteParticipantName.text = remoteParticipant_identity;
             
@@ -832,7 +972,7 @@ NSString *const CLOSED = @"CLOSED";
         [self show_viewRemoteParticipantInfoWithState:@"Disconnected"];
         
         //Zoom the preview from MINI to FULL SCREEN
-        [self updateConstraints_PreviewView_toFullScreen:TRUE animated:TRUE];
+        [self update_PreviewView_toFullScreen:TRUE animated:TRUE];
     }
 }
 - (void)flipCamera {

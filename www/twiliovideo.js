@@ -2,7 +2,10 @@
 
     var TwilioVideo = function () {};
 
-    TwilioVideo.openRoom = function (token, room, remote_user_name, remote_user_photo_url, eventCallback, config) {
+    TwilioVideo.openRoom = function (token, room,
+                                     local_user_name, local_user_photo_url,
+                                     remote_user_name, remote_user_photo_url,
+                                     eventCallback, config) {
         config = config != null ? config : null;
         exec(
             function (e) {
@@ -84,7 +87,7 @@
             null,
             "TwilioVideoPlugin",
             "openRoom",
-            [token, room, remote_user_name, remote_user_photo_url, config]
+            [token, room, local_user_name, local_user_photo_url, remote_user_name, remote_user_photo_url, config]
         );
     };
 
@@ -150,7 +153,10 @@
         );
     };
 
-    TwilioVideo.answerCall = function (token, room, eventCallback, config) {
+    TwilioVideo.answerCall = function (token, room,
+                                       local_user_name, local_user_photo_url,
+                                       remote_user_name, remote_user_photo_url,
+                                       eventCallback, config) {
         config = config != null ? config : null;
         exec(
             function (e) {
@@ -214,7 +220,7 @@
             null,
             "TwilioVideoPlugin",
             "answerCall",
-            [token, room, config]
+             [token, room, local_user_name, local_user_photo_url, remote_user_name, remote_user_photo_url, config]
         );
     };
         
