@@ -127,6 +127,7 @@
                                     </label>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Connection State..." textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="8" translatesAutoresizingMaskIntoConstraints="NO" id="jwj-CT-Sak">
                                         <rect key="frame" x="92" y="37" width="239" height="21"/>
+                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="21" id="u5p-Fc-Knb"/>
                                         </constraints>
@@ -156,7 +157,7 @@
                                         <rect key="frame" x="17.5" y="0.0" width="340" height="100"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <subviews>
-                                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="7bK-Tc-zw5" userLabel="Video button">
+                                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="7bK-Tc-zw5" userLabel="videobutton">
                                                 <rect key="frame" x="20" y="20" width="60" height="60"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <color key="backgroundColor" red="0.13221696020000001" green="0.58809870480000004" blue="0.95350939040000005" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
@@ -172,7 +173,7 @@
                                                     <action selector="videoButtonPressed:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="NfY-Fz-ylQ"/>
                                                 </connections>
                                             </button>
-                                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="rwp-9E-VzS" userLabel="Mic Button">
+                                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="rwp-9E-VzS" userLabel="micButton">
                                                 <rect key="frame" x="100" y="20" width="60" height="60"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <color key="backgroundColor" red="0.13221696020000001" green="0.58809870480000004" blue="0.95350939040000005" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
@@ -188,7 +189,7 @@
                                                     <action selector="micButtonPressed:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="6Tr-Cb-Rmf"/>
                                                 </connections>
                                             </button>
-                                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="XKU-af-eTc" userLabel="Camera switch Button">
+                                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="XKU-af-eTc" userLabel="cameraSwitchButton">
                                                 <rect key="frame" x="180" y="20" width="60" height="60"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <color key="backgroundColor" red="0.13221696020000001" green="0.58809870480000004" blue="0.95350939040000005" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
@@ -203,7 +204,7 @@
                                                     <action selector="cameraSwitchButtonPressed:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="vyj-2G-Rbc"/>
                                                 </connections>
                                             </button>
-                                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="krA-sT-Z3g">
+                                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="krA-sT-Z3g" userLabel="disconnectButton">
                                                 <rect key="frame" x="260" y="20" width="60" height="60"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <color key="backgroundColor" red="0.97163754700000005" green="0.08925878257" blue="0.25874024629999998" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>

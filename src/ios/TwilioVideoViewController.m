@@ -85,8 +85,8 @@ NSString *const CLOSED = @"CLOSED";
     //REMOTE USER PANEL
     //---------------------------------------------------------
     self.textViewRemoteParticipantName.text = @"";
-    self.textViewRemoteParticipantConnectionState.text = @"";
     
+    [self textViewRemoteParticipantConnectionState_setText:@""];
     
     //---------------------------------------------------------
     [self configureLogging];
@@ -250,37 +250,47 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 -(void)fillIn_viewRemoteParticipantInfo{
-    
+
     if (self.remoteUserName) {
         self.textViewRemoteParticipantName.text = self.remoteUserName;
     }else{
         [self log_error:@"[fillIn_viewRemoteParticipantInfo] self.remoteUserName is NULL"];
         self.textViewRemoteParticipantName.text = @"";
     }
-    
+
     if(self.remoteUserPhotoURL){
         [self loadUserImageInBackground_async: self.remoteUserPhotoURL];
     }else{
         [self log_error:@"[fillIn_viewRemoteParticipantInfo] self.remoteUserPhotoURL is NULL"];
     }
-    
-    //text set in didConnectToRoom_StartACall*
-    self.textViewRemoteParticipantConnectionState.text = @"";
+
 }
 
--(void)show_viewRemoteParticipantInfoWithState:(NSString *) state{
-    [self.viewRemoteParticipantInfo setHidden:FALSE];
+-(void)show_viewRemoteParticipantInfoWithState1:(NSString *) state{
     
+    [self.viewRemoteParticipantInfo setHidden:FALSE];
+    [self.textViewRemoteParticipantName setHidden:FALSE];
+    [self.textViewRemoteParticipantConnectionState setHidden:FALSE];
+    [self.textViewRemoteParticipantName setHidden:FALSE];
+    
+    //----------------------------------------------------------------------------------------------
+    //UPDATE CONNECTION STATE
+    [self textViewRemoteParticipantConnectionState_setText:state];
+    //----------------------------------------------------------------------------------------------
+}
+
+-(void)textViewRemoteParticipantConnectionState_setText:(NSString *) state{
     if(self.textViewRemoteParticipantName != NULL){
         self.textViewRemoteParticipantConnectionState.text = state;
     }else{
-        
+        [self log_error:@"self.textViewRemoteParticipantName is NULL"];
     }
 }
 
 -(void)hide_viewRemoteParticipantInfo{
     [self.viewRemoteParticipantInfo setHidden:TRUE];
-    self.textViewRemoteParticipantConnectionState.text = @"";
+
+    [self textViewRemoteParticipantConnectionState_setText: @""];
 }
 
 -(void)setupPreviewView{
@@ -559,6 +569,7 @@ NSString *const CLOSED = @"CLOSED";
     //----------------------------------------------------------------------------------------------
     
     
+    
     //----------------------------------------------------------------------------------------------
     [self log_debug:@"[TwilioVideoViewController.m - connectToRoom] >> [self showRoomUI:YES]"];
     
@@ -715,10 +726,10 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark -
 
 //MUTE VIDEO BUTTON
--(void)videoButton_changeIconTo_on{
+-(void)videoButton_changeTo_on{
     [self.videoButton setSelected: FALSE];
 }
--(void)videoButton_changeIconTo_off{
+-(void)videoButton_changeTo_off{
     [self.videoButton setSelected: TRUE];
 }
 
@@ -728,9 +739,9 @@ NSString *const CLOSED = @"CLOSED";
         //changes icon
         //[self.videoButton setSelected: !self.localVideoTrack.isEnabled];
         if(self.localVideoTrack.isEnabled){
-            [self videoButton_changeIconTo_on];
+            [self videoButton_changeTo_on];
         }else{
-            [self videoButton_changeIconTo_off];
+            [self videoButton_changeTo_off];
         }
     }
     //DEBUG [self updateConstraints_PreviewView_toFullScreen: TRUE animated:TRUE];
@@ -854,9 +865,9 @@ NSString *const CLOSED = @"CLOSED";
             //audio was on background thread - adding this for safety
             dispatch_async(dispatch_get_main_queue(), ^{
                 if(self.localVideoTrack.isEnabled){
-                    [self videoButton_changeIconTo_on];
+                    [self videoButton_changeTo_on];
                 }else{
-                    [self videoButton_changeIconTo_off];
+                    [self videoButton_changeTo_off];
                 }
             });
 
@@ -876,11 +887,12 @@ NSString *const CLOSED = @"CLOSED";
                          //---------------------------------------------------------
                          //preview is inserted o
                          //---------------------------------------------------------
-                         [self show_viewRemoteParticipantInfoWithState:@""];
+// displayCallWaiting                        //[self show_viewRemoteParticipantInfoWithState1:@"Calling..."];
+                         
                          //preview can be inserted in front - if full screen can hide the viewRemoteParticipantInfo
                          [self.view bringSubviewToFront:self.viewRemoteParticipantInfo];
                          
-                       //WRONG startPreview calls always  [self displayCallWaiting];
+                         //WRONG startPreview calls always  [self displayCallWaiting];
                      }
             }];
         }
@@ -897,9 +909,7 @@ NSString *const CLOSED = @"CLOSED";
         //----------------------------------------------------------------------
         //Show the dialing panel
         
-        [self fillIn_viewRemoteParticipantInfo];
-        
-        [self show_viewRemoteParticipantInfoWithState:@"Calling..."];
+        [self show_viewRemoteParticipantInfoWithState1:@"Calling..."];
         
         //----------------------------------------------------------------------
         //show LOCAL USER full screen while waiting for othe ruser to answer
@@ -935,9 +945,7 @@ NSString *const CLOSED = @"CLOSED";
         //------------------------------------------------------------------------------
         //REMOTE USER CONNECTED.. waiting for CALLER to enter room
        
-        [self fillIn_viewRemoteParticipantInfo];
-        
-        [self show_viewRemoteParticipantInfoWithState:@"Connecting..."];
+        [self show_viewRemoteParticipantInfoWithState1:@"Connecting..."];
         
     }else{
         [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
@@ -1006,20 +1014,21 @@ NSString *const CLOSED = @"CLOSED";
         
         //if app running on REMOTE photo will just show white circle no photo
         //this is so Disconnected isnt off center
-
-        if(self.remoteUserPhotoURL){
-            [self loadUserImageInBackground_async: self.remoteUserPhotoURL];
-        }else{
-            [self log_error:@"[fillIn_viewRemoteParticipantInfo] self.remoteUserPhotoURL is NULL"];
-        }
+//should be donw by fill
+//        if(self.remoteUserPhotoURL){
+//            [self loadUserImageInBackground_async: self.remoteUserPhotoURL];
+//        }else{
+//            [self log_error:@"[fillIn_viewRemoteParticipantInfo] self.remoteUserPhotoURL is NULL"];
+//        }
+//
+//        if(remoteParticipant_identity){
+//            self.textViewRemoteParticipantName.text = remoteParticipant_identity;
+//
+//        }else{
+//            [self log_error:@"[participantDidDisconnect:] remoteParticipant_identity is NULL - if LOCAL hangs up before REMOTE then no photo or name just 'Disconnected may show'"];
+//        }
         
-        if(remoteParticipant_identity){
-            self.textViewRemoteParticipantName.text = remoteParticipant_identity;
-            
-        }else{
-            [self log_error:@"[participantDidDisconnect:] remoteParticipant_identity is NULL - if LOCAL hangs up before REMOTE then no photo or name just 'Disconnected may show'"];
-        }
-        [self show_viewRemoteParticipantInfoWithState:@"Disconnected"];
+        [self show_viewRemoteParticipantInfoWithState1:@"Disconnected"];
         
         //Zoom the preview from MINI to FULL SCREEN
         [self update_PreviewView_showInFullScreen:TRUE animated:TRUE];
@@ -1205,6 +1214,9 @@ NSString *const CLOSED = @"CLOSED";
 
     self.micButton.hidden = !inRoom;
     [UIApplication sharedApplication].idleTimerDisabled = inRoom;
+    
+    
+    [self fillIn_viewRemoteParticipantInfo];
 }
 
 #pragma mark -
