@@ -139,10 +139,8 @@ NSString *const CLOSED = @"CLOSED";
     
     // Disconnect and mic button will be displayed when client is connected to a room.
     self.micButton.hidden = YES;
-    [self.micButton setImage:[UIImage imageNamed:@"mic"] forState: UIControlStateNormal];
-    [self.micButton setImage:[UIImage imageNamed:@"no_mic"] forState: UIControlStateSelected];
-    [self.videoButton setImage:[UIImage imageNamed:@"video"] forState: UIControlStateNormal];
-    [self.videoButton setImage:[UIImage imageNamed:@"no_video"] forState: UIControlStateSelected];
+
+    [self setup_button_states];
     
     // Customize button colors
     NSString *primaryColor = [self.config primaryColorHex];
@@ -159,6 +157,7 @@ NSString *const CLOSED = @"CLOSED";
     
     [self startProximitySensor];
 }
+
 
 #pragma mark -
 #pragma mark Borders
@@ -335,18 +334,47 @@ NSString *const CLOSED = @"CLOSED";
 //@"no_mic.png
 -(void)update_imageViewInCallRemoteMicMuteState:(NSString *) imageName{
     
-    if(imageName){
-        //NSString * imageName = @"mic.png";
-        UIImage * image = [UIImage imageNamed:imageName];
-        if(image){
-            self.imageViewInCallRemoteMicMuteState.image = image;
+    [self update_imageView:self.imageViewInCallRemoteMicMuteState imageName:imageName];
+    
+}
+
+-(void)update_imageView:(UIImageView *) imageView imageName:(NSString *) imageName{
+    if(imageView){
+        if(imageName){
+            //NSString * imageName = @"mic.png";
+            UIImage * image = [UIImage imageNamed:imageName];
+            if(image){
+                imageView.image = image;
+            }else{
+                [self log_error:[NSString stringWithFormat:@"imageNamed:'%@' is null",imageName]];
+            }
         }else{
-            [self log_error:[NSString stringWithFormat:@"imageNamed:'%@' is null",imageName]];
+            [self log_error:@"[update_imageView:imageName:] imageName is null"];
         }
     }else{
-        [self log_error:@"[update_imageView_RemoteParticipant_MicState_DuringCall] imageName is null"];
+        [self log_error:@"[update_imageView:imageName:] imageView is null"];
     }
-    
+}
+
+-(void)update_button:(UIButton *) button imageName:(NSString *) imageName{
+    if(button){
+        if(imageName){
+            //NSString * imageName = @"mic.png";
+            UIImage * image = [UIImage imageNamed:imageName];
+            if(image){
+                [button setImage:image forState:UIControlStateNormal];
+                [button setImage:image forState:UIControlStateHighlighted];
+                [button setImage:image forState:UIControlStateNormal];
+                [button setImage:image forState:UIControlStateDisabled];
+            }else{
+                [self log_error:[NSString stringWithFormat:@"imageNamed:'%@' is null",imageName]];
+            }
+        }else{
+            [self log_error:@"[update_imageView:imageName:] imageName is null"];
+        }
+    }else{
+        [self log_error:@"[update_imageView:imageName:] button is null"];
+    }
 }
 
 
@@ -786,12 +814,49 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark BUTTONS
 #pragma mark -
 
-//MUTE VIDEO BUTTON
--(void)videoButton_changeTo_on{
-    [self.videoButton setSelected: FALSE];
+
+-(void) setup_button_states{
+    
+    //----------------------------------------------------------------------------------------------
+    //MIC
+    //----------------------------------------------------------------------------------------------
+    [self.micButton setImage:[UIImage imageNamed:@"mic"] forState: UIControlStateNormal];
+
+    //----------------------------------------------------------------------------------------------
+    //VIDEO
+    //----------------------------------------------------------------------------------------------
+    [self.videoButton setImage:[UIImage imageNamed:@"video"] forState: UIControlStateNormal];
+
 }
--(void)videoButton_changeTo_off{
-    [self.videoButton setSelected: TRUE];
+
+-(UIColor *)button_backGroundColor_enabled{
+    //blue
+    return [UIColor colorWithRed:34.0/255.0
+                           green:150.0/255.0
+                            blue:243.0/255.0
+                           alpha:1.0];
+}
+//icon is greyed
+-(UIColor *)button_backGroundColor_disabled{
+    return [UIColor whiteColor];
+}
+
+
+//MUTE VIDEO BUTTON
+-(void)videoButton_changeTo_videoEnabled{
+    //icons for SELECTED/UNSELECTED are set in setup_button_states
+    //[self.videoButton setSelected: FALSE];
+    [self update_button:self.videoButton imageName:@"video"];
+    
+    [self.videoButton setBackgroundColor:[self button_backGroundColor_enabled]];
+}
+
+-(void)videoButton_changeTo_videoDisabled{
+    //icons for SELECTED/UNSELECTED are set in setup_button_states
+    //[self.videoButton setSelected: FALSE];
+    [self update_button:self.videoButton imageName:@"no_video_grey"];
+    
+    [self.videoButton setBackgroundColor:[self button_backGroundColor_disabled]];
 }
 
 - (IBAction)videoButtonPressed:(id)sender {
@@ -800,23 +865,26 @@ NSString *const CLOSED = @"CLOSED";
         //changes icon
         //[self.videoButton setSelected: !self.localVideoTrack.isEnabled];
         if(self.localVideoTrack.isEnabled){
-            [self videoButton_changeTo_on];
+            [self videoButton_changeTo_videoEnabled];
         }else{
-            [self videoButton_changeTo_off];
+            [self videoButton_changeTo_videoDisabled];
         }
     }
-    //DEBUG [self updateConstraints_PreviewView_toFullScreen: TRUE animated:TRUE];
-    
-    //DEBUG [self dialingSound_start];
 }
 
 //MUTE VIDEO BUTTON
 -(void)micButton_changeIconTo_on{
-    [self.micButton setSelected: FALSE];
+    //[self.micButton setSelected: TRUE];
+    
+    [self update_button:self.micButton imageName:@"mic"];
+    [self.micButton setBackgroundColor:[self button_backGroundColor_enabled]];
 }
 -(void)micButton_changeIconTo_off{
-    [self.micButton setSelected: TRUE];
+    //[self.micButton setSelected: FALSE];
+    [self update_button:self.micButton imageName:@"no_mic_grey"];
+    [self.micButton setBackgroundColor:[self button_backGroundColor_disabled]];
 }
+
 - (IBAction)micButtonPressed:(id)sender {
     // We will toggle the mic to mute/unmute and change the title according to the user action.
     
@@ -926,9 +994,9 @@ NSString *const CLOSED = @"CLOSED";
             //audio was on background thread - adding this for safety
             dispatch_async(dispatch_get_main_queue(), ^{
                 if(self.localVideoTrack.isEnabled){
-                    [self videoButton_changeTo_on];
+                    [self videoButton_changeTo_videoEnabled];
                 }else{
-                    [self videoButton_changeTo_off];
+                    [self videoButton_changeTo_videoDisabled];
                 }
             });
 
