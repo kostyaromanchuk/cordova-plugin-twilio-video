@@ -34,7 +34,7 @@
 @property (nonatomic, weak) IBOutlet UIButton *micButton;
 @property (nonatomic, weak) IBOutlet UILabel *roomLabel;
 @property (nonatomic, weak) IBOutlet UILabel *roomLine;
-@property (nonatomic, weak) IBOutlet UIButton *cameraSwitchButton;
+//@property (nonatomic, weak) IBOutlet UIButton *cameraSwitchButton;
 @property (nonatomic, weak) IBOutlet UIButton *videoButton;
 @property (nonatomic, weak) IBOutlet UIButton *buttonDebugStartACall;
 

@@ -1,5 +1,6 @@
 #import "TwilioVideoViewController.h"
 #import <AVFoundation/AVFoundation.h>
+#import <MediaPlayer/MediaPlayer.h>
 
 // CALL EVENTS
 NSString *const OPENED = @"OPENED";
@@ -73,6 +74,8 @@ NSString *const CLOSED = @"CLOSED";
 @property (unsafe_unretained, nonatomic) IBOutlet UIButton *buttonDebug_showOffline;
 @property (unsafe_unretained, nonatomic) IBOutlet UIButton *buttonDebug_showOnline;
 
+@property (unsafe_unretained, nonatomic) IBOutlet UIView *viewAudioWrapper;
+@property (unsafe_unretained, nonatomic) IBOutlet UIVisualEffectView *uiVisualEffectViewBlur;
 
 
 @end
@@ -98,6 +101,9 @@ NSString *const CLOSED = @"CLOSED";
     
     [self hide_inCall_remoteUserNameAndMic];
     
+    //---------------------------------------------------------
+    
+    [self placeVolumeIconOverButton];
     //---------------------------------------------------------
     [self configureLogging];
     
@@ -152,7 +158,7 @@ NSString *const CLOSED = @"CLOSED";
     if (secondaryColor != NULL) {
         self.micButton.backgroundColor = [TwilioVideoConfig colorFromHexString:secondaryColor];
         self.videoButton.backgroundColor = [TwilioVideoConfig colorFromHexString:secondaryColor];
-        self.cameraSwitchButton.backgroundColor = [TwilioVideoConfig colorFromHexString:secondaryColor];
+        //self.cameraSwitchButton.backgroundColor = [TwilioVideoConfig colorFromHexString:secondaryColor];
     }
     
     [self startProximitySensor];
@@ -907,7 +913,40 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 - (IBAction)cameraSwitchButtonPressed:(id)sender {
-    [self flipCamera];
+//    [self flipCamera];
+    
+    
+ 
+}
+-(void)placeVolumeIconOverButton{
+    
+    if(self.viewAudioWrapper){
+        MPVolumeView *mpVolumeView = [[MPVolumeView alloc] init];
+        mpVolumeView.hidden = NO;
+        [mpVolumeView setShowsRouteButton:YES];
+        
+        //this is a volume slide and a button to choose SPEAKER/airpods etc
+        //but we hide the slider
+        [mpVolumeView setShowsVolumeSlider:NO];
+        
+        //[mpVolumeView setFrame:CGRectMake(100, 200, 200 ,200)];
+        CGRect rect = self.viewAudioWrapper.bounds;
+        
+        
+        [mpVolumeView setFrame:rect];
+        [self.viewAudioWrapper addSubview:mpVolumeView];
+        
+        [self.viewAudioWrapper bringSubviewToFront:mpVolumeView];
+        
+//        AVRoutePickerView
+//        //see also AVRoutePickerView
+//        
+//    https://developer.apple.com/documentation/mediaplayer/mpvolumeview
+    }else{
+        [self log_error:@" is null"];
+    }
+    
+   
 }
 #pragma mark -
 #pragma mark BUTTON DISCONECT
@@ -984,7 +1023,10 @@ NSString *const CLOSED = @"CLOSED";
                 UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self
                                                                                       action:@selector(flipCamera)];
                 [self.previewView addGestureRecognizer:tap];
-                self.cameraSwitchButton.hidden = NO;
+  
+                self.viewAudioWrapper.hidden = NO;
+
+                
             }
             
             //UNHIDE video button(so user can turn it off if needed)
