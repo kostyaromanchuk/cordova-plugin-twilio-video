@@ -80,9 +80,21 @@
                                     <constraint firstItem="DbX-Yg-QbD" firstAttribute="top" secondItem="byJ-I9-Kp8" secondAttribute="bottom" constant="16" id="zja-Nx-cJo"/>
                                 </constraints>
                             </view>
-                            <view contentMode="scaleAspectFit" translatesAutoresizingMaskIntoConstraints="NO" id="hJ3-NM-pz1" customClass="TVIVideoView">
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="7RT-Bo-1q4" userLabel="View[viewPreviewWrapperForBorder]">
                                 <rect key="frame" x="239" y="399" width="120" height="160"/>
-                                <color key="backgroundColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
+                                <subviews>
+                                    <view contentMode="scaleAspectFit" translatesAutoresizingMaskIntoConstraints="NO" id="hJ3-NM-pz1" userLabel="previewView" customClass="TVIVideoView">
+                                        <rect key="frame" x="1" y="1" width="118" height="158"/>
+                                        <color key="backgroundColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
+                                    </view>
+                                </subviews>
+                                <color key="backgroundColor" red="0.054901960784313725" green="0.10588235294117647" blue="0.16470588235294117" alpha="1" colorSpace="calibratedRGB"/>
+                                <constraints>
+                                    <constraint firstItem="hJ3-NM-pz1" firstAttribute="top" secondItem="7RT-Bo-1q4" secondAttribute="top" constant="1" id="CFc-8P-7O8"/>
+                                    <constraint firstItem="hJ3-NM-pz1" firstAttribute="leading" secondItem="7RT-Bo-1q4" secondAttribute="leading" constant="1" id="aPh-sK-sBt"/>
+                                    <constraint firstAttribute="bottom" secondItem="hJ3-NM-pz1" secondAttribute="bottom" constant="1" id="fS6-gj-Fid"/>
+                                    <constraint firstAttribute="trailing" secondItem="hJ3-NM-pz1" secondAttribute="trailing" constant="1" id="iYm-eY-jNx"/>
+                                </constraints>
                             </view>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="r4p-h9-xiA">
                                 <rect key="frame" x="16" y="20" width="351" height="100"/>
@@ -235,18 +247,18 @@
                             <constraint firstItem="r4p-h9-xiA" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leadingMargin" id="Dxm-al-38m"/>
                             <constraint firstItem="qSc-QC-8BN" firstAttribute="top" secondItem="MOz-y7-RXA" secondAttribute="bottom" constant="16" id="EUE-ZH-A2q"/>
                             <constraint firstItem="Mof-LL-MfS" firstAttribute="top" secondItem="3Bh-pO-6uY" secondAttribute="top" id="Gr8-Jb-Fjl"/>
-                            <constraint firstAttribute="trailing" secondItem="hJ3-NM-pz1" secondAttribute="trailing" constant="16" id="KtB-hI-T7f"/>
-                            <constraint firstItem="hJ3-NM-pz1" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leading" constant="239" id="M7E-Gc-MWk"/>
                             <constraint firstAttribute="trailing" secondItem="r4p-h9-xiA" secondAttribute="trailing" constant="8" id="QEd-vK-reu"/>
                             <constraint firstItem="tZu-uw-hgi" firstAttribute="top" secondItem="l3a-7A-hrE" secondAttribute="bottom" id="V8p-ba-Vit"/>
                             <constraint firstItem="l3a-7A-hrE" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leading" id="bTm-oi-Lbg"/>
-                            <constraint firstItem="hJ3-NM-pz1" firstAttribute="top" secondItem="3Bh-pO-6uY" secondAttribute="top" constant="399" id="bY7-IZ-adY"/>
-                            <constraint firstAttribute="bottom" secondItem="hJ3-NM-pz1" secondAttribute="bottom" constant="108" id="dgs-ti-JgC"/>
+                            <constraint firstItem="7RT-Bo-1q4" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leading" constant="239" id="dcc-Xw-QGP"/>
                             <constraint firstItem="MOz-y7-RXA" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leadingMargin" id="gqL-ZH-vHm"/>
+                            <constraint firstAttribute="bottom" secondItem="7RT-Bo-1q4" secondAttribute="bottom" constant="108" id="jTx-oS-ZoI"/>
                             <constraint firstAttribute="trailing" secondItem="l3a-7A-hrE" secondAttribute="trailing" id="lZ3-lj-wT5"/>
                             <constraint firstItem="Mof-LL-MfS" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leading" id="ndP-es-mED"/>
                             <constraint firstAttribute="trailing" secondItem="Mof-LL-MfS" secondAttribute="trailing" id="p5v-Bl-uKJ"/>
                             <constraint firstAttribute="bottom" secondItem="Mof-LL-MfS" secondAttribute="bottom" id="pjG-gi-Uar"/>
+                            <constraint firstAttribute="trailing" secondItem="7RT-Bo-1q4" secondAttribute="trailing" constant="16" id="sTh-GE-OfB"/>
+                            <constraint firstItem="7RT-Bo-1q4" firstAttribute="top" secondItem="3Bh-pO-6uY" secondAttribute="top" constant="399" id="xJQ-IK-OpQ"/>
                         </constraints>
                     </view>
                     <connections>
@@ -257,10 +269,10 @@
                         <outlet property="disconnectButton" destination="krA-sT-Z3g" id="uQu-1U-Ree"/>
                         <outlet property="imageViewRemoteParticipant" destination="4rw-7g-hOA" id="4Og-as-WqN"/>
                         <outlet property="micButton" destination="rwp-9E-VzS" id="SW4-po-OHw"/>
-                        <outlet property="nsLayoutConstraint_previewView_bottom" destination="dgs-ti-JgC" id="4Ja-5U-dRA"/>
-                        <outlet property="nsLayoutConstraint_previewView_leading" destination="M7E-Gc-MWk" id="3ZX-H9-hVO"/>
-                        <outlet property="nsLayoutConstraint_previewView_top" destination="bY7-IZ-adY" id="NbZ-mo-iyk"/>
-                        <outlet property="nsLayoutConstraint_previewView_trailing" destination="KtB-hI-T7f" id="erY-B0-2Gb"/>
+                        <outlet property="nsLayoutConstraint_previewView_bottom" destination="jTx-oS-ZoI" id="nG0-XT-QDQ"/>
+                        <outlet property="nsLayoutConstraint_previewView_leading" destination="dcc-Xw-QGP" id="r7b-2R-2Un"/>
+                        <outlet property="nsLayoutConstraint_previewView_top" destination="xJQ-IK-OpQ" id="S4I-y9-s6e"/>
+                        <outlet property="nsLayoutConstraint_previewView_trailing" destination="sTh-GE-OfB" id="5nh-kb-N2s"/>
                         <outlet property="previewView" destination="hJ3-NM-pz1" id="1kY-rd-tEJ"/>
                         <outlet property="textFieldAlertSubtitle" destination="weU-jh-Fgv" id="5uh-QF-0i9"/>
                         <outlet property="textFieldAlertTitle" destination="DbX-Yg-QbD" id="qlt-Zo-KdW"/>
@@ -268,6 +280,7 @@
                         <outlet property="textViewRemoteParticipantName" destination="aqP-iA-exF" id="jf0-PT-1kG"/>
                         <outlet property="videoButton" destination="7bK-Tc-zw5" id="WoD-99-cw1"/>
                         <outlet property="viewAlert" destination="Mof-LL-MfS" id="LDN-YO-vqA"/>
+                        <outlet property="viewBorderFor_previewView" destination="7RT-Bo-1q4" id="7Jl-DJ-2lt"/>
                         <outlet property="viewButtonOuter" destination="l3a-7A-hrE" id="14i-bO-JBf"/>
                         <outlet property="viewRemoteParticipantInfo" destination="r4p-h9-xiA" id="oP5-TA-CII"/>
                     </connections>

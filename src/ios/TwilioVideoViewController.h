@@ -28,6 +28,7 @@
 
 // `TVIVideoView` created from a storyboard
 @property (weak, nonatomic) IBOutlet TVIVideoView *previewView;
+@property (unsafe_unretained, nonatomic) IBOutlet UIView *viewBorderFor_previewView;
 
 @property (nonatomic, weak) IBOutlet UIButton *disconnectButton;
 @property (nonatomic, weak) IBOutlet UIButton *micButton;

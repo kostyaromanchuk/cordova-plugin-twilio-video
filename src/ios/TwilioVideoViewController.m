@@ -107,9 +107,9 @@ NSString *const CLOSED = @"CLOSED";
     //---------------------------------------
     //DEBUG - draws borders aroud view - handy to track animations
     //---------------------------------------
-    //    [self addBorderToView:self.previewView withColor:[UIColor redColor]];
-    //    [self addBorderToView:self.viewButtonOuter withColor:[UIColor blueColor]];
-    //    [self addBorderToView:self.imageViewOtherUser withColor:[UIColor whiteColor]];
+    //    [self addBorderToView:self.previewView withColor:[UIColor redColor] borderWidth: 1.0f];
+    //    [self addBorderToView:self.viewButtonOuter withColor:[UIColor blueColor] borderWidth: 1.0f];
+    //    [self addBorderToView:self.imageViewOtherUser withColor:[UIColor whiteColor] borderWidth: 1.0f];
     
      
     //---------------------------------------
@@ -155,10 +155,12 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark -
 
 //DEBUG - draws line aroudn a UIView
--(void)addBorderToView:(UIView *)view withColor:(UIColor *) color{
+-(void)addBorderToView:(UIView *)view withColor:(UIColor *) color borderWidth:(CGFloat) borderWidth{
     //DEBUG view.layer.borderColor = [[UIColor redColor] CGColor];
     view.layer.borderColor = [color CGColor];
-    view.layer.borderWidth = 1.0f;
+    view.layer.borderWidth = borderWidth; // 1.0f / 0.0f;
+
+    //[view layoutIfNeeded];
 }
 
 -(void)removeBorderFromView:(UIView *)view{
@@ -291,7 +293,7 @@ NSString *const CLOSED = @"CLOSED";
     //I tried changing it to Fit/Fill but jumps at the end when it zooms in
     self.previewView.contentMode = UIViewContentModeScaleAspectFill;
     
-    [self update_PreviewView_toFullScreen: TRUE animated:FALSE];
+    [self update_PreviewView_showInFullScreen: TRUE animated:FALSE];
 }
 
 -(void)update_PreviewView_toFullScreen:(BOOL)fullScreen{
@@ -308,11 +310,12 @@ NSString *const CLOSED = @"CLOSED";
         
         self.previewIsFullScreen = TRUE;
         
-        
-        [self removeBorderFromView:self.previewView];
+        //Dont do here the layer is being updated by the animation so this may not work at first - moved up to update_PreviewView_showInFullScreen
+        //[self removeBorderFromView:self.previewView];
     }else{
+        //------------------------------------------------------------------------------------------
         
-        //----------------------------------------------------------------------
+        //------------------------------------------------------------------------------------------
         CGFloat screen_width = self.view.frame.size.width;
         CGFloat screen_height = self.view.frame.size.height;
         
@@ -354,17 +357,24 @@ NSString *const CLOSED = @"CLOSED";
         
         self.previewIsFullScreen = FALSE;
         
-        [self addBorderToView:self.previewView withColor:[UIColor blackColor]];
+        //Dont do here the layer is being updated by the animation so this may not work at first - moved up to update_PreviewView_showInFullScreen
+        //
+        //        //didnt work on p1 startCall() but did on p2 answerCall() - animation still happening on layer?
+        //        dispatch_async(dispatch_get_main_queue(), ^{
+        //            [self addBorderToView:self.previewView withColor:[UIColor redColor] borderWidth: 2.0f];
+        //        });
+        
     }
 }
 
 
--(void)update_PreviewView_toFullScreen:(BOOL)fullScreen animated:(BOOL)isAnimated{
+-(void)update_PreviewView_showInFullScreen:(BOOL)fullScreen animated:(BOOL)isAnimated{
 
     //animation in and out should be same number of secs
     NSTimeInterval duration = 0.3;
     
     if(fullScreen){
+        
         if(isAnimated){
             //------------------------------------------------------------------
             //FULL SCREEN + ANIMATED
@@ -382,7 +392,7 @@ NSString *const CLOSED = @"CLOSED";
                              }
                              completion:^(BOOL finished) {
                                 //ANIMATION DONE
-
+                                [self removeBorderFromPreview];
                              }
             ];
            
@@ -391,9 +401,14 @@ NSString *const CLOSED = @"CLOSED";
             //FULL SCREEN + UNANIMATED (when app starts)
             //------------------------------------------------------------------
             [self update_PreviewView_toFullScreen: TRUE];
-            
+            [self removeBorderFromPreview];
         }
     }else{
+        //------------------------------------------------------------------------------------------
+        //MINI VIEW
+        //------------------------------------------------------------------------------------------
+        
+        //------------------------------------------------------------------------------------------
         if(isAnimated){
             //------------------------------------------------------------------
             //NOT FULL SCREEN + ANIMATED - (dialing ends shrink preview to bottom right)
@@ -402,23 +417,25 @@ NSString *const CLOSED = @"CLOSED";
                                   delay:0
                                 options:UIViewAnimationOptionCurveEaseInOut
                              animations:^{
-                //--------------------------------------------------
-                [self update_PreviewView_toFullScreen: FALSE];
-                //--------------------------------------------------
-                //will resize but animate without this
-                [self.view layoutIfNeeded];
-                //--------------------------------------------------
-            }
-            completion:^(BOOL finished) {
-                //DONE
-            }
-             ];
+                                        //--------------------------------------------------
+                                        [self update_PreviewView_toFullScreen: FALSE];
+                                        //--------------------------------------------------
+                                        //will resize but animate without this
+                                        [self.view layoutIfNeeded];
+                                        //--------------------------------------------------
+                                    }
+                                    completion:^(BOOL finished) {
+                                        //DONE
+                                        [self addBorderToPreview];
+                                    }
+            ];
             
         }else{
             //------------------------------------------------------------------
             //NOT FULL SCREEN + UNANIMATED (preview size jumps to bottom right - unused)
             //------------------------------------------------------------------
             [self update_PreviewView_toFullScreen: FALSE];
+            [self addBorderToPreview];
             
         }
     }
@@ -426,19 +443,52 @@ NSString *const CLOSED = @"CLOSED";
     //[self.view setNeedsUpdateConstraints];
 }
 
+//Note - ading border to prev
+-(void)removeBorderFromPreview{
+    [self removeBorderFromView:self.previewView];
+}
 
 
-//#pragma mark -
-//#pragma mark PUBLIC - connectToRoom
-//#pragma mark -
+-(void)addBorderToPreview{
+    
+    //----------------------------------------------------------------------------------------------
+    //TRIED TO ADD BORDER TO self.previewView
+    //but previewView is not a simple UIView - TVIVideoView *previewView
+    //I think TVIVideoView removes any border on preView
+    //so in Storyboard I just wrapped it in a UIView and added border to that
+    //but when p1 calls StartRoom() i think the whole view is cleared
+    //Note if you dont wrap this in mainq then outer border wont appear
+    //in the storybaord I a 1pixel gap so if this fails then at least theres a border
+    //on p2 the border is set correctly in answerCall()
+    //on p1 it shows the layer..border
+    //put app in background and out again and it gets bigger - constraints?
+    //gave up set this to 1 and have 1 in Storyboard less noticable
+    //----------------------------------------------------------------------------------------------
+    dispatch_async(dispatch_get_main_queue(), ^{
+        //------------------------------------------------------------------------------------------
+        UIColor * borderColor = [UIColor colorWithRed:14.0/255.0
+                                                green:27.0/255.0
+                                                 blue:42.0/255.0
+                                                alpha:1.0];  //1 + 1,1,1,1 set in SB means at least border of 1
+        //------------------------------------------------------------------------------------------
+        //DEBUG  borderColor = [UIColor redColor];
+        //------------------------------------------------------------------------------------------
+      
+        
+        if(self.viewBorderFor_previewView){
+            //--------------------------------------------------------------------------------------
+            [self addBorderToView:self.viewBorderFor_previewView
+                        withColor: borderColor
+                      borderWidth: 1.0f];
+            //--------------------------------------------------------------------------------------
+        }else{
+            [self log_debug:@"[TwilioVideoViewController.m - addBorderToPreview] viewBorderFor_previewView is null"];
+        }
+        //------------------------------------------------------------------------------------------
+    });
+    //----------------------------------------------------------------------------------------------
+}
 
-//- (void)connectToRoom:(NSString*)room token:(NSString *)token {
-//    #pragma mark TODO - NOW - HARDCODED NEEDS TO BE PASSED IN FROM CORDOVA
-//    [self connectToRoom:room
-//                  token:token
-//         remoteUserName:@"Lorin Kalemi"
-//     remoteUserPhotoURL:@"https://sealogin-trfm-prd-cdn.azureedge.net/API/1_3/User/picture?imageUrl=673623fdc8b39b5b05b3167765019398.jpg"];
-//}
 
 #pragma mark -
 #pragma mark LOCAL part 1 - openRoom
@@ -853,7 +903,7 @@ NSString *const CLOSED = @"CLOSED";
         
         //----------------------------------------------------------------------
         //show LOCAL USER full screen while waiting for othe ruser to answer
-        [self update_PreviewView_toFullScreen:TRUE animated:FALSE];
+        [self update_PreviewView_showInFullScreen:TRUE animated:FALSE];
         
         //----------------------------------------------------------------------
         //FIRST TIME VERY LOUD - cant set volume to 0
@@ -912,14 +962,14 @@ NSString *const CLOSED = @"CLOSED";
 
         //REMOTE user is visible in full screen
         //shrink PREVIEW from FULL SCREEN to MINI to show REMOTE user behind
-        [self update_PreviewView_toFullScreen: FALSE animated:FALSE];
+        [self update_PreviewView_showInFullScreen: FALSE animated:FALSE];
 
     }else{
         [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
     }
 }
 
--(void)participantDidConnect_LocalUserAndCallerHasConnectedToRoom{
+-(void)participantDidConnect_LocalUserAndCallerHaveConnectedToRoom_StartTalking{
     [self log_info:@"[participantDidConnect_StartACall] START"];
     
     [self dialingSound_stop];
@@ -930,7 +980,7 @@ NSString *const CLOSED = @"CLOSED";
         
         //REMOTE user is visible in full screen
         //shrink PREVIEW from FULL SCREEN to MINI to show REMOTE user behind
-        [self update_PreviewView_toFullScreen: FALSE animated:FALSE];
+        [self update_PreviewView_showInFullScreen: FALSE animated:FALSE];
         
     }else{
         [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
@@ -972,7 +1022,7 @@ NSString *const CLOSED = @"CLOSED";
         [self show_viewRemoteParticipantInfoWithState:@"Disconnected"];
         
         //Zoom the preview from MINI to FULL SCREEN
-        [self update_PreviewView_toFullScreen:TRUE animated:TRUE];
+        [self update_PreviewView_showInFullScreen:TRUE animated:TRUE];
     }
 }
 - (void)flipCamera {
@@ -1286,49 +1336,50 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark - TVIRoomDelegate
 
 - (void)didConnectToRoom:(nonnull TVIRoom *)room {
-    
-    [self log_debug:@"[TwilioVideoViewController.m - TVIRoomDelegate.didConnectToRoom] >> GET FIRST room.remoteParticipants[0]"];
-    
-    // At the moment, this example only supports rendering one Participant at a time.
-    [self log_info:[NSString stringWithFormat:@"[didConnectToRoom] Connected to room %@ as %@", room.name, room.localParticipant.identity]];
-    [[TwilioVideoManager getInstance] publishEvent: CONNECTED];
-    
-    
-    
-    //NO MATTER HOW MANY ROOM PARTICIPANTS - just pick the first
-    if (room.remoteParticipants.count > 0) {
-        self.remoteParticipant = room.remoteParticipants[0];
-        self.remoteParticipant.delegate = self;
-    }
-    
-    //didConnectToRoom
-    
-    if([room.remoteParticipants count] == 0){
-        //----------------------------------------------------------------------
-        //1..1 CALL - no remote users so I am DIALING the REMOTE USER
-        //----------------------------------------------------------------------
-        [self log_info:[NSString stringWithFormat:@"[didConnectToRoom] room.remoteParticipants count:%lu >> LOCAL USER is STARTING A 1..1 CALL",
-                        (unsigned long)[room.remoteParticipants count]]];
-        //----------------------------------------------------------------------
-        [self didConnectToRoom_AnswerACall];
-        //does nothing Dialing.. moved to displayCallWaiting
-        //----------------------------------------------------------------------
-    }
-    else if([room.remoteParticipants count] == 1){
-        //----------------------------------------------------------------------
-        //1..1 CALL - 1 remote user in room so LOCAL USER(Caller))
-        //----------------------------------------------------------------------
-        [self log_info:[NSString stringWithFormat:@"[didConnectToRoom] room.remoteParticipants count:%lu >> LOCAL USER is CONNECTING TO ROOM AFTER REMOTE for A 1..1 CALL",
-                        (unsigned long)[room.remoteParticipants count]]];
-        //----------------------------------------------------------------------
-        [self participantDidConnect_LocalUserAndCallerHasConnectedToRoom];
-        //----------------------------------------------------------------------
-    }
-    else{
-        [self log_error:[NSString stringWithFormat:@"[didConnectToRoom] room.remoteParticipants count:%lu >> UNHANDLED MORE THAN 2 USERS in room 1 LOCAL + %lu REMOTE - TODO IN FUTURE GROUP CALLS",
-                         (unsigned long)[room.remoteParticipants count],
-                         (unsigned long)[room.remoteParticipants count]]];
-    }
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self log_debug:@"[TwilioVideoViewController.m - TVIRoomDelegate.didConnectToRoom] >> GET FIRST room.remoteParticipants[0]"];
+        
+        // At the moment, this example only supports rendering one Participant at a time.
+        [self log_info:[NSString stringWithFormat:@"[didConnectToRoom] Connected to room %@ as %@", room.name, room.localParticipant.identity]];
+        [[TwilioVideoManager getInstance] publishEvent: CONNECTED];
+        
+        
+        
+        //NO MATTER HOW MANY ROOM PARTICIPANTS - just pick the first
+        if (room.remoteParticipants.count > 0) {
+            self.remoteParticipant = room.remoteParticipants[0];
+            self.remoteParticipant.delegate = self;
+        }
+        
+        //didConnectToRoom
+        
+        if([room.remoteParticipants count] == 0){
+            //----------------------------------------------------------------------
+            //1..1 CALL - no remote users so I am DIALING the REMOTE USER
+            //----------------------------------------------------------------------
+            [self log_info:[NSString stringWithFormat:@"[didConnectToRoom] room.remoteParticipants count:%lu >> LOCAL USER is STARTING A 1..1 CALL",
+                            (unsigned long)[room.remoteParticipants count]]];
+            //----------------------------------------------------------------------
+            [self didConnectToRoom_AnswerACall];
+            //does nothing Dialing.. moved to displayCallWaiting
+            //----------------------------------------------------------------------
+        }
+        else if([room.remoteParticipants count] == 1){
+            //----------------------------------------------------------------------
+            //1..1 CALL - 1 remote user in room so LOCAL USER(Caller))
+            //----------------------------------------------------------------------
+            [self log_info:[NSString stringWithFormat:@"[didConnectToRoom] room.remoteParticipants count:%lu >> LOCAL USER is CONNECTING TO ROOM AFTER REMOTE for A 1..1 CALL",
+                            (unsigned long)[room.remoteParticipants count]]];
+            //----------------------------------------------------------------------
+            [self participantDidConnect_LocalUserAndCallerHaveConnectedToRoom_StartTalking];
+            //----------------------------------------------------------------------
+        }
+        else{
+            [self log_error:[NSString stringWithFormat:@"[didConnectToRoom] room.remoteParticipants count:%lu >> UNHANDLED MORE THAN 2 USERS in room 1 LOCAL + %lu REMOTE - TODO IN FUTURE GROUP CALLS",
+                             (unsigned long)[room.remoteParticipants count],
+                             (unsigned long)[room.remoteParticipants count]]];
+        }
+    });
 }
 
 - (void)room:(nonnull TVIRoom *)room didFailToConnectWithError:(nonnull NSError *)error {
@@ -1365,10 +1416,15 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 - (void)room:(nonnull TVIRoom *)room isReconnectingWithError:(nonnull NSError *)error {
+    
+    [self log_debug:[NSString stringWithFormat:@"[TwilioVideoViewController.m - TVIRoomDelegate.room:isReconnectingWithError:%@ >> publishEvent: RECONNECTING with Error:", error]];
+    
     [[TwilioVideoManager getInstance] publishEvent: RECONNECTING with:[TwilioVideoUtils convertErrorToDictionary:error]];
 }
 
 - (void)didReconnectToRoom:(nonnull TVIRoom *)room {
+    [self log_debug:[NSString stringWithFormat:@"[TwilioVideoViewController.m - TVIRoomDelegate.room:didReconnectToRoom:%@ >> publishEvent: RECONNECTED", room.name]];
+
     [[TwilioVideoManager getInstance] publishEvent: RECONNECTED];
 }
 
