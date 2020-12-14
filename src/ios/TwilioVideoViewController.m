@@ -20,6 +20,9 @@ NSString *const PERMISSIONS_REQUIRED = @"PERMISSIONS_REQUIRED";
 NSString *const HANG_UP = @"HANG_UP";
 NSString *const CLOSED = @"CLOSED";
 
+#define BLURRED_VIEW_ALPHA_ON 0.5
+
+
 #pragma mark - private  
 
 @interface TwilioVideoViewController()<AVAudioPlayerDelegate>{
@@ -49,6 +52,10 @@ NSString *const CLOSED = @"CLOSED";
 //------------------------------------------------------------------------------------------
 //CALLING PANEL - photo and name and Calling.../Disconnected....
 @property (unsafe_unretained, nonatomic) IBOutlet UIImageView *imageViewRemoteParticipant;
+@property (unsafe_unretained, nonatomic) IBOutlet UIImageView *imageViewLocalParticipant;
+
+@property (unsafe_unretained, nonatomic) IBOutlet UIView *viewWrapperAnimatedBorder0;
+
 @property (unsafe_unretained, nonatomic) IBOutlet UILabel *textViewRemoteParticipantName;
 //Calling.../Disconnected
 @property (unsafe_unretained, nonatomic) IBOutlet UILabel *textViewRemoteParticipantConnectionState;
@@ -78,6 +85,7 @@ NSString *const CLOSED = @"CLOSED";
 @property (unsafe_unretained, nonatomic) IBOutlet UIVisualEffectView *uiVisualEffectViewBlur;
 
 
+
 @end
 
 @implementation TwilioVideoViewController
@@ -100,6 +108,14 @@ NSString *const CLOSED = @"CLOSED";
     [self textViewRemoteParticipantConnectionState_setText:@""];
     
     [self hide_inCall_remoteUserNameAndMic];
+    
+    //---------------------------------------------------------
+    //when camera off show caller photo - hide this on startup
+    [self viewRemoteCameraDisabled_hide];
+    
+    //---------------------------------------------------------
+    //this view has border whos alpha will be animated when Calling...
+    [self addFakeBordersToRemoteImageView];
     
     //---------------------------------------------------------
     
@@ -187,39 +203,50 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark User Image - Default
 #pragma mark -
 
--(void)loadUserImage_default{
-    NSString *imageName = @"baseline_account_circle_black_18dp.png";
-    UIImage * defaultImage = [UIImage imageNamed:imageName];
-    if(defaultImage){
-        self.imageViewRemoteParticipant.image = defaultImage;
+-(void)loadDefaultUserImageIntoImageView:(UIImageView *) imageViewToFill{
+    
+    if(imageViewToFill){
+        
+        NSString *imageName = @"baseline_account_circle_black_18dp.png";
+        UIImage * defaultImage = [UIImage imageNamed:imageName];
+        
+        if(defaultImage){
+            //imageViewToFill.backgroundColor = [UIColor clearColor];
+            imageViewToFill.layer.cornerRadius = self.imageViewRemoteParticipant.frame.size.height / 2.0;
+            
+            imageViewToFill.image = defaultImage;
+            imageViewToFill.image = defaultImage;
+        }else{
+            imageViewToFill.image = nil;
+            imageViewToFill.image = nil;
+        }
     }else{
-        self.imageViewRemoteParticipant.image = nil;
+        [self log_error:@"[loadDefaultUserImageIntoImageView:] imageViewToFill is NULL"];
     }
+   
 }
 
 //for P2 show whos calling P1
 //for P1 show whos is being called P2
--(void)loadUserImageInBackground_async:(NSString *) userPhotoURL{
-   
-    [self loadUserImage_default];
-    
-    self.imageViewRemoteParticipant.backgroundColor = [UIColor whiteColor];
-    self.imageViewRemoteParticipant.layer.cornerRadius = self.imageViewRemoteParticipant.frame.size.height / 2.0;
-    self.imageViewRemoteParticipant.layer.borderWidth = 4.f;
-    self.imageViewRemoteParticipant.layer.borderColor = [[UIColor whiteColor] CGColor];
-    
-    [self performSelectorInBackground:@selector(loadUserImageInBackground:) withObject:userPhotoURL];
 
+//When user turnes local camera off we show their photo
+-(void)loadUserImageInBackground_async:(NSString *) userPhotoURL toImageView:(UIImageView *)imageView{
+    
+    //check NULL inside loadUserImageInBackground as then it should load default image
+    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        [self loadUserImageInBackground: userPhotoURL toImageView:(UIImageView *)imageView];
+    });
 }
 
-- (void)loadUserImageInBackground:(NSString *) userPhotoURL
+- (void)loadUserImageInBackground:(NSString *) userPhotoURL toImageView:(UIImageView *)imageViewToUpdate
 {
     //NOT THE SAME AS self.remoteUserPhotoURL = NULL;
     //TO TRIGGER - let global_remote_user_photo_url = null;
     // self.remoteUserPhotoURL is not null it's [NSNull null] description :'<null>'
+    BOOL userImageLoadedOk = FALSE;
     
     if(NULL != userPhotoURL){
-        
         if([userPhotoURL isEqual:[NSNull null]]){
             [self log_error:@"[loadImage] [self.userPhotoURL isEqual:[NSNull null]] - JS param is nil somewhere"];
         }else{
@@ -235,32 +262,49 @@ NSString *const CLOSED = @"CLOSED";
                     UIImage * image = [UIImage imageWithData:data];
                     if (image)
                     {
+                        userImageLoadedOk = TRUE;
+                        
                         // set image on main thread
                         dispatch_async(dispatch_get_main_queue(), ^{
-                            self.imageViewRemoteParticipant.image = image;
+                            if(imageViewToUpdate){
+                                
+                                imageViewToUpdate.backgroundColor = [UIColor clearColor];
+                                imageViewToUpdate.layer.cornerRadius = imageViewToUpdate.frame.size.height / 2.0;
+                                //border is animated so I cheated added it to a UIView wraping the remote image view then I animate the alpha whilst calling
+
+                                imageViewToUpdate.image = image;
+                            }else{
+                                [self log_error:@"[loadUserImageInBackground:toImageView:] imageViewToUpdate is NULL"];
+                            }
                         });
                     }
                     else
                     {
                         // Failed (load an error image?)
                         [self log_error:[NSString stringWithFormat:@"[loadImage] imageWithData failed to load from self.remoteUserPhotoURL:'%@'", userPhotoURL]];
-                        
-                        //if no image show blank circle else name an Disconnected look off center
-                        //self.imageViewRemoteParticipant.layer.borderWidth = 0.0f;
-                        
-                        [self loadUserImage_default];
-                        
+                        //default image loaded below - need to handle all the else clauses in this hierarchy
                     }
                 }else{
                     [self log_error:[NSString stringWithFormat:@"[loadImage] dataWithContentsOfURL failed to load from userPhotoURL:'%@'", userPhotoURL]];
                 }
-                
             }else{
                 [self log_error:[NSString stringWithFormat:@"[loadImage] URLWithString failed to load from userPhotoURL:'%@'", userPhotoURL]];
             }
         }
     }else{
         [self log_error:@"[loadUserImageInBackground] userPhotoURL is NULL"];
+    }
+    
+    //something failed above load default image - need to handle all the else clauses in this hierarchy
+    if(userImageLoadedOk){
+        //
+    }else{
+        [self log_error:@"[loadUserImageInBackground:..] userImageLoadedOk is FALSE >> loadDefaultUserImageIntoImageView"];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            
+            [self loadDefaultUserImageIntoImageView: imageViewToUpdate];
+            
+        });
     }
 }
 
@@ -276,11 +320,66 @@ NSString *const CLOSED = @"CLOSED";
         self.textViewRemoteParticipantName.text = @"";
     }
 
-    if(self.remoteUserPhotoURL){
-        [self loadUserImageInBackground_async: self.remoteUserPhotoURL];
-    }else{
-        [self log_error:@"[fillIn_viewRemoteParticipantInfo] self.remoteUserPhotoURL is NULL"];
-    }
+    [self fill_imageView_RemoteParticipant];
+    [self fill_imageView_LocalParticipant];
+}
+
+//border is animated so I cheated and added it to a UIView wraping the remote image view then I animate the alpha whilst Calling..
+//viewWrapperAnimatedBorder is exact ame frame as imageViewRemoteParticipant
+//coregraphic border will be outside this frame
+-(void)addFakeBordersToRemoteImageView{
+    self.viewWrapperAnimatedBorder0.layer.cornerRadius = self.viewWrapperAnimatedBorder0.frame.size.height / 2.0;
+}
+
+-(void)animateAlphaBorderForViews_ShowBorder{
+    [self.viewWrapperAnimatedBorder0 setHidden:FALSE];
+}
+
+//Disconnected... just hide the animation is not stopped
+-(void)animateAlphaBorderForViews_HideBorder{
+    [self.viewWrapperAnimatedBorder0 setHidden:TRUE];
+}
+
+-(void)animateAlphaBorderForViews{
+    
+    [self animateAlphaBorderForViews_ShowBorder];
+    
+    self.viewWrapperAnimatedBorder0.alpha = 0.0; //fade in so start at 0, then animate to alpha 1 below
+    
+    //----------------------------------------------------------------------------------------------
+    //same duration but 0 has delayed start
+    NSTimeInterval duration = 2.0;
+    //----------------------------------------------------------------------------------------------
+
+    UIViewAnimationOptions options = UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionRepeat | UIViewAnimationOptionAutoreverse;
+
+    //----------------------------------------------------------------------------------------------
+    [UIView animateWithDuration:duration
+                          delay:0         //START immediately
+                        options:options
+                     animations:^{
+                                self.viewWrapperAnimatedBorder0.alpha = 1.0;  //FADE IN - Autoreverse then means fade out - pulse
+                    }
+                    completion:^(BOOL finished) {
+
+                    }
+    ];
+    //----------------------------------------------------------------------------------------------
+    
+}
+
+-(void)fill_imageView_RemoteParticipant{
+    //DEBUG self.remoteUserPhotoURL = NULL;
+    
+    [self loadUserImageInBackground_async: self.remoteUserPhotoURL toImageView:self.imageViewRemoteParticipant];
+}
+
+//when LOCAL user is offline we show their image over the disable camera view
+-(void)fill_imageView_LocalParticipant{
+    //DEBUG DO NOT RELEASE - self.localUserPhotoURL = NULL;
+    
+    [self loadUserImageInBackground_async: self.localUserPhotoURL toImageView:self.imageViewLocalParticipant];
+    
 }
 
 -(void)show_viewRemoteParticipantInfoWithState:(NSString *) state{
@@ -398,7 +497,7 @@ NSString *const CLOSED = @"CLOSED";
     //I tried changing it to Fit/Fill but jumps at the end when it zooms in
     self.previewView.contentMode = UIViewContentModeScaleAspectFill;
     
-    [self update_PreviewView_showInFullScreen: TRUE animated:FALSE];
+    [self update_PreviewView_showInFullScreen: TRUE animated:FALSE showBlurView:TRUE];
 }
 
 -(void)update_PreviewView_toFullScreen:(BOOL)fullScreen{
@@ -473,12 +572,21 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 
--(void)update_PreviewView_showInFullScreen:(BOOL)fullScreen animated:(BOOL)isAnimated{
+-(void)update_PreviewView_showInFullScreen:(BOOL)changeToFullScreen animated:(BOOL)isAnimated showBlurView:(BOOL) showBlurView{
 
     //animation in and out should be same number of secs
-    NSTimeInterval duration = 0.3;
+    NSTimeInterval duration = 1.0;
     
-    if(fullScreen){
+    //When you show "Disconnected.." you dont show the blur - other use has hung up
+    if(showBlurView){
+        [self.uiVisualEffectViewBlur setHidden:FALSE];
+        //if alpha is 0.0 will still be hidden - a;pha is animated below
+    }else{
+        [self.uiVisualEffectViewBlur setHidden:TRUE];
+    }
+    
+    
+    if(changeToFullScreen){
         
         if(isAnimated){
             //------------------------------------------------------------------
@@ -490,6 +598,11 @@ NSString *const CLOSED = @"CLOSED";
                              animations:^{
                                 //--------------------------------------------------
                                 [self update_PreviewView_toFullScreen: TRUE];
+                
+                                //--------------------------------------------------
+                                //may still be hidden if uiVisualEffectViewBlur setHidden: not changed above
+                                self.uiVisualEffectViewBlur.alpha = BLURRED_VIEW_ALPHA_ON;
+                                
                                 //--------------------------------------------------
                                 //will resize but animate without this
                                 [self.view layoutIfNeeded];
@@ -506,6 +619,7 @@ NSString *const CLOSED = @"CLOSED";
             //FULL SCREEN + UNANIMATED (when app starts)
             //------------------------------------------------------------------
             [self update_PreviewView_toFullScreen: TRUE];
+            self.uiVisualEffectViewBlur.alpha = BLURRED_VIEW_ALPHA_ON;
             [self removeBorderFromPreview];
         }
     }else{
@@ -525,6 +639,8 @@ NSString *const CLOSED = @"CLOSED";
                                         //--------------------------------------------------
                                         [self update_PreviewView_toFullScreen: FALSE];
                                         //--------------------------------------------------
+                                        self.uiVisualEffectViewBlur.alpha = 0.0;
+                                        //--------------------------------------------------
                                         //will resize but animate without this
                                         [self.view layoutIfNeeded];
                                         //--------------------------------------------------
@@ -540,6 +656,11 @@ NSString *const CLOSED = @"CLOSED";
             //NOT FULL SCREEN + UNANIMATED (preview size jumps to bottom right - unused)
             //------------------------------------------------------------------
             [self update_PreviewView_toFullScreen: FALSE];
+            //--------------------------------------------------
+            //FADE OUT
+            self.uiVisualEffectViewBlur.alpha = 0.0;
+            //--------------------------------------------------
+            
             [self addBorderToPreview];
             
         }
@@ -872,8 +993,10 @@ NSString *const CLOSED = @"CLOSED";
         //[self.videoButton setSelected: !self.localVideoTrack.isEnabled];
         if(self.localVideoTrack.isEnabled){
             [self videoButton_changeTo_videoEnabled];
+            [self.viewRemoteCameraDisabled setHidden:TRUE];
         }else{
             [self videoButton_changeTo_videoDisabled];
+            [self.viewRemoteCameraDisabled setHidden:FALSE];
         }
     }
 }
@@ -912,12 +1035,6 @@ NSString *const CLOSED = @"CLOSED";
     //DEBUG [self dialingSound_stop];
 }
 
-- (IBAction)cameraSwitchButtonPressed:(id)sender {
-//    [self flipCamera];
-    
-    
- 
-}
 -(void)placeVolumeIconOverButton{
     
     if(self.viewAudioWrapper){
@@ -937,11 +1054,12 @@ NSString *const CLOSED = @"CLOSED";
         [self.viewAudioWrapper addSubview:mpVolumeView];
         
         [self.viewAudioWrapper bringSubviewToFront:mpVolumeView];
-        
-//        AVRoutePickerView
-//        //see also AVRoutePickerView
-//        
-//    https://developer.apple.com/documentation/mediaplayer/mpvolumeview
+        //------------------------------------------------------------------------------------------
+        //        AVRoutePickerView
+        //        //see also AVRoutePickerView
+        //
+        //    https://developer.apple.com/documentation/mediaplayer/mpvolumeview
+        //------------------------------------------------------------------------------------------
     }else{
         [self log_error:@" is null"];
     }
@@ -1080,10 +1198,11 @@ NSString *const CLOSED = @"CLOSED";
         
         [self show_viewRemoteParticipantInfoWithState:@"Calling..."];
         
+        [self animateAlphaBorderForViews];
         
         //----------------------------------------------------------------------
         //show LOCAL USER full screen while waiting for othe ruser to answer
-        [self update_PreviewView_showInFullScreen:TRUE animated:FALSE];
+        [self update_PreviewView_showInFullScreen:TRUE animated:FALSE showBlurView:TRUE];
         
         //----------------------------------------------------------------------
         //FIRST TIME VERY LOUD - cant set volume to 0
@@ -1117,6 +1236,8 @@ NSString *const CLOSED = @"CLOSED";
        
         [self show_viewRemoteParticipantInfoWithState:@"Connecting..."];
         
+        [self animateAlphaBorderForViews];
+        
     }else{
         [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
     }
@@ -1144,12 +1265,10 @@ NSString *const CLOSED = @"CLOSED";
         //default ot muted - AUDIO_TRACK_ADDED will set it to unmuted
         [self show_inCall_remoteUserNameAndMic_isMuted:TRUE];
        
-     
         //------------------------------------------------------------------------------------------
-        
         //REMOTE user is visible in full screen
         //shrink PREVIEW from FULL SCREEN to MINI to show REMOTE user behind
-        [self update_PreviewView_showInFullScreen: FALSE animated:FALSE];
+        [self update_PreviewView_showInFullScreen: FALSE animated:TRUE showBlurView:TRUE];
 
     }else{
         [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
@@ -1170,12 +1289,12 @@ NSString *const CLOSED = @"CLOSED";
         //------------------------------------------------------------------------------------------
         //default ot muted - AUDIO_TRACK_ADDED will set it to unmuted
         [self show_inCall_remoteUserNameAndMic_isMuted:TRUE];
+        
         //------------------------------------------------------------------------------------------
-        
-        
         //REMOTE user is visible in full screen
+        //------------------------------------------------------------------------------------------
         //shrink PREVIEW from FULL SCREEN to MINI to show REMOTE user behind
-        [self update_PreviewView_showInFullScreen: FALSE animated:FALSE];
+        [self update_PreviewView_showInFullScreen: FALSE animated:TRUE showBlurView:TRUE];
         
         
     }else{
@@ -1202,24 +1321,17 @@ NSString *const CLOSED = @"CLOSED";
         
         //if app running on REMOTE photo will just show white circle no photo
         //this is so Disconnected isnt off center
-//should be donw by fill
-//        if(self.remoteUserPhotoURL){
-//            [self loadUserImageInBackground_async: self.remoteUserPhotoURL];
-//        }else{
-//            [self log_error:@"[fillIn_viewRemoteParticipantInfo] self.remoteUserPhotoURL is NULL"];
-//        }
-//
-//        if(remoteParticipant_identity){
-//            self.textViewRemoteParticipantName.text = remoteParticipant_identity;
-//
-//        }else{
-//            [self log_error:@"[participantDidDisconnect:] remoteParticipant_identity is NULL - if LOCAL hangs up before REMOTE then no photo or name just 'Disconnected may show'"];
-//        }
         
         [self show_viewRemoteParticipantInfoWithState:@"Disconnected"];
         
+        //pulse animation is on repeat forever - just hide the fake border view - I think when in full sea/chat disconnect will close this whole VC
+        [self animateAlphaBorderForViews_HideBorder];
+        
         //Zoom the preview from MINI to FULL SCREEN
-        [self update_PreviewView_showInFullScreen:TRUE animated:TRUE];
+        //ONLY show BLUR when dialing
+        //Here remote has disconnected so dont show blur
+        
+        [self update_PreviewView_showInFullScreen:TRUE animated:TRUE showBlurView:FALSE];
     }
 }
 - (void)flipCamera {
@@ -1924,6 +2036,8 @@ NSString *const CLOSED = @"CLOSED";
             [self log_info:@"[PROXIMITY: TRUE] TURN OFF VIDEO: self.localVideoTrack.enabled = FALSE"];
             self.localVideoTrack.enabled = FALSE;
             
+            [self viewRemoteCameraDisabled_show];
+            
         }else{
             //Camera was OFF when user moved phone to their ear.
             //later when user moves phone away from ear >  proximityStateDidChange called again
@@ -1940,6 +2054,7 @@ NSString *const CLOSED = @"CLOSED";
             
             //turn it back on when you move phone away from ear
             self.localVideoTrack.enabled = TRUE;
+            [self viewRemoteCameraDisabled_hide];
             [self log_info:@"[PROXIMITY: FALSE] TURN VIDEO BACK ON"];
             
         }else{
@@ -1949,6 +2064,18 @@ NSString *const CLOSED = @"CLOSED";
         }
     }
 }
+//if proximity triggered
+//if camera button set to off
+-(void)viewRemoteCameraDisabled_show{
+    [self.viewRemoteCameraDisabled setHidden:FALSE];
+    
+    //video feed gets inserted on top
+    [self.viewBorderFor_previewView bringSubviewToFront:self.viewRemoteCameraDisabled];
+}
+-(void)viewRemoteCameraDisabled_hide{
+    [self.viewRemoteCameraDisabled setHidden:TRUE];
+}
+
 
 -(void)viewWillDisappear:(BOOL)animated{
     [super viewWillDisappear: animated];
