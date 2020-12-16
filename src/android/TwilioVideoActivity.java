@@ -12,7 +12,6 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
@@ -33,7 +32,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.squareup.picasso.Callback;
 import com.twilio.video.CameraCapturer;
 import com.twilio.video.CameraCapturer.CameraSource;
 import com.twilio.video.ConnectOptions;
@@ -83,8 +81,13 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
      */
     private String accessToken;
     private String roomId;
+
+    private String action_current;
+
     private CallConfig config;
 
+    private String local_user_name;
+    private String local_user_photo_url;
     private String remote_user_name;
     private String remote_user_photo_url;
 
@@ -107,6 +110,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private CameraCapturerCompat cameraCapturer;
     private LocalAudioTrack localAudioTrack;
     private LocalVideoTrack localVideoTrack;
+
     private FloatingActionButton connectActionFab;
     private FloatingActionButton switchCameraActionFab;
     private FloatingActionButton localVideoActionFab;
@@ -122,13 +126,18 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     //play ringing.mp3
     private MediaPlayer mediaPlayer;
+
+
     //remote participant image
     private ImageView imageViewRemoteParticipant;
+    // TODO: 16/12/20   imageViewLocalParticipant
+    private ImageView imageViewLocalParticipant;
 
     private TextView textViewRemoteParticipantName;
     private TextView textViewRemoteParticipantConnectionState;
 
     private boolean previewIsFullScreen;
+
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -139,6 +148,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         FAKE_R = new FakeR(this);
 
         publishEvent(CallEvent.OPENED);
+
+        //------------------------------------------------------------------------------------------
+        //ContentView
+        //------------------------------------------------------------------------------------------
         setContentView(FAKE_R.getLayout("activity_video"));
 
         primaryVideoView = findViewById(FAKE_R.getId("primary_video_view"));
@@ -156,37 +169,53 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         textViewRemoteParticipantConnectionState = findViewById(FAKE_R.getId("textViewRemoteParticipantConnectionState"));
 
 
-
-        /*
-         * Enable changing the volume using the up/down keys during a conversation
-         */
-        setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
-
-        /*
-         * Needed for setting/abandoning audio focus during call
-         */
-        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        audioManager.setSpeakerphoneOn(true);
-
-        //to play ringing.mp3
-        int id_ringing =  FAKE_R.getResourceId( TwilioVideoActivity.this, "raw", "ringing");
-        mediaPlayer = MediaPlayer.create(TwilioVideoActivity.this, id_ringing);
-        if (mediaPlayer != null) {
-            mediaPlayer.setLooping(true); 
-            //use .play + pause 
-            //.play() + .stop() seems to kill it next .play() fails
-        }else{
-            Log.e(TAG, "methodName: mediaPlayer is null");
-        }
         //------------------------------------------------------------------------------------------
-        Intent intent = getIntent();
+        //AUDIO
+        //------------------------------------------------------------------------------------------
+        onCreate_configureAudio();
 
-        this.accessToken = intent.getStringExtra("token");
-        this.roomId = intent.getStringExtra("roomId");
+        //------------------------------------------------------------------------------------------
+        //LOCAL CAMERA VIEW
+        //------------------------------------------------------------------------------------------
+        //must call before handling Intents
+        setupPreviewView();
+
+//        //------------------------------------------------------------------------------------------
+//        //PARSE PARAMS FROM Intent
+//        //------------------------------------------------------------------------------------------
+//        //    P1 CALLER
+//        //        - openRoom
+//        //            - startActivity
+//        //                - onCreate
+//        //                    - instance 699
+//        //                    - get Intents
+//        //                        - action > openRoom
+//        //                - onResume
+//        //        - startCall
+//        //            - startActivity
+//        //                - doesnt call onCreate due to FLAG_ACTIVITY_REORDER_TO_FRONT
+//        //                - onResume
+//        //                    - same instance
+//        //                    - ISSUE - Intents parsed in onCreate
+//        //    P2 - PERSON BEING CALLED
+//        //            - answerCall()
+//        //                - startActivity
+//        //                    - onCreate
+//        //                        - instance 699
+//        //                        - get Intents
+//        //                        - action > openRoom
+//        //                      - onResume
+//        //------------------------------------------------------------------------------------------
+//        parse_Intents();
+//        //------------------------------------------------------------------------------------------
+
+        //initializeUI requires config - the other Intent values are handle in onResume as thats always called
+        Intent intent = getIntent();
         this.config = (CallConfig) intent.getSerializableExtra("config");
 
-        this.remote_user_name = intent.getStringExtra("remote_user_name");
-        this.remote_user_photo_url = intent.getStringExtra("remote_user_photo_url");
+
+        //requires config to be parsed in parse_Intents()
+        initializeUI();
 
         //------------------------------------------------------------------------------------------
         //FILL USER INFO but dont show yet
@@ -200,42 +229,383 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         }else{
             Log.e(TAG, "methodName: textViewRemoteParticipantName is null");
         }
+    }
+    private void parse_Intents(){
+        Intent intent = getIntent();
+
+        //doesnt work for startCall - getIntent() is values set when Activity created
+        //for startCall values passed to startActivity are ignored action stuck on openRoom
+        //String action = intent.getStringExtra("action");
+
+        String action = TwilioVideoActivityNextAction.getNextAction();
+
+        if(null != action){
+            if(action.equals(TwilioVideoActivityNextAction.action_openRoom)){
+
+                //needed for flow after onRequestPermissionsResult
+                this.action_current = TwilioVideoActivityNextAction.action_openRoom;
+
+                //----------------------------------------------------------------------------------
+                //CORDOVA > openRoom()
+                //----------------------------------------------------------------------------------
+                String token = intent.getStringExtra("token");
+                String roomId = intent.getStringExtra("roomId");
+
+                //----------------------------------------------------------------------------------
+                //config
+                //parsed in onCreate as intitalizeUI requires it
+                //in iOS the config is passed in by TwilioPlugin
+                //this.config = (CallConfig) intent.getSerializableExtra("config");
+                //----------------------------------------------------------------------------------
+
+// TODO: 15/12/2020 CHECK FOR JS NULL > NSNull
+                String local_user_name = intent.getStringExtra("local_user_name");
+                String local_user_photo_url = intent.getStringExtra("local_user_photo_url");
+
+                String remote_user_name = intent.getStringExtra("remote_user_name");
+                String remote_user_photo_url = intent.getStringExtra("remote_user_photo_url");
+
+                Log.e(TAG, "onCreate: INTENT > action:'"  + action + "' >> CALL this.openRoom()");
+                this.action_openRoom(roomId, token, local_user_name, local_user_photo_url, remote_user_name, remote_user_photo_url);
+
+            }
+            else if(action.equals(TwilioVideoActivityNextAction.action_startCall))
+            {
+                //----------------------------------------------------------------------------------
+                //CORDOVA > startCall()
+                //----------------------------------------------------------------------------------
+                String token = intent.getStringExtra("token");
+                String roomId = intent.getStringExtra("roomId");
+
+                //needed for flow after onRequestPermissionsResult
+                this.action_current = TwilioVideoActivityNextAction.action_startCall;
+
+                Log.e(TAG, "onCreate: INTENT > action:'"  + action + "' >> CALL this.startCall()");
+                this.action_startCall(roomId, token);
+
+            }
+            else if(action.equals(TwilioVideoActivityNextAction.action_answerCall))
+            {
+                //----------------------------------------------------------------------------------
+                //CORDOVA > answerCall()
+                //----------------------------------------------------------------------------------
+                Log.e(TAG, "onCreate: INTENT > action:'"  + action + "' >> CALL this.answerCall()");
+                String token = intent.getStringExtra("token");
+                String roomId = intent.getStringExtra("roomId");
+
+                // TODO: 15/12/2020 CHECK FOR JS NULL > NSNull
+                String local_user_name = intent.getStringExtra("local_user_name");
+                String local_user_photo_url = intent.getStringExtra("local_user_photo_url");
+
+                String remote_user_name = intent.getStringExtra("remote_user_name");
+                String remote_user_photo_url = intent.getStringExtra("remote_user_photo_url");
 
 
 
+                //needed for flow after onRequestPermissionsResult
+                this.action_current = TwilioVideoActivityNextAction.action_answerCall;
 
+                this.action_answerCall(roomId, token, local_user_name, local_user_photo_url, remote_user_name, remote_user_photo_url);
 
-        //------------------------------------------------------------------------------------------
+            }
+            else{
+                Log.e(TAG, "UNHANDLED action:" + action);
 
-        Log.d(TwilioVideo.TAG, "BEFORE REQUEST PERMISSIONS");
-        if (!hasPermissionForCameraAndMicrophone()) {
-            Log.d(TwilioVideo.TAG, "REQUEST PERMISSIONS");
-            requestPermissions();
-        } else {
-            Log.d(TwilioVideo.TAG, "PERMISSIONS OK. CREATE LOCAL MEDIA");
-            createAudioAndVideoTracks();
-            connectToRoom();
+                //needed for onRequestPermissionsResult
+                this.action_current = null;
+            }
+        }else{
+            Log.e(TAG, "action is null");
         }
-
-        /*
-         * Set the initial state of the UI
-         */
-        initializeUI();
-        setupPreviewView();
     }
 
+    private void onCreate_configureAudio(){
+
+        //Enable changing the volume using the up/down keys during a conversation
+        setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
+
+        //------------------------------------------------------------------------------------------
+        //Needed for setting/abandoning audio focus during call
+        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+//TODO - speakerphone
+        audioManager.setSpeakerphoneOn(true);
+
+        //------------------------------------------------------------------------------------------
+        //PLAY RING TONE - ringing.mp3
+        //------------------------------------------------------------------------------------------
+        int id_ringing =  FAKE_R.getResourceId( TwilioVideoActivity.this, "raw", "ringing");
+
+        mediaPlayer = MediaPlayer.create(TwilioVideoActivity.this, id_ringing);
+
+        if (mediaPlayer != null) {
+            mediaPlayer.setLooping(true);
+            //use .play + pause
+            //.play() + .stop() seems to kill it next .play() fails
+        }else{
+            Log.e(TAG, "methodName: mediaPlayer is null");
+        }
+        //------------------------------------------------------------------------------------------
+    }
+
+    private void action_openRoom(  String room,
+                            String token,
+                            String localUserName,
+                            String localUserPhotoURL,
+                            String remoteUserName,
+                            String remoteUserPhotoURL)
+    {
+
+        Log.e(TAG, "action_openRoom: STARTED");
+
+
+        this.roomId = room;
+        this.accessToken = token;
+
+// TODO: 15/12/2020 CHECK FOR JS NULL > NSNull
+        this.local_user_name = localUserName;
+        this.local_user_photo_url = localUserPhotoURL;
+
+        this.remote_user_name = remoteUserName;
+        this.remote_user_photo_url = remoteUserPhotoURL;
+
+
+        showRoomUI(true);
+
+        //------------------------------------------------------------------------------------------
+        //CAMERA PERMISSIONS
+        //------------------------------------------------------------------------------------------
+        //moved from onCreate
+        //called by openRoom and answerRoom
+        //------------------------------------------------------------------------------------------
+        Log.d(TwilioVideo.TAG, "BEFORE REQUEST PERMISSIONS");
+        if (!hasPermissionForCameraAndMicrophone()) {
+
+            Log.d(TwilioVideo.TAG, "REQUEST PERMISSIONS");
+            requestPermissions();
+            //if ok will call permissionOk()
+
+        } else {
+            Log.d(TwilioVideo.TAG, "PERMISSIONS OK");
+            permissionOk();
+        }
+        //------------------------------------------------------------------------------------------
+    }
+
+
+    private void action_startCall(  String room,
+                            String token)
+    {
+        Log.e(TAG, "action_startCall: STARTED");
+
+        this.roomId = room;
+        this.accessToken = token;
+
+        //------------------------------------------------------------------------------------------
+        //enable mic button
+        this.showRoomUI(true);
+
+        //------------------------------------------------------------------------------------------
+        //CAMERA PERMISSIONS
+        //------------------------------------------------------------------------------------------
+        //moved from onCreate
+        //called by openRoom and answerRoom
+        //------------------------------------------------------------------------------------------
+
+        if (!hasPermissionForCameraAndMicrophone()) {
+
+            Log.d(TwilioVideo.TAG, "REQUEST PERMISSIONS");
+            requestPermissions();
+            //if ok will call permissionOk()
+
+        } else {
+            Log.d(TwilioVideo.TAG, "PERMISSIONS OK");
+            permissionOk();
+        }
+        //------------------------------------------------------------------------------------------
+
+    }
+
+    private void action_answerCall( String room,
+                                    String token,
+                                    String localUserName,
+                                    String localUserPhotoURL,
+                                    String remoteUserName,
+                                    String remoteUserPhotoURL)
+    {
+        Log.e(TAG, "action_answerCall: STARTED");
+
+        this.roomId = room;
+        this.accessToken = token;
+
+
+        // TODO: 15/12/2020 CHECK FOR JS NULL > NSNull
+        this.local_user_name = localUserName;
+        this.local_user_photo_url = localUserPhotoURL;
+
+        this.remote_user_name = remoteUserName;
+        this.remote_user_photo_url = remoteUserPhotoURL;
+
+        //------------------------------------------------------------------------------------------
+        //enable mic button
+        this.showRoomUI(true);
+
+        //------------------------------------------------------------------------------------------
+        //CAMERA PERMISSIONS
+        //------------------------------------------------------------------------------------------
+        //moved from onCreate
+        //called by openRoom and answerRoom
+        //------------------------------------------------------------------------------------------
+
+        if (!hasPermissionForCameraAndMicrophone()) {
+
+            Log.d(TwilioVideo.TAG, "REQUEST PERMISSIONS");
+            requestPermissions();
+            //if ok will call permissionOk()
+
+        } else {
+            Log.d(TwilioVideo.TAG, "PERMISSIONS OK");
+            permissionOk();
+        }
+        //------------------------------------------------------------------------------------------
+    }
+
+    //----------------------------------------------------------------------------------------------
+    //CAMERA PERMISSIONS
+    //----------------------------------------------------------------------------------------------
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        if (requestCode == PERMISSIONS_REQUEST_CODE) {
+            boolean permissionsGranted = true;
+
+            for (int grantResult : grantResults) {
+                permissionsGranted &= grantResult == PackageManager.PERMISSION_GRANTED;
+            }
+
+            if (permissionsGranted) {
+                //----------------------------------------------------------------------------------
+                permissionOk();
+                //----------------------------------------------------------------------------------
+            } else {
+                //----------------------------------------------------------------------------------
+                publishEvent(CallEvent.PERMISSIONS_REQUIRED);
+                TwilioVideoActivity.this.handleConnectionError(config.getI18nConnectionError());
+                //----------------------------------------------------------------------------------
+            }
+        }
+    }
+
+    private void permissionOk(){
+        if(this.action_current.equals(TwilioVideoActivityNextAction.action_openRoom)){
+
+            //--------------------------------------------------------------------------------------
+            //SETUP LOCAL CAMERA AND AUDIO
+            //--------------------------------------------------------------------------------------
+            createAudioAndVideoTracks();
+
+            //--------------------------------------------------------------------------------------
+            //p1 - wait for P2 to call room.connect() then backend will send startCall() to P1
+            //--------------------------------------------------------------------------------------
+            displayCallWaiting();
+
+        }
+        else if(this.action_current.equals(TwilioVideoActivityNextAction.action_startCall))
+        {
+            setupLocalCamera_ifnull();
+            connectToRoom();
+
+        }
+        else if(this.action_current.equals(TwilioVideoActivityNextAction.action_answerCall))
+        {
+            createAudioAndVideoTracks();
+            setupLocalCamera_ifnull();
+            connectToRoom();
+
+        }
+        else{
+            Log.e(TAG, "UNHANDLED this.action_current:" + this.action_current);
+        }
+    }
+
+
+
+    //----------------------------------------------------------------------------------------------
+    //UI
+    //----------------------------------------------------------------------------------------------
+    // Reset the client ui status
+    private void showRoomUI(boolean inRoom) {
+        Log.e(TAG, "showRoomUI: hide mic button");
+
+//TODO        this.micButton.hidden = !inRoom;
+
+        this.fillIn_viewRemoteParticipantInfo();
+    }
     private void setupPreviewView(){
         //HIDE till my camera connected
         this.hide_viewRemoteParticipantInfo();
 
         //set it always to Fill so it looks ok in fullscreen
         //I tried changing it to Fit/Fill but jumps at the end when it zooms in
-        //self.previewView.contentMode = UIViewContentModeScaleAspectFill;
+        //this.previewView.contentMode = UIViewContentModeScaleAspectFill;
 
         //DEBUG - when video is full screen is may have wrong AspectFit or AspectFil
 
-        this.updateConstraints_PreviewView_toFullScreen(true, false);
+        this.update_PreviewView_showInFullScreen(true, false, true);
     }
+
+
+
+
+    //border is animated so I cheated and added it to a UIView wraping the remote image view then I animate the alpha whilst Calling..
+    //viewWrapperAnimatedBorder is exact ame frame as imageViewRemoteParticipant
+    //coregraphic border will be outside this frame
+    private void addFakeBordersToRemoteImageView(){
+        Log.e(TAG, "addFakeBordersToRemoteImageView: TODO" );
+        //        this.viewWrapperAnimatedBorder0.layer.cornerRadius = this.viewWrapperAnimatedBorder0.frame.size.height / 2.0;
+    }
+
+    private void animateAlphaBorderForViews_ShowBorder(){
+        Log.e(TAG, "animateAlphaBorderForViews_ShowBorder: TODO" );
+        //TODO
+        // [this.viewWrapperAnimatedBorder0 setHidden:FALSE];
+    }
+
+    //Disconnected... just hide the animation is not stopped
+    private void animateAlphaBorderForViews_HideBorder(){
+        Log.e(TAG, "animateAlphaBorderForViews_HideBorder: TODO" );
+        //[this.viewWrapperAnimatedBorder0 setHidden:TRUE];
+    }
+
+    private void animateAlphaBorderForViews(){
+        Log.e(TAG, "animateAlphaBorderForViews: TODO" );
+//        this.animateAlphaBorderForViews_ShowBorder();
+//
+//        this.viewWrapperAnimatedBorder0.alpha = 0.0; //fade in so start at 0, then animate to alpha 1 below
+//
+//        //----------------------------------------------------------------------------------------------
+//        //same duration but 0 has delayed start
+//        NSTimeInterval duration = 2.0;
+//        //----------------------------------------------------------------------------------------------
+//
+//        UIViewAnimationOptions options = UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionRepeat | UIViewAnimationOptionAutoreverse;
+//
+//        //----------------------------------------------------------------------------------------------
+//        [UIView animateWithDuration:duration
+//            delay:0         //START immediately
+//            options:options
+//            animations:^{
+//                this.viewWrapperAnimatedBorder0.alpha = 1.0;  //FADE IN - Autoreverse then means fade out - pulse
+//            }
+//            completion:^(BOOL finished) {
+//
+//            }
+//        ];
+//        //----------------------------------------------------------------------------------------------
+
+    }
+    
 
 
 
@@ -248,75 +618,113 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             this.textViewRemoteParticipantName.setText("");
         }
 
-        this.loadUserImageInBackground_async();
+        fill_imageView_RemoteParticipant();
 
         //text set in didConnectToRoom_StartACall*
         this.textViewRemoteParticipantConnectionState.setText("");
     }
-    
 
-    private void loadUserImageInBackground_async(){
+
+    private void fill_imageView_RemoteParticipant(){
+        //DEBUG self.remoteUserPhotoURL = NULL;
+
+        this.loadUserImageInBackground_async(this.remote_user_photo_url, this.imageViewRemoteParticipant);
+
+    }
+
+    //when LOCAL user is offline we show their image over the disable camera view
+    private void fill_imageView_LocalParticipant(){
+        //DEBUG DO NOT RELEASE - self.localUserPhotoURL = NULL;
+
+        this.loadUserImageInBackground_async(this.local_user_photo_url, this.imageViewLocalParticipant);
+
+    }
+
+//    private void loadUserImageInBackground_async(){
+//        //TODO add border around image
+//        //            this.imageViewRemoteParticipant.backgroundColor = [UIColor whiteColor];
+//        //            this.imageViewRemoteParticipant.layer.cornerRadius = this.imageViewRemoteParticipant.frame.size.height / 2.0;
+//        //            this.imageViewRemoteParticipant.layer.borderWidth = 4.f;
+//        //            this.imageViewRemoteParticipant.layer.borderColor = [[UIColor whiteColor] CGColor];
+//
+//        //            this.performSelectorInBackground:@selector(loadUserImageInBackground) withObject:nil];
+//
+//        //------------------------------------------------------------------------------------------
+//        //Fill imageView async
+//        //------------------------------------------------------------------------------------------
+//        //"https://sealogin-trfm-prd-cdn.azureedge.net/API/1_3/User/picture?imageUrl=673623fdc8b39b5b05b3167765019398.jpg"
+//        //------------------------------------------------------------------------------------------
+//        if (this.remote_user_photo_url != null) {
+//            Picasso.get().load(this.remote_user_photo_url).into(imageViewRemoteParticipant);
+////CLEANUP after more testing of CircleView library
+////            Picasso.get().load(this.remote_user_photo_url)
+////                    .resize(96, 96)
+////                    .into(imageViewRemoteParticipant, new Callback() {
+////                        @Override
+////                        public void onSuccess() {
+////                            Bitmap imageBitmap = ((BitmapDrawable) imageViewRemoteParticipant.getDrawable()).getBitmap();
+////
+////                            //v1 circular image
+////                            RoundedBitmapDrawable imageDrawable = RoundedBitmapDrawableFactory.create(getResources(), imageBitmap);
+////                            imageDrawable.setCircular(true);
+////                            imageDrawable.setCornerRadius(Math.max(imageBitmap.getWidth(), imageBitmap.getHeight()) / 2.0f);
+////
+////                            Canvas canvas = new Canvas(imageBitmap);
+////                            canvas.drawBitmap(imageBitmap, 0, 0, null);
+////                            int borderWidth = 5;
+////                            Paint borderPaint = new Paint();
+////                            borderPaint.setStyle(Paint.Style.STROKE);
+////                            borderPaint.setStrokeWidth(borderWidth);
+////                            borderPaint.setAntiAlias(true);
+////                            borderPaint.setColor(Color.WHITE);
+////                            //https://stackoverflow.com/questions/24878740/how-to-use-roundedbitmapdrawable
+////                            //int circleDelta = (borderWidth / 2) - DisplayUtility.dp2px(context, 1);
+////                            int radius = (canvas.getWidth() / 2);  // - circleDelta;
+////                            canvas.drawCircle(canvas.getWidth() / 2, canvas.getHeight() / 2, radius, borderPaint);
+////
+////
+////
+////                            imageViewRemoteParticipant.setImageDrawable(imageDrawable);
+////
+////                            //v2 with border
+////                            //RoundedBitmapDrawable rbd = createRoundedBitmapDrawableWithBorder(imageBitmap);
+////                            //imageViewRemoteParticipant.setImageDrawable(rbd);
+////
+////
+////                        }
+////                        @Override
+////                        public void onError(Exception e) {
+////                            //imageViewRemoteParticipant.setImageResource(R.drawable.default_image);
+////                        }
+////                    });
+//
+//        }else{
+//            Log.e(TAG, "onCreate: imageViewRemoteParticipant is null");
+//        }
+//    }
+
+
+    private void loadUserImageInBackground_async(String userPhotoURL, ImageView imageView){
         //TODO add border around image
-        //            self.imageViewRemoteParticipant.backgroundColor = [UIColor whiteColor];
-        //            self.imageViewRemoteParticipant.layer.cornerRadius = self.imageViewRemoteParticipant.frame.size.height / 2.0;
-        //            self.imageViewRemoteParticipant.layer.borderWidth = 4.f;
-        //            self.imageViewRemoteParticipant.layer.borderColor = [[UIColor whiteColor] CGColor];
-
-        //            [self performSelectorInBackground:@selector(loadUserImageInBackground) withObject:nil];
 
         //------------------------------------------------------------------------------------------
         //Fill imageView async
         //------------------------------------------------------------------------------------------
         //"https://sealogin-trfm-prd-cdn.azureedge.net/API/1_3/User/picture?imageUrl=673623fdc8b39b5b05b3167765019398.jpg"
         //------------------------------------------------------------------------------------------
-        if (this.remote_user_photo_url != null) {
-            Picasso.get().load(this.remote_user_photo_url).into(imageViewRemoteParticipant);
-//CLEANUP after more testing of CircleView library
-//            Picasso.get().load(this.remote_user_photo_url)
-//                    .resize(96, 96)
-//                    .into(imageViewRemoteParticipant, new Callback() {
-//                        @Override
-//                        public void onSuccess() {
-//                            Bitmap imageBitmap = ((BitmapDrawable) imageViewRemoteParticipant.getDrawable()).getBitmap();
-//
-//                            //v1 circular image
-//                            RoundedBitmapDrawable imageDrawable = RoundedBitmapDrawableFactory.create(getResources(), imageBitmap);
-//                            imageDrawable.setCircular(true);
-//                            imageDrawable.setCornerRadius(Math.max(imageBitmap.getWidth(), imageBitmap.getHeight()) / 2.0f);
-//
-//                            Canvas canvas = new Canvas(imageBitmap);
-//                            canvas.drawBitmap(imageBitmap, 0, 0, null);
-//                            int borderWidth = 5;
-//                            Paint borderPaint = new Paint();
-//                            borderPaint.setStyle(Paint.Style.STROKE);
-//                            borderPaint.setStrokeWidth(borderWidth);
-//                            borderPaint.setAntiAlias(true);
-//                            borderPaint.setColor(Color.WHITE);
-//                            //https://stackoverflow.com/questions/24878740/how-to-use-roundedbitmapdrawable
-//                            //int circleDelta = (borderWidth / 2) - DisplayUtility.dp2px(context, 1);
-//                            int radius = (canvas.getWidth() / 2);  // - circleDelta;
-//                            canvas.drawCircle(canvas.getWidth() / 2, canvas.getHeight() / 2, radius, borderPaint);
-//
-//
-//
-//                            imageViewRemoteParticipant.setImageDrawable(imageDrawable);
-//
-//                            //v2 with border
-//                            //RoundedBitmapDrawable rbd = createRoundedBitmapDrawableWithBorder(imageBitmap);
-//                            //imageViewRemoteParticipant.setImageDrawable(rbd);
-//
-//
-//                        }
-//                        @Override
-//                        public void onError(Exception e) {
-//                            //imageViewRemoteParticipant.setImageResource(R.drawable.default_image);
-//                        }
-//                    });
 
+        if (userPhotoURL != null) {
+            if (imageView != null) {
+                Picasso.get().load(userPhotoURL).into(imageView);
+
+            }else{
+                Log.e(TAG, "loadUserImageInBackground_async: imageView is null");
+            }
         }else{
-            Log.e(TAG, "onCreate: imageViewRemoteParticipant is null");
+            Log.e(TAG, "loadUserImageInBackground_async: userPhotoURL is null");
         }
     }
+
 
     //Rounded Image - with border
     //https://android--examples.blogspot.com/2015/11/android-how-to-create-circular.html
@@ -374,14 +782,15 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         show_textViewRemoteParticipantName();
         show_textViewRemoteParticipantConnectionState();
 
-        set_state_textViewRemoteParticipantConnectionState(state);
+        textViewRemoteParticipantConnectionState_setText(state);
     }
+
     private void hide_viewRemoteParticipantInfo(){
         hide_imageViewRemoteParticipant();
         hide_textViewRemoteParticipantName();
         hide_textViewRemoteParticipantConnectionState();
         //clear it
-        set_state_textViewRemoteParticipantConnectionState("");
+        textViewRemoteParticipantConnectionState_setText("");
     }
 
     //------------------------------------------------------------------------------------------
@@ -416,7 +825,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             Log.e(TAG, "hide_textViewRemoteParticipantName: textViewRemoteParticipantName is null");
         }
     }
-    //show_textViewRemoteParticipantConnectionState
+
     private void show_textViewRemoteParticipantConnectionState(){
         if (this.textViewRemoteParticipantConnectionState != null) {
             this.textViewRemoteParticipantConnectionState.setVisibility(View.VISIBLE);
@@ -431,13 +840,34 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             Log.e(TAG, "hide_textViewRemoteParticipantConnectionState: textViewRemoteParticipantConnectionState is null");
         }
     }
-    private void set_state_textViewRemoteParticipantConnectionState(String state){
+    private void textViewRemoteParticipantConnectionState_setText(String state){
         if (this.textViewRemoteParticipantConnectionState != null) {
             this.textViewRemoteParticipantConnectionState.setText(state);
         }else{
             Log.e(TAG, "hide_textViewRemoteParticipantConnectionState: textViewRemoteParticipantConnectionState is null");
         }
     }
+
+
+    private void addBorderToPreview(){
+        Log.e(TAG, "addBorderToPreview: TODO" );
+    }
+    private void removeBorderFromPreview(){
+        Log.e(TAG, "removeBorderFromPreview: TODO" );
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     //------------------------------------------------------------------------------------------
     //DELEGATE > UPDATE UI
@@ -456,7 +886,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             //----------------------------------------------------------------------
             //show LOCAL USER full screen while waiting for other user to answer
-            this.updateConstraints_PreviewView_toFullScreen(true, false);
+            this.update_PreviewView_showInFullScreen(false, true, true);
             //----------------------------------------------------------------------
             //FIRST TIME VERY LOUD - cant set volume to 0
             //NEXT TIMES too quiet
@@ -475,12 +905,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         Log.e(TAG, "didConnectToRoom_AnswerACall: START");
         
         if(this.previewIsFullScreen){
-            //REMOTE USER CONNECTED
-            //Hide the dialing screen
-            this.hide_viewRemoteParticipantInfo();
+            this.show_viewRemoteParticipantInfoWithState("Connecting...");
 
-            //Zoom the preview from FULL SCREEN to MINI
-            this.updateConstraints_PreviewView_toFullScreen(false, true);
+            this.animateAlphaBorderForViews();
 
         }else{
             Log.e(TAG, "didConnectToRoom_AnswerACall: new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL");
@@ -488,91 +915,17 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     }
 
 
-    //called by TVIRoomDelegate.participantDidConnect
-    //Same app installed on both phones but UI changes depending on who starts or answers a call
-    //1 local + 0 remote - LOCAL USER is person dialing REMOTE participant.
-    //Remote hasnt joined the room yet so hasnt answered so show 'Dialing..'
-    //On the CALLING PHONE it will trigger
-    //didConnectToRoom_StartACall >> participantDidConnect_RemoteUserHasAnswered
-    private void participantDidConnect_RemoteUserHasAnswered() {
-        Log.e(TAG, "participantDidConnect_RemoteUserHasAnswered: START");
+    private void show_inCall_remoteUserNameAndMic_isMuted(boolean micIsMuted){
+        Log.e(TAG, "show_inCall_remoteUserNameAndMic_isMuted: TODO");
 
-        //if you need to restart it use _pause
-        this.dialing_sound_stop();
-
-        if(this.previewIsFullScreen){
-
-            this.hide_viewRemoteParticipantInfo();
-
-            //REMOTE user is visible in full screen
-            //shrink PREVIEW from FULL SCREEN to MINI to show REMOTE user behind
-            this.updateConstraints_PreviewView_toFullScreen(false, false);
-
-        }else{
-            Log.e(TAG, "participantDidConnect_RemoteUserHasAnswered: new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL");
-        }
+//            [this.imageViewInCallRemoteMicMuteState setHidden:FALSE];
+//    [this.textViewInCallRemoteName setHidden:FALSE];
+//
+//    this.update_imageViewInCallRemoteMicMuteState_isMuted:micIsMuted];
     }
 
-    //called by TVIRoomDelegate.participantDidConnect
-    //Same app installed on both phones but UI changes depending on who starts or answers a call
-    //1 local + 1 remote - REMOTE user in room is the other person who started the call
-    //LOCAL USER is answering a call so dont show 'Dialing..'
 
-    private void participantDidConnect(String remoteParticipant_identity) {
-        Log.e(TAG, "participantDidConnect: START -  Unused in 1..1 - use for GROUP");
 
-        if(this.previewIsFullScreen){
-            Log.e(TAG, "participantDidConnect:new participant joined room BUT previewIsFullScreen is true - shouldnt happen for 1..1 CALL");
-
-        }else{
-            //REMOTE USER DISCONNECTED
-            //show the remote user panel with state 'Disconnected'
-
-            //if app running on REMOTE photo will just show white circle no photo
-            //this is so Disconnected isnt off center
-
-            this.loadUserImageInBackground_async();
-
-            if (remoteParticipant_identity != null) {
-                this.textViewRemoteParticipantName.setText(remoteParticipant_identity);
-            }else{
-                Log.e(TAG, "remoteParticipant_identity is null");
-            }
-
-            this.show_viewRemoteParticipantInfoWithState("Disconnected");
-
-            //Zoom the preview from MINI to FULL SCREEN
-            this.updateConstraints_PreviewView_toFullScreen(true, true);
-
-        }
-    }
-
-    private void participantDidDisconnect(String remoteParticipant_identity) {
-        Log.e(TAG, "participantDidDisconnect: START");
-
-        if(this.previewIsFullScreen){
-            Log.e(TAG, "participantDidDisconnect: new participant joined room BUT previewIsFullScreen is true - shouldnt happen for 1..1 CALL");
-
-        }else{
-            //REMOTE USER DISCONNECTED
-            //show the remote user panel with state 'Disconnected'
-
-            //if app running on REMOTE photo will just show white circle no photo
-            //this is so Disconnected isnt off center
-            this.loadUserImageInBackground_async();
-             if (remoteParticipant_identity != null) {
-                   this.textViewRemoteParticipantName.setText(remoteParticipant_identity);
-             }else{
-                 Log.e(TAG, "emoteParticipant_identity is NULL - if LOCAL hangs up before REMOTE then no photo or name just 'Disconnected may show'");
-             }
-
-             this.show_viewRemoteParticipantInfoWithState("Disconnected");
-             //TODO - should prob hange up
-
-            //Zoom the preview from MINI to FULL SCREEN
-            this.updateConstraints_PreviewView_toFullScreen(true, true);
-        }
-    }
 
     private void shrinkPreview(){
         //------------------------------------------------------------------------------------------
@@ -664,10 +1017,268 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     }
 
+//    private void update_PreviewView_showInFullScreen(boolean changeToFullScreen,
+//                                                     boolean isAnimated,
+//                                                     boolean showBlurView)
+//    {
+//        Log.e(TAG, "update_PreviewView_showInFullScreen: TODO");
+////TODO BLURRED VIEW
+////        //animation in and out should be same number of secs
+////        NSTimeInterval duration = 1.0;
+////
+////        //When you show "Disconnected.." you dont show the blur - other use has hung up
+////        if(showBlurView){
+////        [this.uiVisualEffectViewBlur setHidden:FALSE];
+////            //if alpha is 0.0 will still be hidden - a;pha is animated below
+////        }else{
+////        [this.uiVisualEffectViewBlur setHidden:TRUE];
+////        }
+//
+//
+//        if(changeToFullScreen){
+//
+//            if(isAnimated){
+//                //------------------------------------------------------------------
+//                //FULL SCREEN + ANIMATED
+//                //------------------------------------------------------------------
+////TODO ANIMATE ZOOM
+////                [UIView animateWithDuration:duration
+////                    delay:0
+////                    options:UIViewAnimationOptionCurveEaseInOut
+////                    animations:^{
+//                //--------------------------------------------------
+//                this.update_PreviewView_toFullScreen(true);
+//
+//                //--------------------------------------------------
+////TODO BLUR
+////                        //may still be hidden if uiVisualEffectViewBlur setHidden: not changed above
+////                        this.uiVisualEffectViewBlur.alpha = BLURRED_VIEW_ALPHA_ON;
+//
+//                //--------------------------------------------------
+////                        //will resize but animate without this
+////                        [this.view layoutIfNeeded];
+//                //--------------------------------------------------
+////                    }
+////                    completion:^(BOOL finished) {
+////                        //ANIMATION DONE
+//                this.removeBorderFromPreview();
+////                    }
+////                ];
+//
+//            }else{
+//                //------------------------------------------------------------------
+//                //FULL SCREEN + UNANIMATED (when app starts)
+//                //------------------------------------------------------------------
+//                this.update_PreviewView_toFullScreen(true);
+////TODO BLUR ON
+////                this.uiVisualEffectViewBlur.alpha = BLURRED_VIEW_ALPHA_ON;
+//
+//                this.removeBorderFromPreview();
+//            }
+//        }else{
+//            //------------------------------------------------------------------------------------------
+//            //MINI VIEW
+//            //------------------------------------------------------------------------------------------
+//
+//            //------------------------------------------------------------------------------------------
+//            if(isAnimated){
+//                //------------------------------------------------------------------
+//                //NOT FULL SCREEN + ANIMATED - (dialing ends shrink preview to bottom right)
+//                //------------------------------------------------------------------
+////                [UIView animateWithDuration:duration
+////                    delay:0
+////                    options:UIViewAnimationOptionCurveEaseInOut
+////                    animations:^{
+//                //-------------------------------------------------
+//                this.update_PreviewView_toFullScreen(false);
+//                //--------------------------------------------------
+////TODO BLUR OFF/alpha 0
+////                        this.uiVisualEffectViewBlur.alpha = 0.0;
+//                //--------------------------------------------------
+//                //will resize but animate without this
+////                        [this.view layoutIfNeeded];
+////                        //--------------------------------------------------
+////                    }
+////                    completion:^(BOOL finished) {
+//                //DONE
+//                this.addBorderToPreview();
+////                    }
+////                ];
+//
+//            }else{
+//                //------------------------------------------------------------------
+//                //NOT FULL SCREEN + UNANIMATED (preview size jumps to bottom right - unused)
+//                //------------------------------------------------------------------
+//                this.update_PreviewView_toFullScreen(false);
+//                //--------------------------------------------------
+//                //FADE OUT
+////TODO - alpha out
+////                this.uiVisualEffectViewBlur.alpha = 0.0;
+//                //--------------------------------------------------
+//
+//                this.addBorderToPreview();
+//
+//            }
+//        }
+//
+//        //[this.view setNeedsUpdateConstraints];
+//    }
+
+    private void update_PreviewView_showInFullScreen(boolean changeToFullScreen, boolean isAnimated, boolean showBlurView) {
+
+        //animation in and out should be same number of secs
+//        NSTimeInterval duration = 1.0;
+
+        //When you show "Disconnected.." you dont show the blur - other use has hung up
+        if(showBlurView){
+//TODO BLUR VIEW ON
+//            [this.uiVisualEffectViewBlur setHidden:FALSE];
+            //if alpha is 0.0 will still be hidden - a;pha is animated below
+        }else{
+//TODO BLUR VIEW OFF
+//            [this.uiVisualEffectViewBlur setHidden:TRUE];
+        }
+
+        if(changeToFullScreen){
+            if(isAnimated){
+                //------------------------------------------------------------------
+                //FULL SCREEN + ANIMATED
+                //------------------------------------------------------------------
+//            [UIView animateWithDuration:duration
+//                delay:0
+//                options:UIViewAnimationOptionCurveEaseInOut
+//                animations:^{
+//                    //--------------------------------------------------
+//                                this.update_PreviewView_toFullScreen: TRUE];
+//                    //--------------------------------------------------
+//                    //will resize but animate without this
+//                                [this.view layoutIfNeeded];
+//                    //--------------------------------------------------
+//                }
+//                completion:^(BOOL finished) {
+//                    //ANIMATION DONE
+//
+//                }
+//            ];
+
+             this.update_PreviewView_toFullScreen(true);
+
+            }else{
+                //------------------------------------------------------------------
+                //FULL SCREEN + UNANIMATED (when app starts)
+                //------------------------------------------------------------------
+                this.update_PreviewView_toFullScreen(true);
+
+            }
+        }else{
+            if(isAnimated){
+                //------------------------------------------------------------------
+                //NOT FULL SCREEN + ANIMATED - (dialing ends shrink preview to bottom right)
+                //------------------------------------------------------------------
+//            [UIView animateWithDuration:duration
+//                delay:0
+//                options:UIViewAnimationOptionCurveEaseInOut
+//                animations:^{
+//                    //--------------------------------------------------
+//                this.update_PreviewView_toFullScreen: FALSE];
+//                    //--------------------------------------------------
+//                    //will resize but animate without this
+//                [this.view layoutIfNeeded];
+//                    //--------------------------------------------------
+//                }
+//                completion:^(BOOL finished) {
+//                    //DONE
+//                }
+//             ];
+
+                this.update_PreviewView_toFullScreen(false);
+
+            }else{
+                //------------------------------------------------------------------
+                //NOT FULL SCREEN + UNANIMATED (preview size jumps to bottom right - unused)
+                //------------------------------------------------------------------
+
+                this.update_PreviewView_toFullScreen(false);
+
+            }
+        }
+    }
 
 
-    private void updateConstraints_PreviewView_toFullScreen(boolean fullScreen) {
-        Log.e(TAG, "updateConstraints_PreviewView_toFullScreen: START");
+//    private void update_PreviewView_toFullScreen(boolean fullScreen){
+//        if(fullScreen){
+////TODO - ZOOM
+////            //THESE are linked to SuperView not Layoutguide - may go behind nav bar
+////            this.nsLayoutConstraint_previewView_top.constant = 0.0;
+////            this.nsLayoutConstraint_previewView_bottom.constant = 0.0;
+////
+////            this.nsLayoutConstraint_previewView_leading.constant = 0.0;
+////            this.nsLayoutConstraint_previewView_trailing.constant = 0.0;
+//
+//
+//
+//            this.previewIsFullScreen = true;
+//
+//
+//        }else{
+//            //------------------------------------------------------------------------------------------
+////TODO ZOOM TO MINI VIEW
+//            //------------------------------------------------------------------------------------------
+////            CGFloat screen_width = this.view.frame.size.width;
+////            CGFloat screen_height = this.view.frame.size.height;
+////
+////            CGFloat border = 8.0;
+////            CGFloat previewView_height_small = 160.0;
+////            CGFloat previewView_width_small = 120.0;
+////
+////            //----------------------------------------------------------------------
+////            //BOTTOM
+////            //----------------------------------------------------------------------
+////            //ISSUE - previewView in full screen ignores Safe Area
+////            //BUT viewButtonOuter bottom is calculated from view.safeAreaInsets.bottom
+////            //
+////            //UIEdgeInsets screen_safeAreaInsets = this.view.safeAreaInsets;
+////
+////            CGFloat bottom = (this.viewButtonOuter.frame.size.height + this.view.safeAreaInsets.bottom + 8.0);
+////
+////            this.nsLayoutConstraint_previewView_bottom.constant = bottom;
+////
+////            //----------------------------------------------------------------------
+////            //TOP = BOTTOM + HEIGHT of preview
+////            //----------------------------------------------------------------------
+////            CGFloat top = screen_height - (bottom + previewView_height_small);
+////            this.nsLayoutConstraint_previewView_top.constant = top;
+////
+////            //----------------------------------------------------------------------
+////            //TRAILING
+////            //----------------------------------------------------------------------
+////            CGFloat trailing = this.view.safeAreaInsets.right + border;
+////            this.nsLayoutConstraint_previewView_trailing.constant = trailing;
+////
+////            //----------------------------------------------------------------------
+////            //LEADING
+////            //----------------------------------------------------------------------
+////            CGFloat leading = screen_width - (trailing + previewView_width_small);
+////            this.nsLayoutConstraint_previewView_leading.constant = leading;
+//
+//            //this.previewView.contentMode = UIViewContentModeScaleAspectFit;
+//
+//            this.previewIsFullScreen = false;
+//
+//            //Dont do here the layer is being updated by the animation so this may not work at first - moved up to update_PreviewView_showInFullScreen
+//            //
+//            //        //didnt work on p1 startCall() but did on p2 answerCall() - animation still happening on layer?
+//            //        dispatch_async(dispatch_get_main_queue(), ^{
+//            //            this.addBorderToView:this.previewView withColor:[UIColor redColor] borderWidth: 2.0f];
+//            //        });
+//
+//        }
+//    }
+
+
+
+    private void update_PreviewView_toFullScreen(boolean fullScreen) {
+        Log.e(TAG, "update_PreviewView_toFullScreen: START");
         if(fullScreen){
 
             //------------------------------------------------------------------------------------------
@@ -712,6 +1323,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             this.previewIsFullScreen = false;
         }
     }
+
     private void thumbnail_video_view_setmargins(int leftmargin, int topMargin, int rightMargin, int bottomMargin){
         VideoView thumbnail_video_view = findViewById(FAKE_R.getId("thumbnail_video_view"));
         ViewGroup.LayoutParams layoutParams = thumbnail_video_view.getLayoutParams();
@@ -736,75 +1348,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         }
     }
 
-    private void updateConstraints_PreviewView_toFullScreen(boolean fullScreen, boolean isAnimated) {
 
-        //animation in and out should be same number of secs
-        //NSTimeInterval duration = 0.3;
 
-        if(fullScreen){
-            if(isAnimated){
-                //------------------------------------------------------------------
-                //FULL SCREEN + ANIMATED
-                //------------------------------------------------------------------
-//            [UIView animateWithDuration:duration
-//                delay:0
-//                options:UIViewAnimationOptionCurveEaseInOut
-//                animations:^{
-//                    //--------------------------------------------------
-//                                [self updateConstraints_PreviewView_toFullScreen: TRUE];
-//                    //--------------------------------------------------
-//                    //will resize but animate without this
-//                                [this.view layoutIfNeeded];
-//                    //--------------------------------------------------
-//                }
-//                completion:^(BOOL finished) {
-//                    //ANIMATION DONE
-//
-//                }
-//            ];
 
-             this.updateConstraints_PreviewView_toFullScreen(true);
 
-            }else{
-                //------------------------------------------------------------------
-                //FULL SCREEN + UNANIMATED (when app starts)
-                //------------------------------------------------------------------
-                this.updateConstraints_PreviewView_toFullScreen(true);
-
-            }
-        }else{
-            if(isAnimated){
-                //------------------------------------------------------------------
-                //NOT FULL SCREEN + ANIMATED - (dialing ends shrink preview to bottom right)
-                //------------------------------------------------------------------
-//            [UIView animateWithDuration:duration
-//                delay:0
-//                options:UIViewAnimationOptionCurveEaseInOut
-//                animations:^{
-//                    //--------------------------------------------------
-//                [self updateConstraints_PreviewView_toFullScreen: FALSE];
-//                    //--------------------------------------------------
-//                    //will resize but animate without this
-//                [this.view layoutIfNeeded];
-//                    //--------------------------------------------------
-//                }
-//                completion:^(BOOL finished) {
-//                    //DONE
-//                }
-//             ];
-
-                this.updateConstraints_PreviewView_toFullScreen(false);
-
-            }else{
-                //------------------------------------------------------------------
-                //NOT FULL SCREEN + UNANIMATED (preview size jumps to bottom right - unused)
-                //------------------------------------------------------------------
-
-                this.updateConstraints_PreviewView_toFullScreen(false);
-
-            }
-        }
-    }
 
 
 
@@ -816,16 +1363,22 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //.play() + .stop() seems to kill it next .play() fails
     
     private void dialing_sound_start(){
+        //------------------------------------------------------------------------------------------
         //use .play + pause 
         //.play() + .stop() seems to kill it next .play() fails
+        //------------------------------------------------------------------------------------------
         if (mediaPlayer != null) {
+            //Plays ringing tone
             mediaPlayer.start();
+            //--------------------------------------------------------------------------------------
             //use .start() + pause() 
             //not .start() + .stop() seems to kill it, next .play() fails
+            //--------------------------------------------------------------------------------------
         }else{
             Log.e(TAG, "methodName: mediaPlayer is null");
         }
     }
+
     private void dialing_sound_pause(){
         if (mediaPlayer != null) {
             mediaPlayer.pause();
@@ -836,6 +1389,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             Log.e(TAG, "methodName: mediaPlayer is null");
         }
     }
+
     private void dialing_sound_stop(){
         if (mediaPlayer != null) {
             mediaPlayer.stop();
@@ -848,46 +1402,221 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     }
     
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        if (requestCode == PERMISSIONS_REQUEST_CODE) {
-            boolean permissionsGranted = true;
 
-            for (int grantResult : grantResults) {
-                permissionsGranted &= grantResult == PackageManager.PERMISSION_GRANTED;
-            }
-
-            if (permissionsGranted) {
-                createAudioAndVideoTracks();
-                connectToRoom();
-            } else {
-                publishEvent(CallEvent.PERMISSIONS_REQUIRED);
-                TwilioVideoActivity.this.handleConnectionError(config.getI18nConnectionError());
-            }
-        }
-    }
 
     @Override
     protected void onResume() {
         super.onResume();
-        /*
-         * If the local video track was released when the app was put in the background, recreate.
-         */
-        if (localVideoTrack == null && hasPermissionForCameraAndMicrophone()) {
-            localVideoTrack = LocalVideoTrack.create(this,
-                    true,
-                    cameraCapturer.getVideoCapturer(),
-                    LOCAL_VIDEO_TRACK_NAME);
-            localVideoTrack.addRenderer(thumbnailVideoView);
+        Log.e(TAG, "onResume: STARTED" );
 
-            /*
-             * If connected to a Room then share the local video track.
-             */
-            if (localParticipant != null) {
-                localParticipant.publishTrack(localVideoTrack);
+
+
+
+        //------------------------------------------------------------------------------------------
+        //PARSE PARAMS FROM Intent
+        //------------------------------------------------------------------------------------------
+        //    P1 CALLER
+        //        - openRoom
+        //            - startActivity
+        //                - onCreate
+        //                    - instance 699
+        //                    - get Intents
+        //                        - action > openRoom
+        //                - onResume
+        //        - startCall
+        //            - startActivity
+        //                - doesnt call onCreate due to FLAG_ACTIVITY_REORDER_TO_FRONT
+        //                - onResume
+        //                    - same instance
+        //                    - ISSUE - Intents parsed in onCreate
+        //    P2 - PERSON BEING CALLED
+        //            - answerCall()
+        //                - startActivity
+        //                    - onCreate
+        //                        - instance 699
+        //                        - get Intents
+        //                        - action > openRoom
+        //                      - onResume
+        //------------------------------------------------------------------------------------------
+        parse_Intents();
+
+        //------------------------------------------------------------------------------------------
+        setupLocalCamera_ifnull();
+        publishTrack_video(); //needed room.connect not set yet so cant publish??
+        //------------------------------------------------------------------------------------------
+
+    }
+// TODO: 16/12/20 CLEANUP
+//    private void setupLocalCamera(){
+//        /*
+//         * If the local video track was released when the app was put in the background, recreate.
+//         */
+//        if (localVideoTrack == null) {
+//
+//            Log.e(TAG, "onResume: localVideoTrack == null >> recreate" );
+//
+//            if (hasPermissionForCameraAndMicrophone()) {
+//
+//                Log.e(TAG, "onResume: hasPermissionForCameraAndMicrophone(): TRUE - recreate" );
+//
+//                if(null != cameraCapturer){
+//                    localVideoTrack = LocalVideoTrack.create(this,
+//                            true,
+//                            cameraCapturer.getVideoCapturer(),
+//                            LOCAL_VIDEO_TRACK_NAME);
+//                    localVideoTrack.addRenderer(thumbnailVideoView);
+//
+//                    /*
+//                     * If connected to a Room then share the local video track.
+//                     */
+//                    if (localParticipant != null) {
+//                        localParticipant.publishTrack(localVideoTrack);
+//                    }else{
+//                        Log.e(TAG, "localParticipant is null >> publishTrack(localVideoTrack) FAILED");
+//                    }
+//                }else{
+//                    //happened when openRoom and StartCall both did startActivity
+//                    Log.e(TAG, "cameraCapturer is null");
+//                }
+//
+//            }else{
+//                //can happen when openRoom and StartCall both did startActivity
+//                Log.e(TAG, "hasPermissionForCameraAndMicrophone() FAILED");
+//            }
+//        }else{
+//            //can happen when openRoom and StartCall both did startActivity
+//            Log.e(TAG, "localVideoTrack is OK ");
+//
+//
+//            //MUST CALL publishTrack else other user doesnt see the camera
+//            /*
+//             * If connected to a Room then share the local video track.
+//             */
+//            if (localParticipant != null) {
+//                localParticipant.publishTrack(localVideoTrack);
+//            }else{
+//                Log.e(TAG, "localParticipant is null >> publishTrack(localVideoTrack) FAILED");
+//
+//                if(null != room){
+//                    localParticipant = room.getLocalParticipant();
+//
+//                    if (localParticipant != null) {
+//                        localParticipant.publishTrack(localVideoTrack);
+//                    }else{
+//                        Log.e(TAG, "localParticipant is null >> publishTrack(localVideoTrack) FAILED");
+//
+//                    }
+//                }else{
+//                    Log.e(TAG, "room is null");
+//                }
+//            }
+//        }
+//    }
+
+    //1 - openRooom - setup local camera to show full screen
+    //2 - startCall > room.connect > room.localParticipant > publishtrack
+    private void setupLocalCamera_ifnull(){
+        //If the local video track was released when the app was put in the background, recreate.
+        if (localVideoTrack == null) {
+
+            Log.e(TAG, "onResume: localVideoTrack == null >> recreate" );
+
+            if (hasPermissionForCameraAndMicrophone()) {
+
+                Log.e(TAG, "onResume: hasPermissionForCameraAndMicrophone(): TRUE - recreate" );
+
+                if(null != cameraCapturer){
+                    //------------------------------------------------------------------------------
+                    localVideoTrack = LocalVideoTrack.create(this,
+                            true,
+                            cameraCapturer.getVideoCapturer(),
+                            LOCAL_VIDEO_TRACK_NAME);
+                    //------------------------------------------------------------------------------
+                    localVideoTrack.addRenderer(thumbnailVideoView);
+                    //------------------------------------------------------------------------------
+                    //                    /*
+                    //                     * If connected to a Room then share the local video track.
+                    //                     */
+                    //                    if (localParticipant != null) {
+                    //                        localParticipant.publishTrack(localVideoTrack);
+                    //                    }else{
+                    //                        Log.e(TAG, "localParticipant is null >> publishTrack(localVideoTrack) FAILED");
+                    //                    }
+                    //------------------------------------------------------------------------------
+                    //publishTrack_video
+                    //------------------------------------------------------------------------------
+                    //publishTrack_video();
+                    //------------------------------------------------------------------------------
+                }else{
+                    //happened when openRoom and StartCall both did startActivity
+                    Log.e(TAG, "cameraCapturer is null");
+                }
+
+            }else{
+                //can happen when openRoom and StartCall both did startActivity
+                Log.e(TAG, "hasPermissionForCameraAndMicrophone() FAILED");
             }
+        }else{
+            //can happen when openRoom and StartCall both did startActivity
+            Log.e(TAG, "localVideoTrack is OK ");
+
+        }
+    }
+    //----------------------------------------------------------------------------------------------
+    //TO PUBLISH a VIDEO TRACK to REMOTE USER
+    //----------------------------------------------------------------------------------------------
+    //you need room to be connected - onConnected listener returned
+    //room.localParticipant
+    //localVideoTrack - which can be setup in openRoom > setupLocalCamera
+    //but then null for startCall so need to call setupLocalCamera again
+
+    private void publishTrack_video(){
+        if (localVideoTrack == null) {
+
+            if (hasPermissionForCameraAndMicrophone()) {
+
+                Log.e(TAG, "onResume: hasPermissionForCameraAndMicrophone(): TRUE - recreate" );
+
+                if (localParticipant != null) {
+                    localParticipant.publishTrack(localVideoTrack);
+                }else{
+                    Log.e(TAG, "localParticipant is null >> publishTrack(localVideoTrack) FAILED");
+
+                    if(null != room){
+                        localParticipant = room.getLocalParticipant();
+
+                        if (localParticipant != null) {
+                            localParticipant.publishTrack(localVideoTrack);
+                        }else{
+                            Log.e(TAG, "localParticipant is null >> publishTrack(localVideoTrack) FAILED");
+
+                        }
+                    }else{
+                        Log.e(TAG, "room is null");
+                    }
+                }
+
+            }else{
+                //can happen when openRoom and StartCall both did startActivity
+                Log.e(TAG, "hasPermissionForCameraAndMicrophone() FAILED");
+            }
+        }else{
+            //can happen when openRoom and StartCall both did startActivity
+
+
+            if(null != room){
+                localParticipant = room.getLocalParticipant();
+
+                if (localParticipant != null) {
+                    localParticipant.publishTrack(localVideoTrack);
+                }else{
+                    Log.e(TAG, "localVideoTrack is OK - ocalParticipant is null >> wait for room.connect");
+
+                }
+            }else{
+                Log.e(TAG, "room is null >> wait for room.connect");
+            }
+
         }
     }
 
@@ -967,15 +1696,35 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     }
 
     private void createAudioAndVideoTracks() {
-        // Share your microphone
+        //------------------------------------------------------------------------------------------
+        //AUDIO -  Share your microphone
+        //------------------------------------------------------------------------------------------
+
         localAudioTrack = LocalAudioTrack.create(this, true, LOCAL_AUDIO_TRACK_NAME);
 
-        // Share your camera
+        if(null != localAudioTrack){
+            Log.e(TAG, "localAudioTrack is created ok from  callers audio source");
+
+        }else{
+            Log.e(TAG, "localAudioTrack is null - failed to create from  callers audio source");
+        }
+
+        //------------------------------------------------------------------------------------------
+        //LOCAL CAMERA -  Share your camera
         cameraCapturer = new CameraCapturerCompat(this, getAvailableCameraSource());
+        //------------------------------------------------------------------------------------------
         localVideoTrack = LocalVideoTrack.create(this,
-                true,
-                cameraCapturer.getVideoCapturer(),
-                LOCAL_VIDEO_TRACK_NAME);
+                                                 true,
+                                                  cameraCapturer.getVideoCapturer(),
+                                                  LOCAL_VIDEO_TRACK_NAME);
+
+        if(null != localVideoTrack){
+            Log.e(TAG, "localVideoTrack is created ok from camera capture");
+
+        }else{
+        	Log.e(TAG, "localVideoTrack is null - failed to create from camera capture");
+        }
+
         this.moveLocalVideoToThumbnailView();
     }
 
@@ -985,28 +1734,164 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 (CameraSource.BACK_CAMERA);
     }
 
+
+    //P1  - openRoom > dont connect to room > show Calling...
+    //backend will send push to p2 to connect to room
+    //once p2 has joined to room webhood will send startCall to P1
+    //till then just show Calling...
+    private void displayCallWaiting(){
+        Log.d(TwilioVideo.TAG, "TODO displayCallWaiting");
+
+
+        if(this.previewIsFullScreen){
+            //----------------------------------------------------------------------
+            //Show the dialing panel
+
+            this.show_viewRemoteParticipantInfoWithState("Calling...");
+
+            this.animateAlphaBorderForViews();
+
+            //----------------------------------------------------------------------
+            // show LOCAL USER full screen while waiting for othe ruser to answer
+            this.update_PreviewView_showInFullScreen(true, false, true);
+
+            //----------------------------------------------------------------------
+            //FIRST TIME VERY LOUD - cant set volume to 0
+            //NEXT TIMESupdate_PreviewView_showInFullScreen too quiet
+            //will start it before room connect in viewDidLoad
+            this.dialing_sound_start();
+            //----------------------------------------------------------------------
+
+        }else{
+            Log.e(TAG, "[displayCallWaiting] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL");
+        }
+    }
+
+
+
+
+
+    //called by TVIRoomDelegate.participantDidConnect
+    //Same app installed on both phones but UI changes depending on who starts or answers a call
+    //1 local + 0 remote - LOCAL USER is person dialing REMOTE participant.
+    //Remote hasnt joined the room yet so hasnt answered so show 'Dialing..'
+    //On the CALLING PHONE it will trigger
+    //didConnectToRoom_StartACall >> participantDidConnect_RemoteUserHasAnswered
+    private void participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom(){
+        Log.w(TAG, "[participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom] START");
+    
+        this.dialing_sound_stop();
+
+        if(this.previewIsFullScreen){
+            
+            //hide Waiting...
+            this.hide_viewRemoteParticipantInfo();
+
+            //------------------------------------------------------------------------------------------
+            //INCALL remote users name and muted icon
+            //------------------------------------------------------------------------------------------
+            //default ot muted - AUDIO_TRACK_ADDED will set it to unmuted
+            this.show_inCall_remoteUserNameAndMic_isMuted(true);
+
+            //------------------------------------------------------------------------------------------
+            //REMOTE user is visible in full screen
+            //shrink PREVIEW from FULL SCREEN to MINI to show REMOTE user behind
+            this.update_PreviewView_showInFullScreen(false, true, true);
+
+        }else{
+            Log.w(TAG, "[participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL");
+        }
+    }
+
+    private void participantDidConnect_LocalUserAndCallerHaveConnectedToRoom_StartTalking(){
+        Log.w(TAG, "[participantDidConnect_LocalUserAndCallerHaveConnectedToRoom_StartTalking] START");
+
+        this.dialing_sound_stop();
+
+        if(this.previewIsFullScreen){
+        
+        this.hide_viewRemoteParticipantInfo();
+
+            //------------------------------------------------------------------------------------------
+            //INCALL remote users name and muted icon
+            //------------------------------------------------------------------------------------------
+            //default ot muted - AUDIO_TRACK_ADDED will set it to unmuted
+        this.show_inCall_remoteUserNameAndMic_isMuted(true);
+
+            //------------------------------------------------------------------------------------------
+            //REMOTE user is visible in full screen
+            //------------------------------------------------------------------------------------------
+            //shrink PREVIEW from FULL SCREEN to MINI to show REMOTE user behind
+        this.update_PreviewView_showInFullScreen(false, true, true);
+
+
+        }else{
+        Log.w(TAG, "[participantDidConnect_LocalUserAndCallerHaveConnectedToRoom_StartTalking] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL");
+        }
+    }
+
+    //called by TVIRoomDelegate.participantDidConnect
+    //Same app installed on both phones but UI changes depending on who starts or answers a call
+    //1 local + 1 remote - REMOTE user in room is the other person who started the call
+    //LOCAL USER is answering a call so dont show 'Dialing..'
+    private void participantDidConnect(){
+        Log.w(TAG, "[participantDidConnect] Unused in 1..1 - use for GROUP");
+    }
+
+    private void participantDidDisconnect(String remoteParticipant_identity){
+
+        if(this.previewIsFullScreen){
+        Log.w(TAG, "[participantDidDisconnect] new participant joined room BUT previewIsFullScreen is true - shouldnt happen for 1..1 CALL");
+
+        }else{
+            //REMOTE USER DISCONNECTED
+            //show the remote user panel with state 'Disconnected'
+
+            //if app running on REMOTE photo will just show white circle no photo
+            //this is so Disconnected isnt off center
+        
+            this.show_viewRemoteParticipantInfoWithState("Disconnected");
+
+            //pulse animation is on repeat forever - just hide the fake border view - I think when in full sea/chat disconnect will close this whole VC
+            this.animateAlphaBorderForViews_HideBorder();
+
+            //Zoom the preview from MINI to FULL SCREEN
+            //ONLY show BLUR when dialing
+            //Here remote has disconnected so dont show blur
+        
+            this.update_PreviewView_showInFullScreen(true,true, false);
+        }
+    }
+    
+    
+
     private void connectToRoom() {
+
         configureAudio(true);
+
         ConnectOptions.Builder connectOptionsBuilder = new ConnectOptions.Builder(accessToken)
-                .roomName(this.roomId)
-                .enableIceGatheringOnAnyAddressPorts(true);
+                                                                .roomName(this.roomId)
+                                                                .enableIceGatheringOnAnyAddressPorts(true);
 
         /*
          * Add local audio track to connect options to share with participants.
          */
         if (localAudioTrack != null) {
-            connectOptionsBuilder
-                    .audioTracks(Collections.singletonList(localAudioTrack));
+            connectOptionsBuilder.audioTracks(Collections.singletonList(localAudioTrack));
+        }else{
+            Log.e(TAG, "connectToRoom: localAudioTrack is null");
         }
 
-        /*
-         * Add local video track to connect options to share with participants.
-         */
+        //------------------------------------------------------------------------------------------
+        //Add local video track to connect options to share with participants.
         if (localVideoTrack != null) {
             connectOptionsBuilder.videoTracks(Collections.singletonList(localVideoTrack));
+        }else{
+            Log.e(TAG, "connectToRoom: localVideoTrack is null");
         }
-
+        //------------------------------------------------------------------------------------------
         room = Video.connect(this, connectOptionsBuilder.build(), roomListener());
+        //------------------------------------------------------------------------------------------
     }
 
     /*
@@ -1015,29 +1900,34 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private void initializeUI() {
         setDisconnectAction();
 
-        if (config.getPrimaryColorHex() != null) {
-            int primaryColor = Color.parseColor(config.getPrimaryColorHex());
-            ColorStateList color = ColorStateList.valueOf(primaryColor);
-            connectActionFab.setBackgroundTintList(color);
+        if(null != this.config){
+            if (config.getPrimaryColorHex() != null) {
+                int primaryColor = Color.parseColor(config.getPrimaryColorHex());
+                ColorStateList color = ColorStateList.valueOf(primaryColor);
+                connectActionFab.setBackgroundTintList(color);
+            }
+
+            if (config.getSecondaryColorHex() != null) {
+                int secondaryColor = Color.parseColor(config.getSecondaryColorHex());
+                ColorStateList color = ColorStateList.valueOf(secondaryColor);
+                switchCameraActionFab.setBackgroundTintList(color);
+                localVideoActionFab.setBackgroundTintList(color);
+                muteActionFab.setBackgroundTintList(color);
+                switchAudioActionFab.setBackgroundTintList(color);
+            }
+        }else{
+            Log.e(TAG, "this.config is null");
         }
 
-        if (config.getSecondaryColorHex() != null) {
-            int secondaryColor = Color.parseColor(config.getSecondaryColorHex());
-            ColorStateList color = ColorStateList.valueOf(secondaryColor);
-            switchCameraActionFab.setBackgroundTintList(color);
-            localVideoActionFab.setBackgroundTintList(color);
-            muteActionFab.setBackgroundTintList(color);
-            switchAudioActionFab.setBackgroundTintList(color);
-        }
 
         switchCameraActionFab.show();
-        switchCameraActionFab.setOnClickListener(switchCameraClickListener());
+        switchCameraActionFab.setOnClickListener(button_switchCamera_OnClickListener());
         localVideoActionFab.show();
-        localVideoActionFab.setOnClickListener(localVideoClickListener());
+        localVideoActionFab.setOnClickListener(button_localVideo_OnClickListener());
         muteActionFab.show();
-        muteActionFab.setOnClickListener(muteClickListener());
+        muteActionFab.setOnClickListener(button_mute_OnClickListener());
         switchAudioActionFab.show();
-        switchAudioActionFab.setOnClickListener(switchAudioClickListener());
+        switchAudioActionFab.setOnClickListener(button_switchAudio_OnClickListener());
     }
 
     /*
@@ -1046,7 +1936,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private void setDisconnectAction() {
         connectActionFab.setImageDrawable(ContextCompat.getDrawable(this, FAKE_R.getDrawable("ic_call_end_white_24px")));
         connectActionFab.show();
-        connectActionFab.setOnClickListener(disconnectClickListener());
+        connectActionFab.setOnClickListener(button_disconnect_OnClickListener());
     }
 
     /*
@@ -1087,17 +1977,26 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     }
 
     private void moveLocalVideoToThumbnailView() {
+        Log.e(TAG, "moveLocalVideoToThumbnailView: STARTED" );
         if (thumbnailVideoView.getVisibility() == View.GONE) {
+
             thumbnailVideoView.setVisibility(View.VISIBLE);
+            //--------------------------------------------------------------------------------------
             if (localVideoTrack != null) {
                 localVideoTrack.removeRenderer(primaryVideoView);
                 localVideoTrack.addRenderer(thumbnailVideoView);
+            }else{
+                Log.e(TAG, "moveLocalVideoToThumbnailView: localVideoTrack is null");
             }
+            //--------------------------------------------------------------------------------------
             if (localVideoView != null && thumbnailVideoView != null) {
                 localVideoView = thumbnailVideoView;
+            }else{
+                Log.e(TAG, "moveLocalVideoToThumbnailView: localVideoView != null && thumbnailVideoView != null FAILED");
             }
-            thumbnailVideoView.setMirror(cameraCapturer.getCameraSource() ==
-                    CameraSource.FRONT_CAMERA);
+            //--------------------------------------------------------------------------------------
+            //flip camera on horizontal axis?
+            thumbnailVideoView.setMirror(cameraCapturer.getCameraSource() == CameraSource.FRONT_CAMERA);
         }
     }
 
@@ -1135,10 +2034,16 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
      */
     private Room.Listener roomListener() {
         return new Room.Listener() {
+
             @Override
             public void onConnected(Room room) {
+                //----------------------------------------------------------------------------------
+                //ROOM - onConnected
+                //----------------------------------------------------------------------------------
                 Log.e(TAG, "Room.Listener onConnected: ");
+
                 localParticipant = room.getLocalParticipant();
+
                 publishEvent(CallEvent.CONNECTED);
 
                 final List<RemoteParticipant> remoteParticipants = room.getRemoteParticipants();
@@ -1148,21 +2053,23 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
                 if (remoteParticipants != null) {
                     if (remoteParticipants.isEmpty()) {
-                        //----------------------------------------------------------------------
+                        //--------------------------------------------------------------------------
                         //1..1 CALL - no remote users so I am DIALING the REMOTE USER
-                        //----------------------------------------------------------------------
+                        //--------------------------------------------------------------------------
                         Log.e(TAG, "Room.Listener onConnected: room.remoteParticipants count is 0 >> LOCAL USER is STARTING A 1..1 CALL");
 
-                        //----------------------------------------------------------------------
-                        didConnectToRoom_StartACall();
+                        //--------------------------------------------------------------------------
+                        didConnectToRoom_AnswerACall();
+
+                        //--------------------------------------------------------------------------
 
                     }else if (remoteParticipants.size() == 1) {
                         //----------------------------------------------------------------------
                         //1..1 CALL - 1 remote user in room so LOCAL USER is ANSWERING a CALL
                         //----------------------------------------------------------------------
-                        Log.e(TAG, "Room.Listener onConnected: room.remoteParticipants count:%lu >> REMOTE USER is ANSWERING A 1..1 CALL");
+                        Log.e(TAG, "Room.Listener onConnected: room.remoteParticipants count:%lu >> LOCAL USER is CONNECTING TO ROOM AFTER REMOTE for A 1..1 CALL");
                         //----------------------------------------------------------------------
-                        didConnectToRoom_AnswerACall();
+                        participantDidConnect_LocalUserAndCallerHaveConnectedToRoom_StartTalking();
                     }
                     else {
                         Log.e(TAG, "remoteParticipants.size() > 1 - GROUP CALL NOT HANDLED IN v1");
@@ -1196,14 +2103,20 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onDisconnected(Room room, TwilioException e) {
+                //----------------------------------------------------------------------------------
+                //ROOM - onDisconnected
+                //----------------------------------------------------------------------------------
                 Log.e(TAG, "Room.Listener onDisconnected: ");
+
 
                 localParticipant = null;
                 TwilioVideoActivity.this.room = null;
+
                 // Only reinitialize the UI if disconnect was not called from onDestroy()
                 if (!disconnectedFromOnDestroy && e != null) {
                     publishEvent(CallEvent.DISCONNECTED_WITH_ERROR, TwilioVideoUtils.convertToJSON(e));
                     TwilioVideoActivity.this.handleConnectionError(config.getI18nDisconnectedWithError());
+
                 } else {
                     publishEvent(CallEvent.DISCONNECTED);
                 }
@@ -1211,12 +2124,16 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onParticipantConnected(Room room, RemoteParticipant participant) {
+                //----------------------------------------------------------------------------------
+                //PARTICIPANT - onParticipantConnected
+                //----------------------------------------------------------------------------------
+
                 Log.e(TAG, "Room.Listener onParticipantConnected: ");
 
                 publishEvent(CallEvent.PARTICIPANT_CONNECTED);
                 addRemoteParticipant(participant);
 
-                //------------------------------------------------------------------------------------------
+                //----------------------------------------------------------------------------------
                 final List<RemoteParticipant> remoteParticipants = room.getRemoteParticipants();
 
                 if (remoteParticipants != null) {
@@ -1227,7 +2144,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                         //----------------------------------------------------------------------
                         Log.e(TAG, "onParticipantConnected: oom.remoteParticipants count:0 >> LOCAL USER is STARTING A 1..1 CALL");
                         //----------------------------------------------------------------------
-                        //[self participantDidConnect_AnswerACall];
+                        //this.participantDidConnect_AnswerACall];
                         //used didConnectToRoom_AnswerACall instead
                         //for GROUP participantDidConnect will do thinks like inc particpant count
                         //show list of users etc
@@ -1237,9 +2154,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                         //----------------------------------------------------------------------
                         //1..1 CALL - 1 remote user in room so LOCAL USER is ANSWERING a CALL
                         //----------------------------------------------------------------------
-                        Log.e(TAG, "onParticipantConnected: room.remoteParticipants count:1 >> REMOTE USER is ANSWERING A 1..1 CALL");
+                        Log.e(TAG, "onParticipantConnected: room.remoteParticipants count:1 >>  room.remoteParticipants count:%lu >> REMOTE USER is ANSWERING A 1..1 CALL >> participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom");
                         //----------------------------------------------------------------------
-                        participantDidConnect_RemoteUserHasAnswered();
+                        participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom();
                     }
                     else {
                         Log.e(TAG, "remoteParticipants.size() > 1 - GROUP CALL NOT HANDLED IN v1");
@@ -1513,68 +2430,20 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         };
     }
 
-    private View.OnClickListener disconnectClickListener() {
+
+    /***********************************************************************************************
+     *  BUTTONS
+     **********************************************************************************************/
+
+
+    //----------------------------------------------------------------------------------------------
+    //BUTTON - CAMERA ON/OFF
+    //----------------------------------------------------------------------------------------------
+    private View.OnClickListener button_localVideo_OnClickListener() {
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (config.isHangUpInApp()) {
-                    // Propagating the event to the web side in order to allow developers to do something else before disconnecting the room
-                    publishEvent(CallEvent.HANG_UP);
-                } else {
-                    onDisconnect();
-                }
-            }
-        };
-    }
-
-
-    private View.OnClickListener switchCameraClickListener() {
-        return new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                Log.e(TAG, "onClick: switchCameraClickListener" );
-
-                if (cameraCapturer != null) {
-                    CameraSource cameraSource = cameraCapturer.getCameraSource();
-                    cameraCapturer.switchCamera();
-                    if (thumbnailVideoView.getVisibility() == View.VISIBLE) {
-                        thumbnailVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
-                    } else {
-                        primaryVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
-                    }
-                }
-
-            }//onclick
-
-        };//return
-    }
-
-    private View.OnClickListener switchAudioClickListener() {
-        return new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.e(TAG, "switchAudioClickListener.onClick: ");
-                if (audioManager.isSpeakerphoneOn()) {
-                    audioManager.setSpeakerphoneOn(false);
-                } else {
-                    audioManager.setSpeakerphoneOn(true);
-
-                }
-                int icon = audioManager.isSpeakerphoneOn() ?
-                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
-                switchAudioActionFab.setImageDrawable(ContextCompat.getDrawable(
-                        TwilioVideoActivity.this, icon));
-
-            }
-        };
-    }
-
-    private View.OnClickListener localVideoClickListener() {
-        return new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.e(TAG, "switchAudioClickListener.onClick: ");
+                Log.e(TAG, "button_localVideo_OnClickListener.onClick: ");
                 /*
                  * Enable/disable the local video track
                  */
@@ -1598,12 +2467,15 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         };
     }
 
-    private View.OnClickListener muteClickListener() {
+    //----------------------------------------------------------------------------------------------
+    //BUTTON - AUDIO ON/OFF
+    //----------------------------------------------------------------------------------------------
+    private View.OnClickListener button_mute_OnClickListener() {
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Log.e(TAG, "muteClickListener.onClick: ");
-                
+
                 /*
                  * Enable/disable the local audio track. The results of this operation are
                  * signaled to other Participants in the same Room. When an audio track is
@@ -1620,6 +2492,76 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     Log.e(TAG, "onClick: localAudioTrack is null");
                 }
 
+
+            }
+        };
+    }
+
+
+    //----------------------------------------------------------------------------------------------
+    //BUTTON - DISCONNECT
+    //----------------------------------------------------------------------------------------------
+    private View.OnClickListener button_disconnect_OnClickListener() {
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (config.isHangUpInApp()) {
+                    // Propagating the event to the web side in order to allow developers to do something else before disconnecting the room
+                    publishEvent(CallEvent.HANG_UP);
+                } else {
+                    onDisconnect();
+                }
+            }
+        };
+    }
+
+    //----------------------------------------------------------------------------------------------
+    //BUTTON - FLIP FRONT and BACk camera - tap on mini view
+    //----------------------------------------------------------------------------------------------
+    private View.OnClickListener button_switchCamera_OnClickListener() {
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                Log.e(TAG, "onClick: switchCameraClickListener" );
+
+//                if (cameraCapturer != null) {
+//                    CameraSource cameraSource = cameraCapturer.getCameraSource();
+//                    cameraCapturer.switchCamera();
+//                    if (thumbnailVideoView.getVisibility() == View.VISIBLE) {
+//                        thumbnailVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
+//                    } else {
+//                        primaryVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
+//                    }
+//                }
+
+                publishEvent(CallEvent.DEBUGSTARTACALL);
+
+            }//onclick
+
+        };//return
+    }
+
+
+    //----------------------------------------------------------------------------------------------
+    //BUTTON - AUDIO
+    //----------------------------------------------------------------------------------------------
+
+    private View.OnClickListener button_switchAudio_OnClickListener() {
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.e(TAG, "switchAudioClickListener.onClick: ");
+                if (audioManager.isSpeakerphoneOn()) {
+                    audioManager.setSpeakerphoneOn(false);
+                } else {
+                    audioManager.setSpeakerphoneOn(true);
+
+                }
+                int icon = audioManager.isSpeakerphoneOn() ?
+                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
+                switchAudioActionFab.setImageDrawable(ContextCompat.getDrawable(
+                        TwilioVideoActivity.this, icon));
 
             }
         };
@@ -1680,16 +2622,17 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             return;
         }
         Log.i(TwilioVideo.TAG, "Connection error handled by the plugin");
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage(message)
-                .setCancelable(false)
-                .setPositiveButton(config.getI18nAccept(), new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        TwilioVideoActivity.this.finish();
-                    }
-                });
-        AlertDialog alert = builder.create();
-        alert.show();
+//no alert in plugin let main app handle it
+//        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//        builder.setMessage(message)
+//                .setCancelable(false)
+//                .setPositiveButton(config.getI18nAccept(), new DialogInterface.OnClickListener() {
+//                    public void onClick(DialogInterface dialog, int id) {
+//                        TwilioVideoActivity.this.finish();
+//                    }
+//                });
+//        AlertDialog alert = builder.create();
+//        alert.show();
     }
 
 

@@ -118,8 +118,8 @@ NSString *const CLOSED = @"CLOSED";
     [self addFakeBordersToRemoteImageView];
     
     //---------------------------------------------------------
-    
     [self placeVolumeIconOverButton];
+    
     //---------------------------------------------------------
     [self configureLogging];
     
@@ -127,9 +127,9 @@ NSString *const CLOSED = @"CLOSED";
     //---------------------------------------
     //DIALING.. MP3
     //---------------------------------------
-    [self dialingSound_setup];
+    [self dialing_sound_setup];
     //moved from didConnectToRoom_StartACall - run it before room connects
-    //[self dialingSound_start];
+    //[self dialing_sound_start];
     
     //---------------------------------------
     //PREVIEW
@@ -159,6 +159,10 @@ NSString *const CLOSED = @"CLOSED";
     // Preview our local camera track in the local video preview view.
     [self startPreview];
     
+    
+    //----------------------------------------------------------------------------------------------
+    //INIT BUTTONS
+    //----------------------------------------------------------------------------------------------
     // Disconnect and mic button will be displayed when client is connected to a room.
     self.micButton.hidden = YES;
 
@@ -177,6 +181,9 @@ NSString *const CLOSED = @"CLOSED";
         //self.cameraSwitchButton.backgroundColor = [TwilioVideoConfig colorFromHexString:secondaryColor];
     }
     
+    //----------------------------------------------------------------------------------------------
+    //INIT BUTTONS
+    //----------------------------------------------------------------------------------------------
     [self startProximitySensor];
 }
 
@@ -365,9 +372,9 @@ NSString *const CLOSED = @"CLOSED";
                     }
     ];
     //----------------------------------------------------------------------------------------------
-    
 }
 
+//in answerCall - local and remote urls are reversed
 -(void)fill_imageView_RemoteParticipant{
     //DEBUG self.remoteUserPhotoURL = NULL;
     
@@ -375,6 +382,7 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 //when LOCAL user is offline we show their image over the disable camera view
+//in answerCall - local and remote urls are reversed
 -(void)fill_imageView_LocalParticipant{
     //DEBUG DO NOT RELEASE - self.localUserPhotoURL = NULL;
     
@@ -726,7 +734,7 @@ NSString *const CLOSED = @"CLOSED";
                       remoteUserPhotoURL:(NSString *)remoteUserPhotoURL
 {
     
-    [self log_debug:@"[TwilioVideoViewController] [ connectToRoom]"];
+    [self log_debug:@"[TwilioVideoViewController] [openRoom]"];
     
     //RELEASE
     [self show_buttonDebugStartACall];
@@ -782,10 +790,7 @@ NSString *const CLOSED = @"CLOSED";
     }else{
         [self log_error:@"[openRoom:] remoteUserPhotoURL is NULL"];
     }
-    //----------------------------------------------------------------------------------------------
-    
-    
-    
+
     //----------------------------------------------------------------------------------------------
     [self log_debug:@"[TwilioVideoViewController] [ connectToRoom] >> [self showRoomUI:YES]"];
     
@@ -827,6 +832,7 @@ NSString *const CLOSED = @"CLOSED";
     
     [self log_debug:@"[TwilioVideoViewController] [ connectToRoom] >> [self showRoomUI:YES]"];
     
+    //shows mic button
     [self showRoomUI:YES];
     
     [self log_debug:@"[TwilioVideoViewController] [ connectToRoom] >> requestRequiredPermissions"];
@@ -1032,7 +1038,7 @@ NSString *const CLOSED = @"CLOSED";
         
     }
     //[self updateConstraints_PreviewView_toFullScreen: FALSE animated:TRUE];
-    //DEBUG [self dialingSound_stop];
+    //DEBUG [self dialing_sound_stop];
 }
 
 -(void)placeVolumeIconOverButton{
@@ -1208,11 +1214,11 @@ NSString *const CLOSED = @"CLOSED";
         //FIRST TIME VERY LOUD - cant set volume to 0
         //NEXT TIMES too quiet
         //will start it before room connect in viewDidLoad
-        [self dialingSound_start];
+        [self dialing_sound_start];
         //----------------------------------------------------------------------
         
     }else{
-        [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
+        [self log_error:@"[displayCallWaiting] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
     }
 }
 
@@ -1223,15 +1229,6 @@ NSString *const CLOSED = @"CLOSED";
     
     if(self.previewIsFullScreen){
         //------------------------------------------------------------------------------
-        //CLEANUP
-        //        REMOTE USER CONNECTED
-        //        //Hide the dialing screen
-        //        [self hide_viewRemoteParticipantInfo];
-        //
-        //        //Zoom the preview from FULL SCREEN to MINI
-        //        [self updateConstraints_PreviewView_toFullScreen: FALSE animated:TRUE];
-        
-        //------------------------------------------------------------------------------
         //REMOTE USER CONNECTED.. waiting for CALLER to enter room
        
         [self show_viewRemoteParticipantInfoWithState:@"Connecting..."];
@@ -1239,7 +1236,7 @@ NSString *const CLOSED = @"CLOSED";
         [self animateAlphaBorderForViews];
         
     }else{
-        [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
+        [self log_error:@"[didConnectToRoom_AnswerACall] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
     }
 }
 
@@ -1249,11 +1246,11 @@ NSString *const CLOSED = @"CLOSED";
 //1 local + 0 remote - LOCAL USER is person dialing REMOTE participant.
 //Remote hasnt joined the room yet so hasnt answered so show 'Dialing..'
 //On the CALLING PHONE it will trigger
-//didConnectToRoom_StartACall >> participantDidConnect_RemoteUserHasAnswered
+//didConnectToRoom_StartACall >> participantDidConnect_LocalUserAndCallerHaveConnectedToRoom_StartTalking
 -(void)participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom{
     [self log_info:@"[participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom] START"];
 
-    [self dialingSound_stop];
+    [self dialing_sound_stop];
 
     if(self.previewIsFullScreen){
         //hide Waiting...
@@ -1271,14 +1268,14 @@ NSString *const CLOSED = @"CLOSED";
         [self update_PreviewView_showInFullScreen: FALSE animated:TRUE showBlurView:TRUE];
 
     }else{
-        [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
+        [self log_error:@"[participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
     }
 }
 
 -(void)participantDidConnect_LocalUserAndCallerHaveConnectedToRoom_StartTalking{
     [self log_info:@"[participantDidConnect_LocalUserAndCallerHaveConnectedToRoom_StartTalking] START"];
     
-    [self dialingSound_stop];
+    [self dialing_sound_stop];
     
     if(self.previewIsFullScreen){
         
@@ -1298,7 +1295,7 @@ NSString *const CLOSED = @"CLOSED";
         
         
     }else{
-        [self log_error:@"[participantDidConnect] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
+        [self log_error:@"[participantDidConnect_LocalUserAndCallerHaveConnectedToRoom_StartTalking] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL"];
     }
 }
 
@@ -1514,7 +1511,6 @@ NSString *const CLOSED = @"CLOSED";
 
     self.micButton.hidden = !inRoom;
     [UIApplication sharedApplication].idleTimerDisabled = inRoom;
-    
     
     [self fillIn_viewRemoteParticipantInfo];
 }
@@ -1764,9 +1760,7 @@ NSString *const CLOSED = @"CLOSED";
         [self log_info:[NSString stringWithFormat:@"[participantDidConnect][TwilioVideoViewController] [ TVIRoomDelegate.participantDidConnect][room:participantDidConnect:] room.remoteParticipants count:%lu >> LOCAL USER is STARTING A 1..1 CALL >> do nothing",
                         (unsigned long)[room.remoteParticipants count]]];
         //----------------------------------------------------------------------
-        //[self participantDidConnect_AnswerACall];
-        //used didConnectToRoom_AnswerACall instead
-        //for GROUP participantDidConnect will do thinks like inc particpant count
+        //for GROUP participantDidConnect will do things like inc particpant count
         //show list of users etc
         //----------------------------------------------------------------------
     }
@@ -2081,7 +2075,7 @@ NSString *const CLOSED = @"CLOSED";
     [super viewWillDisappear: animated];
     
     //if user disconnects while waiting for remote user to answer
-    [self dialingSound_stop];
+    [self dialing_sound_stop];
     //Strange issue where first time was quiet but 2nd, 3rd loud
     //i think maybe multiple players?
     audioPlayer = NULL;
@@ -2116,10 +2110,10 @@ NSString *const CLOSED = @"CLOSED";
 //ISSUE - IF i turn up the volume and get 50% it get stuck at loud
 // I had to start the mp3 BEFORE connecting to the room else it jumps to loud
 
--(void) dialingSound_setup{
+-(void) dialing_sound_setup{
     
     if (NULL != audioPlayer) {
-        NSLog(@"ERROR: audioPlayer is NOT NULL - dont call dialingSound_setup TWICE youll get same sound played twice sounds VERY LOUD");
+        NSLog(@"ERROR: audioPlayer is NOT NULL - dont call dialing_sound_setup TWICE youll get same sound played twice sounds VERY LOUD");
     }else{
         //NSError *setCategoryError = nil;
         
@@ -2151,28 +2145,28 @@ NSString *const CLOSED = @"CLOSED";
         }
     }
 }
--(void) dialingSound_setVolume{
+-(void) dialing_sound_set_volume{
     //FIRST TIME ALWAYS LOUD THEN USES VOLUME
    // [audioPlayer setVolume:0.6];
 }
--(void) dialingSound_start{
+-(void) dialing_sound_start{
     
     //viewDidLoad only called once - even if you press red disconnect and UI disappears
     //2nd time it will jump into openRoom: or answerCall
     if (audioPlayer) {
-        [self log_info:@"[dialingSound_start] audioPlayer is not NULL - ok to start/restart"];
+        [self log_info:@"[dialing_sound_start] audioPlayer is not NULL - ok to start/restart"];
     }else{
-        [self log_error:@"[dialingSound_start] audioPlayer is NULL calling setup"];
-        [self dialingSound_setup];
+        [self log_error:@"[dialing_sound_start] audioPlayer is NULL calling setup"];
+        [self dialing_sound_setup];
     }
     
     
     if (audioPlayer) {
         
         if([audioPlayer isPlaying]){
-            [self log_debug:@"[dialingSound_start] [audioPlayer isPlaying] is TRUE - DONT start another one you get a VERY loud audio"];
+            [self log_debug:@"[dialing_sound_start] [audioPlayer isPlaying] is TRUE - DONT start another one you get a VERY loud audio"];
         }else{
-            [self log_debug:@"[dialingSound_start]  >> [audioPlayer play]"];
+            [self log_debug:@"[dialing_sound_start]  >> [audioPlayer play]"];
             
             [audioPlayer setNumberOfLoops:1];
             
@@ -2181,21 +2175,21 @@ NSString *const CLOSED = @"CLOSED";
             
             //https://stackoverflow.com/questions/25394627/how-to-lower-the-volume-of-music-in-swift
             //SO - make sure you set volume AFTER PLAY
-            [self dialingSound_setVolume];
+            [self dialing_sound_set_volume];
         }
         
     }else{
-        [self log_error:@"[dialingSound_start] audioPlayer is NULL [audioPlayer play] FAILED"];
+        [self log_error:@"[dialing_sound_start] audioPlayer is NULL [audioPlayer play] FAILED"];
     }
 }
 
--(void) dialingSound_stop{
+-(void) dialing_sound_stop{
     if (audioPlayer) {
-        [self log_debug:@"[dialingSound_stop] >> [audioPlayer stop]"];
+        [self log_debug:@"[dialing_sound_stop] >> [audioPlayer stop]"];
         
         [audioPlayer stop];
     }else{
-        [self log_error:@"[dialingSound_stop] audioPlayer is NULL [audioPlayer stop] FAILED"];
+        [self log_error:@"[dialing_sound_stop] audioPlayer is NULL [audioPlayer stop] FAILED"];
     }
 }
 
