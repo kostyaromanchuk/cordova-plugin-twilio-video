@@ -98,6 +98,7 @@
         <source-file src="src/android/CallConfig.java" target-dir="src/org/apache/cordova/twiliovideo" />
         <source-file src="src/android/CameraCapturerCompat.java" target-dir="src/org/apache/cordova/twiliovideo" />
         <source-file src="src/android/TwilioVideoUtils.java" target-dir="src/org/apache/cordova/twiliovideo" />
+        <source-file src="src/android/TwilioVideoActivityNextAction.java" target-dir="src/org/apache/cordova/twiliovideo" />
 
         <framework src="com.google.android.gms:play-services-gcm:+" />
         <framework src="src/android/twiliovideo.gradle" custom="true" type="gradleReference" />
