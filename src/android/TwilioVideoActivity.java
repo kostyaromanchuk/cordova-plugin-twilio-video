@@ -1558,7 +1558,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             }
         }else{
             //can happen when openRoom and StartCall both did startActivity
-            Log.e(TAG, "localVideoTrack is OK ");
+            Log.e(TAG, "setupLocalCamera_ifnull - localVideoTrack is OK ");
 
         }
     }
@@ -2525,17 +2525,17 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
                 Log.e(TAG, "onClick: switchCameraClickListener" );
 
-//                if (cameraCapturer != null) {
-//                    CameraSource cameraSource = cameraCapturer.getCameraSource();
-//                    cameraCapturer.switchCamera();
-//                    if (thumbnailVideoView.getVisibility() == View.VISIBLE) {
-//                        thumbnailVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
-//                    } else {
-//                        primaryVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
-//                    }
-//                }
-
-                publishEvent(CallEvent.DEBUGSTARTACALL);
+                if (cameraCapturer != null) {
+                    CameraSource cameraSource = cameraCapturer.getCameraSource();
+                    cameraCapturer.switchCamera();
+                    if (thumbnailVideoView.getVisibility() == View.VISIBLE) {
+                        thumbnailVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
+                    } else {
+                        primaryVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
+                    }
+                }
+//DEBUG triggers startCall
+//                publishEvent(CallEvent.DEBUGSTARTACALL);
 
             }//onclick
 
