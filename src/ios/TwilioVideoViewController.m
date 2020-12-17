@@ -318,10 +318,13 @@ NSString *const CLOSED = @"CLOSED";
 -(void)fillIn_viewRemoteParticipantInfo{
 
     if (self.remoteUserName) {
+        //---------------------------------------------------------
         //shown with photo when calling
         self.textViewRemoteParticipantName.text = self.remoteUserName;
+        //---------------------------------------------------------
         //shown above buttons when call active
         self.textViewInCallRemoteName.text = self.remoteUserName;
+        //---------------------------------------------------------
     }else{
         [self log_error:@"[fillIn_viewRemoteParticipantInfo] self.remoteUserName is NULL"];
         self.textViewRemoteParticipantName.text = @"";

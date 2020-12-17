@@ -1,9 +1,7 @@
 package org.apache.cordova.twiliovideo;
 
 import android.Manifest;
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
@@ -59,6 +57,8 @@ import java.util.List;
 
 import com.squareup.picasso.Picasso;
 
+import capacitor.android.plugins.R;
+
 public class TwilioVideoActivity extends AppCompatActivity implements CallActionObserver {
     public static final String TAG = "TwilioVideoActivity";
     /*
@@ -111,11 +111,15 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private LocalAudioTrack localAudioTrack;
     private LocalVideoTrack localVideoTrack;
 
-    private FloatingActionButton connectActionFab;
-    private FloatingActionButton switchCameraActionFab;
-    private FloatingActionButton localVideoActionFab;
-    private FloatingActionButton muteActionFab;
-    private FloatingActionButton switchAudioActionFab;
+    private FloatingActionButton button_fab_localvideo_onoff;
+    private FloatingActionButton button_fab_audio_onoff;
+    private FloatingActionButton button_fab_switchaudio;
+    private FloatingActionButton button_fab_switchcamera;
+    private FloatingActionButton button_fab_disconnect;
+
+
+
+
     private AudioManager audioManager;
     private String participantIdentity;
 
@@ -135,6 +139,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     private TextView textViewRemoteParticipantName;
     private TextView textViewRemoteParticipantConnectionState;
+
+
+    private TextView textViewInCallRemoteName;
+    private ImageView imageViewInCallRemoteMicMuteState;
 
     private boolean previewIsFullScreen;
 
@@ -157,16 +165,34 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         primaryVideoView = findViewById(FAKE_R.getId("primary_video_view"));
         thumbnailVideoView = findViewById(FAKE_R.getId("thumbnail_video_view"));
 
-        connectActionFab = findViewById(FAKE_R.getId("connect_action_fab"));
-        switchCameraActionFab = findViewById(FAKE_R.getId("switch_camera_action_fab"));
-        localVideoActionFab = findViewById(FAKE_R.getId("local_video_action_fab"));
-        muteActionFab = findViewById(FAKE_R.getId("mute_action_fab"));
-        switchAudioActionFab = findViewById(FAKE_R.getId("switch_audio_action_fab"));
+        //------------------------------------------------------------------------------------------
+        //BOTTOM BUTTONS
+        //------------------------------------------------------------------------------------------
+        //CALLER VIDEO ON/OFF
+        button_fab_localvideo_onoff = findViewById(FAKE_R.getId("local_video_action_fab"));
+
+        //MUTE AUDIO
+        button_fab_audio_onoff = findViewById(FAKE_R.getId("mute_action_fab"));
+
+        //FLIP CAMERA
+        button_fab_switchcamera = findViewById(FAKE_R.getId("switch_camera_action_fab"));
+
+        //SWITCH AUDIO - SPEAKER/HEADPHONES
+        button_fab_switchaudio = findViewById(FAKE_R.getId("switch_audio_action_fab"));
+
+        //RED DISCONNECT BUTTON
+        button_fab_disconnect = findViewById(FAKE_R.getId("connect_action_fab"));
+        //------------------------------------------------------------------------------------------
 
         //filled below from url passed in from cordova via intent
         imageViewRemoteParticipant = findViewById(FAKE_R.getId("imageViewRemoteParticipant"));
         textViewRemoteParticipantName = findViewById(FAKE_R.getId("textViewRemoteParticipantName"));
         textViewRemoteParticipantConnectionState = findViewById(FAKE_R.getId("textViewRemoteParticipantConnectionState"));
+
+
+        imageViewInCallRemoteMicMuteState = findViewById(FAKE_R.getId("imageViewInCallRemoteMicMuteState"));
+        textViewInCallRemoteName = findViewById(FAKE_R.getId("textViewInCallRemoteName"));
+
 
 
         //------------------------------------------------------------------------------------------
@@ -179,6 +205,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //------------------------------------------------------------------------------------------
         //must call before handling Intents
         setupPreviewView();
+
+        hide_inCall_remoteUserNameAndMic();
 
 //        //------------------------------------------------------------------------------------------
 //        //PARSE PARAMS FROM Intent
@@ -224,12 +252,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         this.hide_textViewRemoteParticipantConnectionState();
 
 
-        if (textViewRemoteParticipantName != null) {
-            textViewRemoteParticipantName.setText(this.remote_user_name);
-        }else{
-            Log.e(TAG, "methodName: textViewRemoteParticipantName is null");
-        }
+        textViewRemoteParticipantName.setText("");
     }
+
     private void parse_Intents(){
         Intent intent = getIntent();
 
@@ -575,7 +600,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //Disconnected... just hide the animation is not stopped
     private void animateAlphaBorderForViews_HideBorder(){
         Log.e(TAG, "animateAlphaBorderForViews_HideBorder: TODO" );
-        //[this.viewWrapperAnimatedBorder0 setHidden:TRUE];
+        //[this.viewWrapperAnimatedBorder0 setHidden(true);
     }
 
     private void animateAlphaBorderForViews(){
@@ -605,17 +630,17 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 //        //----------------------------------------------------------------------------------------------
 
     }
-    
-
-
 
     private void fillIn_viewRemoteParticipantInfo(){
 
         if (this.remote_user_name != null) {
             this.textViewRemoteParticipantName.setText(this.remote_user_name);
+            this.textViewInCallRemoteName.setText(this.remote_user_name);
         }else{
             Log.e(TAG, "instance initializer: this.remoteUserName is NULL");
             this.textViewRemoteParticipantName.setText("");
+            this.textViewInCallRemoteName.setText("");
+
         }
 
         fill_imageView_RemoteParticipant();
@@ -857,6 +882,37 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     }
 
 
+    //In Call - NAME and MIC state
+
+    private void hide_inCall_remoteUserNameAndMic(){
+
+        this.imageViewInCallRemoteMicMuteState.setVisibility(View.GONE);
+        this.textViewInCallRemoteName.setVisibility(View.GONE);
+
+    }
+
+    private void show_inCall_remoteUserNameAndMic_isMuted(boolean micIsMuted){
+
+        this.imageViewInCallRemoteMicMuteState.setVisibility(View.VISIBLE);
+        this.textViewInCallRemoteName.setVisibility(View.VISIBLE);
+
+    
+        this.update_imageViewInCallRemoteMicMuteState_isMuted(micIsMuted);
+    }
+
+    private void update_imageViewInCallRemoteMicMuteState_isMuted(boolean micIsMuted){
+        if(micIsMuted){
+            // [self update_imageViewInCallRemoteMicMuteState:@"no_mic.png"];
+
+            imageViewInCallRemoteMicMuteState.setImageResource(R.drawable.ic_mic_off_red_24px);
+
+        }else{
+            //        [self update_imageViewInCallRemoteMicMuteState:@"mic.png"];
+
+            imageViewInCallRemoteMicMuteState.setImageResource(R.drawable.ic_mic_green_24px);
+
+        }
+    }
 
 
 
@@ -915,14 +971,14 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     }
 
 
-    private void show_inCall_remoteUserNameAndMic_isMuted(boolean micIsMuted){
-        Log.e(TAG, "show_inCall_remoteUserNameAndMic_isMuted: TODO");
-
-//            [this.imageViewInCallRemoteMicMuteState setHidden:FALSE];
-//    [this.textViewInCallRemoteName setHidden:FALSE];
+//    private void show_inCall_remoteUserNameAndMic_isMuted(boolean micIsMuted){
+//        Log.e(TAG, "show_inCall_remoteUserNameAndMic_isMuted: TODO");
 //
-//    this.update_imageViewInCallRemoteMicMuteState_isMuted:micIsMuted];
-    }
+////            [this.imageViewInCallRemoteMicMuteState setHidden:FALSE];
+////    [this.textViewInCallRemoteName setHidden:FALSE];
+////
+////    this.update_imageViewInCallRemoteMicMuteState_isMuted:micIsMuted];
+//    }
 
 
 
@@ -1031,7 +1087,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 ////        [this.uiVisualEffectViewBlur setHidden:FALSE];
 ////            //if alpha is 0.0 will still be hidden - a;pha is animated below
 ////        }else{
-////        [this.uiVisualEffectViewBlur setHidden:TRUE];
+////        [this.uiVisualEffectViewBlur setHidden(true);
 ////        }
 //
 //
@@ -1136,7 +1192,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //if alpha is 0.0 will still be hidden - a;pha is animated below
         }else{
 //TODO BLUR VIEW OFF
-//            [this.uiVisualEffectViewBlur setHidden:TRUE];
+//            [this.uiVisualEffectViewBlur setHidden(true);
         }
 
         if(changeToFullScreen){
@@ -1369,7 +1425,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //------------------------------------------------------------------------------------------
         if (mediaPlayer != null) {
             //Plays ringing tone
-            mediaPlayer.start();
+//RELEASE PUT BACK            mediaPlayer.start();
             //--------------------------------------------------------------------------------------
             //use .start() + pause() 
             //not .start() + .stop() seems to kill it, next .play() fails
@@ -1898,46 +1954,347 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
      * The initial state when there is no active conversation.
      */
     private void initializeUI() {
-        setDisconnectAction();
 
-        if(null != this.config){
-            if (config.getPrimaryColorHex() != null) {
-                int primaryColor = Color.parseColor(config.getPrimaryColorHex());
-                ColorStateList color = ColorStateList.valueOf(primaryColor);
-                connectActionFab.setBackgroundTintList(color);
-            }
+        //------------------------------------------------------------------------------------------
+        //        if(null != this.config){
+        //            if (config.getPrimaryColorHex() != null) {
+        //                int primaryColor = Color.parseColor(config.getPrimaryColorHex());
+        //                ColorStateList color = ColorStateList.valueOf(primaryColor);
+        //                button_fab_disconnect.setBackgroundTintList(color);
+        //            }
+        //
+        //            if (config.getSecondaryColorHex() != null) {
+        //                int secondaryColor = Color.parseColor(config.getSecondaryColorHex());
+        //                ColorStateList color = ColorStateList.valueOf(secondaryColor);
+        //                if(null != button_fab_switchcamera){
+        //                    button_fab_switchcamera.setBackgroundTintList(color);
+        //                }else{
+        //                	Log.e(TAG, "switchCameraActionFab is null");
+        //                }
+        //
+        //                button_fab_localvideo_onoff.setBackgroundTintList(color);
+        //                button_fab_audio_onoff.setBackgroundTintList(color);
+        //                button_fab_switchaudio.setBackgroundTintList(color);
+        //            }
+        //        }else{
+        //            Log.e(TAG, "this.config is null");
+        //        }
+        //------------------------------------------------------------------------------------------
 
-            if (config.getSecondaryColorHex() != null) {
-                int secondaryColor = Color.parseColor(config.getSecondaryColorHex());
-                ColorStateList color = ColorStateList.valueOf(secondaryColor);
-                switchCameraActionFab.setBackgroundTintList(color);
-                localVideoActionFab.setBackgroundTintList(color);
-                muteActionFab.setBackgroundTintList(color);
-                switchAudioActionFab.setBackgroundTintList(color);
-            }
+
+
+        //------------------------------------------------------------------------------------------
+        //DISCONNECT - always RED
+        //------------------------------------------------------------------------------------------
+        int colorButtonDisconnect = ContextCompat.getColor(this, R.color.colorButtonDisconnect);
+        button_fab_disconnect.setBackgroundColor(colorButtonDisconnect);
+
+        //------------------------------------------------------------------------------------------
+        //OTHER BUTTONS
+        //------------------------------------------------------------------------------------------
+
+        int colorButtonSelected   = ContextCompat.getColor(this, R.color.colorButtonSelected);
+        int colorButtonUnselected = ContextCompat.getColor(this, R.color.colorButtonUnselected);
+
+        //Doesnt work properly with FABs
+        //        button_fab_localvideo_onoff.setBackgroundColor(colorButtonOn);
+
+        //------------------------------------------------------------------------------------------
+        ColorStateList colorStateList = createColorStateList(colorButtonSelected, colorButtonUnselected);
+
+        //------------------------------------------------------------------------------------------
+        button_fab_localvideo_onoff.setBackgroundTintList(colorStateList);
+        button_fab_localvideo_onoff.show();
+        button_fab_localvideo_onoff.setOnClickListener(button_localVideo_OnClickListener());
+
+        //------------------------------------------------------------------------------------------
+        button_fab_audio_onoff.setBackgroundTintList(colorStateList);
+        button_fab_audio_onoff.show();
+        button_fab_audio_onoff.setOnClickListener(button_mute_OnClickListener());
+
+        //------------------------------------------------------------------------------------------
+        //dont use ColorStateList - same color for all states
+        //button_fab_switchaudio.setBackgroundTintList(colorStateList);
+
+        //tint is always blue - if tapped switches to speaker or headphones
+        button_fab_switchaudio.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.colorButtonUnselected));
+
+        button_fab_switchaudio.show();
+        button_fab_switchaudio.setOnClickListener(button_switchAudio_OnClickListener());
+
+
+        //------------------------------------------------------------------------------------------
+        //DISCONNECT
+        //------------------------------------------------------------------------------------------
+        button_fab_disconnect.setImageDrawable(ContextCompat.getDrawable(this, FAKE_R.getDrawable("ic_call_end_white_24px")));
+        button_fab_disconnect.show();
+        button_fab_disconnect.setOnClickListener(button_disconnect_OnClickListener());
+
+
+        //------------------------------------------------------------------------------------------
+        if(null != button_fab_switchcamera){
+            button_fab_switchcamera.show();
+            button_fab_switchcamera.setOnClickListener(button_switchCamera_OnClickListener());
         }else{
-            Log.e(TAG, "this.config is null");
+            Log.e(TAG, "switchCameraActionFab is null");
         }
-
-
-        switchCameraActionFab.show();
-        switchCameraActionFab.setOnClickListener(button_switchCamera_OnClickListener());
-        localVideoActionFab.show();
-        localVideoActionFab.setOnClickListener(button_localVideo_OnClickListener());
-        muteActionFab.show();
-        muteActionFab.setOnClickListener(button_mute_OnClickListener());
-        switchAudioActionFab.show();
-        switchAudioActionFab.setOnClickListener(button_switchAudio_OnClickListener());
     }
 
-    /*
-     * The actions performed during disconnect.
-     */
-    private void setDisconnectAction() {
-        connectActionFab.setImageDrawable(ContextCompat.getDrawable(this, FAKE_R.getDrawable("ic_call_end_white_24px")));
-        connectActionFab.show();
-        connectActionFab.setOnClickListener(button_disconnect_OnClickListener());
+    private ColorStateList createColorStateList(int selectedColor, int unselectedIconColor) {
+        int[][] states = new int[][] {
+                new int[]{android.R.attr.state_pressed},
+                new int[]{android.R.attr.state_selected},
+                new int[]{android.R.attr.state_enabled},
+                new int[]{android.R.attr.state_focused, android.R.attr.state_pressed},
+                new int[]{-android.R.attr.state_enabled},
+                new int[]{}
+        };
+        int[] colors = new int[]{
+                selectedColor,
+                selectedColor,
+                unselectedIconColor,
+                unselectedIconColor,
+                unselectedIconColor,
+                unselectedIconColor
+        };
+        return new ColorStateList(states, colors);
     }
+
+
+
+
+
+
+    /***********************************************************************************************
+     *  BUTTONS
+     **********************************************************************************************/
+
+    //----------------------------------------------------------------------------------------------
+    //BUTTON - CAMERA ON/OFF
+    //----------------------------------------------------------------------------------------------
+    private View.OnClickListener button_localVideo_OnClickListener() {
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.e(TAG, "button_localVideo_OnClickListener.onClick: ");
+                /*
+                 * Enable/disable the local video track
+                 */
+                if (localVideoTrack != null) {
+                    boolean enable = !localVideoTrack.isEnabled();
+                    localVideoTrack.enable(enable);
+
+                    //------------------------------------------------------------------------------
+                    //CHANGE ICON and COLOR
+                    //------------------------------------------------------------------------------
+                    int icon;
+
+                    if (enable) {
+                        icon = FAKE_R.getDrawable("ic_videocam_green_24px");
+                    } else {
+                        icon = FAKE_R.getDrawable("ic_videocam_off_red_24px");
+                    }
+
+                    button_fab_localvideo_onoff.setImageDrawable(ContextCompat.getDrawable(TwilioVideoActivity.this, icon));
+
+                    //------------------------------------------------------------------------------
+                    //BUTTON BACKGROUND TINT
+                    //------------------------------------------------------------------------------
+                    //doesnt work properly for FABs
+                    //button_fab_localvideo_onoff.setBackgroundColor(colorButton);
+
+                    //colors setup in ColorStateList above
+                    //we just need to set state
+                    if (button_fab_localvideo_onoff.isSelected()) {
+                        button_fab_localvideo_onoff.setSelected(false);
+                    }
+                    else {
+                        button_fab_localvideo_onoff.setSelected(true);
+                    }
+                    //------------------------------------------------------------------------------
+                }
+
+            }
+        };
+    }
+
+    //----------------------------------------------------------------------------------------------
+    //BUTTON - AUDIO ON/OFF
+    //----------------------------------------------------------------------------------------------
+    private View.OnClickListener button_mute_OnClickListener() {
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.e(TAG, "muteClickListener.onClick: ");
+
+                /*
+                 * Enable/disable the local audio track. The results of this operation are
+                 * signaled to other Participants in the same Room. When an audio track is
+                 * disabled, the audio is muted.
+                 */
+                if (localAudioTrack != null) {
+                    boolean enable = !localAudioTrack.isEnabled();
+                    localAudioTrack.enable(enable);
+
+                    //------------------------------------------------------------------------------
+                    //BUTTON ICON - badly named OFF is grey not red - see svg
+                    //------------------------------------------------------------------------------
+                    int icon = enable ? FAKE_R.getDrawable("ic_mic_green_24px") : FAKE_R.getDrawable("ic_mic_off_red_24px");
+
+                    button_fab_audio_onoff.setImageDrawable(ContextCompat.getDrawable(TwilioVideoActivity.this, icon));
+
+
+
+                    //------------------------------------------------------------------------------
+                    //BUTTON BACKGROUND TINT
+                    //------------------------------------------------------------------------------
+                    //doesnt work properly for FABs
+                    //button_fab_localvideo_onoff.setBackgroundColor(colorButton);
+
+                    //colors setup in ColorStateList above
+                    //we just need to set state
+                    if (button_fab_audio_onoff.isSelected()) {
+                        button_fab_audio_onoff.setSelected(false);
+                    }
+                    else {
+                        button_fab_audio_onoff.setSelected(true);
+                    }
+                    //------------------------------------------------------------------------------
+
+                }else{
+                    Log.e(TAG, "onClick: localAudioTrack is null");
+                }
+
+
+            }
+        };
+    }
+
+
+    //----------------------------------------------------------------------------------------------
+    //BUTTON - DISCONNECT
+    //----------------------------------------------------------------------------------------------
+    private View.OnClickListener button_disconnect_OnClickListener() {
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (config.isHangUpInApp()) {
+                    // Propagating the event to the web side in order to allow developers to do something else before disconnecting the room
+                    publishEvent(CallEvent.HANG_UP);
+                } else {
+                    onDisconnect();
+                }
+            }
+        };
+    }
+
+    //----------------------------------------------------------------------------------------------
+    //BUTTON - FLIP FRONT and BACk camera - tap on mini view
+    //----------------------------------------------------------------------------------------------
+    private View.OnClickListener button_switchCamera_OnClickListener() {
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                Log.e(TAG, "onClick: switchCameraClickListener" );
+
+                if (cameraCapturer != null) {
+                    CameraSource cameraSource = cameraCapturer.getCameraSource();
+                    cameraCapturer.switchCamera();
+                    if (thumbnailVideoView.getVisibility() == View.VISIBLE) {
+                        thumbnailVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
+                    } else {
+                        primaryVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
+                    }
+                }
+
+
+            }//onclick
+
+        };//return
+    }
+
+
+    //----------------------------------------------------------------------------------------------
+    //BUTTON - AUDIO
+    //----------------------------------------------------------------------------------------------
+
+    private View.OnClickListener button_switchAudio_OnClickListener() {
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.e(TAG, "switchAudioClickListener.onClick: ");
+                if (audioManager.isSpeakerphoneOn()) {
+                    audioManager.setSpeakerphoneOn(false);
+                } else {
+                    audioManager.setSpeakerphoneOn(true);
+
+                }
+                int icon = audioManager.isSpeakerphoneOn() ?
+                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
+                button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable(
+                        TwilioVideoActivity.this, icon));
+//DEBUG triggers startCall
+//                publishEvent(CallEvent.DEBUGSTARTACALL);
+            }
+        };
+    }
+
+    private void configureAudio(boolean enable) {
+        if (enable) {
+            previousAudioMode = audioManager.getMode();
+            // Request audio focus before making any device switch
+            requestAudioFocus();
+            /*
+             * Use MODE_IN_COMMUNICATION as the default audio mode. It is required
+             * to be in this mode when playout and/or recording starts for the best
+             * possible VoIP performance. Some devices have difficulties with
+             * speaker mode if this is not set.
+             */
+            audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+            /*
+             * Always disable microphone mute during a WebRTC call.
+             */
+            previousMicrophoneMute = audioManager.isMicrophoneMute();
+            audioManager.setMicrophoneMute(false);
+        } else {
+            audioManager.setMode(previousAudioMode);
+            audioManager.abandonAudioFocus(null);
+            audioManager.setMicrophoneMute(previousMicrophoneMute);
+        }
+    }
+
+    private void requestAudioFocus() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            AudioAttributes playbackAttributes = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build();
+            AudioFocusRequest focusRequest =
+                    new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                            .setAudioAttributes(playbackAttributes)
+                            .setAcceptsDelayedFocusGain(true)
+                            .setOnAudioFocusChangeListener(
+                                    new AudioManager.OnAudioFocusChangeListener() {
+                                        @Override
+                                        public void onAudioFocusChange(int i) {
+                                        }
+                                    })
+                            .build();
+            audioManager.requestAudioFocus(focusRequest);
+        } else {
+            audioManager.requestAudioFocus(null, AudioManager.STREAM_VOICE_CALL,
+                    AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+        }
+    }
+
+
+
+
+
+
+
+
 
     /*
      * Called when participant joins the room
@@ -2431,190 +2788,12 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     }
 
 
-    /***********************************************************************************************
-     *  BUTTONS
-     **********************************************************************************************/
 
 
-    //----------------------------------------------------------------------------------------------
-    //BUTTON - CAMERA ON/OFF
-    //----------------------------------------------------------------------------------------------
-    private View.OnClickListener button_localVideo_OnClickListener() {
-        return new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.e(TAG, "button_localVideo_OnClickListener.onClick: ");
-                /*
-                 * Enable/disable the local video track
-                 */
-                if (localVideoTrack != null) {
-                    boolean enable = !localVideoTrack.isEnabled();
-                    localVideoTrack.enable(enable);
-                    int icon;
-                    if (enable) {
-                        icon = FAKE_R.getDrawable("ic_videocam_green_24px");
-                        switchCameraActionFab.show();
-                    } else {
-                        icon = FAKE_R.getDrawable("ic_videocam_off_red_24px");
-                        switchCameraActionFab.hide();
-                    }
 
-                    localVideoActionFab.setImageDrawable(
-                            ContextCompat.getDrawable(TwilioVideoActivity.this, icon));
-                }
-
-            }
-        };
-    }
-
-    //----------------------------------------------------------------------------------------------
-    //BUTTON - AUDIO ON/OFF
-    //----------------------------------------------------------------------------------------------
-    private View.OnClickListener button_mute_OnClickListener() {
-        return new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.e(TAG, "muteClickListener.onClick: ");
-
-                /*
-                 * Enable/disable the local audio track. The results of this operation are
-                 * signaled to other Participants in the same Room. When an audio track is
-                 * disabled, the audio is muted.
-                 */
-                if (localAudioTrack != null) {
-                    boolean enable = !localAudioTrack.isEnabled();
-                    localAudioTrack.enable(enable);
-                    int icon = enable ?
-                            FAKE_R.getDrawable("ic_mic_green_24px") : FAKE_R.getDrawable("ic_mic_off_red_24px");
-                    muteActionFab.setImageDrawable(ContextCompat.getDrawable(
-                            TwilioVideoActivity.this, icon));
-                }else{
-                    Log.e(TAG, "onClick: localAudioTrack is null");
-                }
-
-
-            }
-        };
-    }
-
-
-    //----------------------------------------------------------------------------------------------
-    //BUTTON - DISCONNECT
-    //----------------------------------------------------------------------------------------------
-    private View.OnClickListener button_disconnect_OnClickListener() {
-        return new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (config.isHangUpInApp()) {
-                    // Propagating the event to the web side in order to allow developers to do something else before disconnecting the room
-                    publishEvent(CallEvent.HANG_UP);
-                } else {
-                    onDisconnect();
-                }
-            }
-        };
-    }
-
-    //----------------------------------------------------------------------------------------------
-    //BUTTON - FLIP FRONT and BACk camera - tap on mini view
-    //----------------------------------------------------------------------------------------------
-    private View.OnClickListener button_switchCamera_OnClickListener() {
-        return new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                Log.e(TAG, "onClick: switchCameraClickListener" );
-
-                if (cameraCapturer != null) {
-                    CameraSource cameraSource = cameraCapturer.getCameraSource();
-                    cameraCapturer.switchCamera();
-                    if (thumbnailVideoView.getVisibility() == View.VISIBLE) {
-                        thumbnailVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
-                    } else {
-                        primaryVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
-                    }
-                }
-//DEBUG triggers startCall
-//                publishEvent(CallEvent.DEBUGSTARTACALL);
-
-            }//onclick
-
-        };//return
-    }
-
-
-    //----------------------------------------------------------------------------------------------
-    //BUTTON - AUDIO
-    //----------------------------------------------------------------------------------------------
-
-    private View.OnClickListener button_switchAudio_OnClickListener() {
-        return new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.e(TAG, "switchAudioClickListener.onClick: ");
-                if (audioManager.isSpeakerphoneOn()) {
-                    audioManager.setSpeakerphoneOn(false);
-                } else {
-                    audioManager.setSpeakerphoneOn(true);
-
-                }
-                int icon = audioManager.isSpeakerphoneOn() ?
-                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
-                switchAudioActionFab.setImageDrawable(ContextCompat.getDrawable(
-                        TwilioVideoActivity.this, icon));
-
-            }
-        };
-    }
-
-    private void configureAudio(boolean enable) {
-        if (enable) {
-            previousAudioMode = audioManager.getMode();
-            // Request audio focus before making any device switch
-            requestAudioFocus();
-            /*
-             * Use MODE_IN_COMMUNICATION as the default audio mode. It is required
-             * to be in this mode when playout and/or recording starts for the best
-             * possible VoIP performance. Some devices have difficulties with
-             * speaker mode if this is not set.
-             */
-            audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
-            /*
-             * Always disable microphone mute during a WebRTC call.
-             */
-            previousMicrophoneMute = audioManager.isMicrophoneMute();
-            audioManager.setMicrophoneMute(false);
-        } else {
-            audioManager.setMode(previousAudioMode);
-            audioManager.abandonAudioFocus(null);
-            audioManager.setMicrophoneMute(previousMicrophoneMute);
-        }
-    }
-
-    private void requestAudioFocus() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            AudioAttributes playbackAttributes = new AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                    .build();
-            AudioFocusRequest focusRequest =
-                    new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-                            .setAudioAttributes(playbackAttributes)
-                            .setAcceptsDelayedFocusGain(true)
-                            .setOnAudioFocusChangeListener(
-                                    new AudioManager.OnAudioFocusChangeListener() {
-                                        @Override
-                                        public void onAudioFocusChange(int i) {
-                                        }
-                                    })
-                            .build();
-            audioManager.requestAudioFocus(focusRequest);
-        } else {
-            audioManager.requestAudioFocus(null, AudioManager.STREAM_VOICE_CALL,
-                    AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
-        }
-    }
-
+    /*
+    * handleConnectionError
+    * */
     private void handleConnectionError(String message) {
         if (config.isHandleErrorInApp()) {
             Log.i(TwilioVideo.TAG, "Error handling disabled for the plugin. This error should be handled in the hybrid app");

@@ -15,58 +15,82 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:layout_gravity="bottom"
-        android:orientation="horizontal" >
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/local_video_action_fab"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="@dimen/fab_margin"
-            app:fabSize="mini"
-            android:src="@drawable/ic_videocam_green_24px" 
-            app:backgroundTint="#2296F3" 
-            />
-            
-         <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/mute_action_fab"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:fabSize="mini"
-            android:layout_margin="@dimen/fab_margin"
-            android:src="@drawable/ic_mic_green_24px" 
-            app:backgroundTint="#2296F3"
-            />
-            
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/switch_camera_action_fab"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:fabSize="mini"
-            android:layout_margin="@dimen/fab_margin"
-            android:src="@drawable/ic_flip_camera_ios_white_18dp"
-            app:backgroundTint="#2296F3" 
-            />
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/switch_audio_action_fab"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:fabSize="mini"
-            android:layout_margin="@dimen/fab_margin"
-            android:src="@drawable/ic_phonelink_ring_white_24dp"
-            app:backgroundTint="#2296F3"
-            />
-        
+        android:orientation="vertical" >
 
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/connect_action_fab"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:fabSize="mini"
-            android:layout_margin="@dimen/fab_margin"
-            android:src="@drawable/ic_call_white_24px" 
-            app:backgroundTint="#FF1844"
-            />
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_gravity="bottom"
+            android:orientation="horizontal" >
+
+            <ImageView
+                android:id="@+id/imageViewInCallRemoteMicMuteState"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginStart="20dp"
+                app:srcCompat="@drawable/ic_mic_green_24px" />
+
+            <TextView
+                android:id="@+id/textViewInCallRemoteName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textSize="14sp"
+                android:text="" />
+
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_gravity="bottom"
+            android:orientation="horizontal" >
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/local_video_action_fab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/fab_margin"
+                android:src="@drawable/ic_videocam_green_24px"
+                app:backgroundTint="#2296F3"
+                app:fabSize="auto" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/mute_action_fab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/fab_margin"
+                android:src="@drawable/ic_mic_green_24px"
+                app:backgroundTint="#2296F3"
+                app:fabSize="auto" />
+
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/switch_audio_action_fab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/fab_margin"
+                android:src="@drawable/ic_phonelink_ring_white_24dp"
+                app:backgroundTint="#2296F3"
+                app:fabSize="auto" />
+
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/connect_action_fab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/fab_margin"
+                android:src="@drawable/ic_call_white_24px"
+                app:backgroundTint="#FF1844"
+                app:fabSize="auto" />
+
+
+        </LinearLayout>
 
     </LinearLayout>
 
