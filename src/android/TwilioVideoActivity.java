@@ -59,6 +59,8 @@ import com.squareup.picasso.Picasso;
 //DONT USE it works in this POC but when they integrate with the main sea/chat app theres no capacitor so it breaks
 //import capacitor.android.plugins.R;
 
+import jp.wasabeef.blurry.Blurry;
+
 public class TwilioVideoActivity extends AppCompatActivity implements CallActionObserver {
     public static final String TAG = "TwilioVideoActivity";
     /*
@@ -103,6 +105,13 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
      */
     private VideoView primaryVideoView;
     private VideoView thumbnailVideoView;
+
+
+
+    private android.widget.LinearLayout blurredviewgroup;
+
+
+
 
     /*
      * Android application UI elements
@@ -162,6 +171,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //------------------------------------------------------------------------------------------
 //        setContentView(R.layout.activity_video);
         setContentView(FAKE_R.getLayout("activity_video"));
+
+
+        blurredviewgroup = findViewById(FAKE_R.getId("blurredviewgroup"));
 
 
 
@@ -495,6 +507,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             permissionOk();
         }
         //------------------------------------------------------------------------------------------
+
     }
 
     //----------------------------------------------------------------------------------------------
@@ -549,6 +562,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         {
             createAudioAndVideoTracks();
             setupLocalCamera_ifnull();
+
+            showHideBlurView(true);
+
             connectToRoom();
 
         }
@@ -580,7 +596,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
         //DEBUG - when video is full screen is may have wrong AspectFit or AspectFil
 
-        this.update_PreviewView_showInFullScreen(true, false, true);
+        //DIFF to iOS - we show blur in onResume so View is ready - doesnt work from onCreate
+        //this.update_PreviewView_showInFullScreen(true, false, true);
+        this.update_PreviewView_showInFullScreen(true, false, false);
     }
 
 
@@ -667,71 +685,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         this.loadUserImageInBackground_async(this.local_user_photo_url, this.imageViewLocalParticipant);
 
     }
-
-//    private void loadUserImageInBackground_async(){
-//        //TODO add border around image
-//        //            this.imageViewRemoteParticipant.backgroundColor = [UIColor whiteColor];
-//        //            this.imageViewRemoteParticipant.layer.cornerRadius = this.imageViewRemoteParticipant.frame.size.height / 2.0;
-//        //            this.imageViewRemoteParticipant.layer.borderWidth = 4.f;
-//        //            this.imageViewRemoteParticipant.layer.borderColor = [[UIColor whiteColor] CGColor];
-//
-//        //            this.performSelectorInBackground:@selector(loadUserImageInBackground) withObject:nil];
-//
-//        //------------------------------------------------------------------------------------------
-//        //Fill imageView async
-//        //------------------------------------------------------------------------------------------
-//        //"https://sealogin-trfm-prd-cdn.azureedge.net/API/1_3/User/picture?imageUrl=673623fdc8b39b5b05b3167765019398.jpg"
-//        //------------------------------------------------------------------------------------------
-//        if (this.remote_user_photo_url != null) {
-//            Picasso.get().load(this.remote_user_photo_url).into(imageViewRemoteParticipant);
-////CLEANUP after more testing of CircleView library
-////            Picasso.get().load(this.remote_user_photo_url)
-////                    .resize(96, 96)
-////                    .into(imageViewRemoteParticipant, new Callback() {
-////                        @Override
-////                        public void onSuccess() {
-////                            Bitmap imageBitmap = ((BitmapDrawable) imageViewRemoteParticipant.getDrawable()).getBitmap();
-////
-////                            //v1 circular image
-////                            RoundedBitmapDrawable imageDrawable = RoundedBitmapDrawableFactory.create(getResources(), imageBitmap);
-////                            imageDrawable.setCircular(true);
-////                            imageDrawable.setCornerRadius(Math.max(imageBitmap.getWidth(), imageBitmap.getHeight()) / 2.0f);
-////
-////                            Canvas canvas = new Canvas(imageBitmap);
-////                            canvas.drawBitmap(imageBitmap, 0, 0, null);
-////                            int borderWidth = 5;
-////                            Paint borderPaint = new Paint();
-////                            borderPaint.setStyle(Paint.Style.STROKE);
-////                            borderPaint.setStrokeWidth(borderWidth);
-////                            borderPaint.setAntiAlias(true);
-////                            borderPaint.setColor(Color.WHITE);
-////                            //https://stackoverflow.com/questions/24878740/how-to-use-roundedbitmapdrawable
-////                            //int circleDelta = (borderWidth / 2) - DisplayUtility.dp2px(context, 1);
-////                            int radius = (canvas.getWidth() / 2);  // - circleDelta;
-////                            canvas.drawCircle(canvas.getWidth() / 2, canvas.getHeight() / 2, radius, borderPaint);
-////
-////
-////
-////                            imageViewRemoteParticipant.setImageDrawable(imageDrawable);
-////
-////                            //v2 with border
-////                            //RoundedBitmapDrawable rbd = createRoundedBitmapDrawableWithBorder(imageBitmap);
-////                            //imageViewRemoteParticipant.setImageDrawable(rbd);
-////
-////
-////                        }
-////                        @Override
-////                        public void onError(Exception e) {
-////                            //imageViewRemoteParticipant.setImageResource(R.drawable.default_image);
-////                        }
-////                    });
-//
-//        }else{
-//            Log.e(TAG, "onCreate: imageViewRemoteParticipant is null");
-//        }
-//    }
-
-
+    
     private void loadUserImageInBackground_async(String userPhotoURL, ImageView imageView){
         //TODO add border around image
 
@@ -1190,20 +1144,42 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 //        //[this.view setNeedsUpdateConstraints];
 //    }
 
+    private void showHideBlurView(boolean showBlurView){
+
+        if(showBlurView){
+            //if alpha is 0.0 will still be hidden - a;pha is animated below
+            this.blurredviewgroup.setVisibility(View.VISIBLE);
+            //--------------------------------------------------------------------------------------
+            //TODO - works but needs tweaking
+            //--------------------------------------------------------------------------------------
+            //            if(null != blurredviewgroup){
+            //                //Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(blurredviewgroup);
+            //
+            //                Blurry.with(TwilioVideoActivity.this).radius(10)
+            //                        .sampling(8)
+            //                        .color(Color.argb(66, 255, 255, 0))
+            //                        .async()
+            //                        .animate(500)
+            //                        .onto(blurredviewgroup);
+            //            }else{
+            //                Log.e(TAG, "blurredviewgroup is null");
+            //            }
+            //--------------------------------------------------------------------------------------
+        }else{
+            this.blurredviewgroup.setVisibility(View.GONE);
+        }
+    }
+
     private void update_PreviewView_showInFullScreen(boolean changeToFullScreen, boolean isAnimated, boolean showBlurView) {
 
         //animation in and out should be same number of secs
 //        NSTimeInterval duration = 1.0;
 
+        //------------------------------------------------------------------------------------------
         //When you show "Disconnected.." you dont show the blur - other use has hung up
-        if(showBlurView){
-//TODO BLUR VIEW ON
-//            [this.uiVisualEffectViewBlur setHidden:FALSE];
-            //if alpha is 0.0 will still be hidden - a;pha is animated below
-        }else{
-//TODO BLUR VIEW OFF
-//            [this.uiVisualEffectViewBlur setHidden(true);
-        }
+
+        showHideBlurView(showBlurView);
+        //------------------------------------------------------------------------------------------
 
         if(changeToFullScreen){
             if(isAnimated){
@@ -1513,72 +1489,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //------------------------------------------------------------------------------------------
 
     }
-// TODO: 16/12/20 CLEANUP
-//    private void setupLocalCamera(){
-//        /*
-//         * If the local video track was released when the app was put in the background, recreate.
-//         */
-//        if (localVideoTrack == null) {
-//
-//            Log.e(TAG, "onResume: localVideoTrack == null >> recreate" );
-//
-//            if (hasPermissionForCameraAndMicrophone()) {
-//
-//                Log.e(TAG, "onResume: hasPermissionForCameraAndMicrophone(): TRUE - recreate" );
-//
-//                if(null != cameraCapturer){
-//                    localVideoTrack = LocalVideoTrack.create(this,
-//                            true,
-//                            cameraCapturer.getVideoCapturer(),
-//                            LOCAL_VIDEO_TRACK_NAME);
-//                    localVideoTrack.addRenderer(thumbnailVideoView);
-//
-//                    /*
-//                     * If connected to a Room then share the local video track.
-//                     */
-//                    if (localParticipant != null) {
-//                        localParticipant.publishTrack(localVideoTrack);
-//                    }else{
-//                        Log.e(TAG, "localParticipant is null >> publishTrack(localVideoTrack) FAILED");
-//                    }
-//                }else{
-//                    //happened when openRoom and StartCall both did startActivity
-//                    Log.e(TAG, "cameraCapturer is null");
-//                }
-//
-//            }else{
-//                //can happen when openRoom and StartCall both did startActivity
-//                Log.e(TAG, "hasPermissionForCameraAndMicrophone() FAILED");
-//            }
-//        }else{
-//            //can happen when openRoom and StartCall both did startActivity
-//            Log.e(TAG, "localVideoTrack is OK ");
-//
-//
-//            //MUST CALL publishTrack else other user doesnt see the camera
-//            /*
-//             * If connected to a Room then share the local video track.
-//             */
-//            if (localParticipant != null) {
-//                localParticipant.publishTrack(localVideoTrack);
-//            }else{
-//                Log.e(TAG, "localParticipant is null >> publishTrack(localVideoTrack) FAILED");
-//
-//                if(null != room){
-//                    localParticipant = room.getLocalParticipant();
-//
-//                    if (localParticipant != null) {
-//                        localParticipant.publishTrack(localVideoTrack);
-//                    }else{
-//                        Log.e(TAG, "localParticipant is null >> publishTrack(localVideoTrack) FAILED");
-//
-//                    }
-//                }else{
-//                    Log.e(TAG, "room is null");
-//                }
-//            }
-//        }
-//    }
+
 
     //1 - openRooom - setup local camera to show full screen
     //2 - startCall > room.connect > room.localParticipant > publishtrack
@@ -1863,7 +1774,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //------------------------------------------------------------------------------------------
             //REMOTE user is visible in full screen
             //shrink PREVIEW from FULL SCREEN to MINI to show REMOTE user behind
-            this.update_PreviewView_showInFullScreen(false, true, true);
+            //ANSWER this.update_PreviewView_showInFullScreen(false, true, true);
+            this.update_PreviewView_showInFullScreen(false, true, false);
 
         }else{
             Log.w(TAG, "[participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL");
@@ -1889,7 +1801,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //REMOTE user is visible in full screen
             //------------------------------------------------------------------------------------------
             //shrink PREVIEW from FULL SCREEN to MINI to show REMOTE user behind
-        this.update_PreviewView_showInFullScreen(false, true, true);
+            //this.update_PreviewView_showInFullScreen(false, true, true);
+            this.update_PreviewView_showInFullScreen(false, true, false);
 
 
         }else{
@@ -2262,8 +2175,12 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                         FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
                 button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable(
                         TwilioVideoActivity.this, icon));
-//DEBUG triggers startCall
+                //----------------------------------------------------------------------------------
+//DO NOT RELEASE - DEBUG triggers startCall
 //                publishEvent(CallEvent.DEBUGSTARTACALL);
+                //----------------------------------------------------------------------------------
+
+
             }
         };
     }
