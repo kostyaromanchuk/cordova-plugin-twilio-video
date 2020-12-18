@@ -56,8 +56,8 @@ import java.util.Collections;
 import java.util.List;
 
 import com.squareup.picasso.Picasso;
-
-import capacitor.android.plugins.R;
+//DONT USE it works in this POC but when they integrate with the main sea/chat app theres no capacitor so it breaks
+//import capacitor.android.plugins.R;
 
 public class TwilioVideoActivity extends AppCompatActivity implements CallActionObserver {
     public static final String TAG = "TwilioVideoActivity";
@@ -160,7 +160,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //------------------------------------------------------------------------------------------
         //ContentView
         //------------------------------------------------------------------------------------------
+//        setContentView(R.layout.activity_video);
         setContentView(FAKE_R.getLayout("activity_video"));
+
+
 
         primaryVideoView = findViewById(FAKE_R.getId("primary_video_view"));
         thumbnailVideoView = findViewById(FAKE_R.getId("thumbnail_video_view"));
@@ -904,12 +907,19 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         if(micIsMuted){
             // [self update_imageViewInCallRemoteMicMuteState:@"no_mic.png"];
 
-            imageViewInCallRemoteMicMuteState.setImageResource(R.drawable.ic_mic_off_red_24px);
+            //imageViewInCallRemoteMicMuteState.setImageResource(R.drawable.ic_mic_off_red_24px);
+            imageViewInCallRemoteMicMuteState.setImageResource(FAKE_R.getDrawable("ic_mic_off_red_24px"));
+
+
 
         }else{
             //        [self update_imageViewInCallRemoteMicMuteState:@"mic.png"];
 
-            imageViewInCallRemoteMicMuteState.setImageResource(R.drawable.ic_mic_green_24px);
+            //DONT USE R its //import capacitor.android.plugins.R;
+            //will break in sea/chat as theres no capacitor
+            //imageViewInCallRemoteMicMuteState.setImageResource(R.drawable.ic_mic_green_24px);
+
+            imageViewInCallRemoteMicMuteState.setImageResource(FAKE_R.getDrawable("ic_mic_green_24px"));
 
         }
     }
@@ -1425,7 +1435,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //------------------------------------------------------------------------------------------
         if (mediaPlayer != null) {
             //Plays ringing tone
-//RELEASE PUT BACK            mediaPlayer.start();
+//RELEASE PUT BACK
+            mediaPlayer.start();
             //--------------------------------------------------------------------------------------
             //use .start() + pause() 
             //not .start() + .stop() seems to kill it, next .play() fails
@@ -1986,15 +1997,27 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //------------------------------------------------------------------------------------------
         //DISCONNECT - always RED
         //------------------------------------------------------------------------------------------
-        int colorButtonDisconnect = ContextCompat.getColor(this, R.color.colorButtonDisconnect);
+//        int colorButtonDisconnect = ContextCompat.getColor(this, R.color.colorButtonDisconnect);
+        int colorButtonDisconnect = ContextCompat.getColor(this, FAKE_R.getColor("colorButtonDisconnect"));
+
+
+
+
         button_fab_disconnect.setBackgroundColor(colorButtonDisconnect);
 
         //------------------------------------------------------------------------------------------
         //OTHER BUTTONS
         //------------------------------------------------------------------------------------------
+//DONT USE R. doesnt work
+//        int colorButtonSelected   = ContextCompat.getColor(this, R.color.colorButtonSelected);
+//        int colorButtonUnselected = ContextCompat.getColor(this, R.color.colorButtonUnselected);
 
-        int colorButtonSelected   = ContextCompat.getColor(this, R.color.colorButtonSelected);
-        int colorButtonUnselected = ContextCompat.getColor(this, R.color.colorButtonUnselected);
+
+        int colorButtonSelected = ContextCompat.getColor(this, FAKE_R.getColor("colorButtonSelected"));
+        int colorButtonUnselected = ContextCompat.getColor(this, FAKE_R.getColor("colorButtonUnselected"));
+
+
+
 
         //Doesnt work properly with FABs
         //        button_fab_localvideo_onoff.setBackgroundColor(colorButtonOn);
@@ -2017,7 +2040,12 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //button_fab_switchaudio.setBackgroundTintList(colorStateList);
 
         //tint is always blue - if tapped switches to speaker or headphones
-        button_fab_switchaudio.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.colorButtonUnselected));
+
+        //DONT USE R its capacitor...R
+        //button_fab_switchaudio.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.colorButtonUnselected));
+        button_fab_switchaudio.setBackgroundTintList(ContextCompat.getColorStateList(this, FAKE_R.getColor("colorButtonUnselected")));
+
+
 
         button_fab_switchaudio.show();
         button_fab_switchaudio.setOnClickListener(button_switchAudio_OnClickListener());

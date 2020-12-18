@@ -27,6 +27,11 @@ public class FakeR {
 		return getResourceId(context, "layout", key);
 	}
 
+	//BC added
+	public int getColor(String key) {
+		return getResourceId(context, "color", key);
+	}
+
 	public static int getResourceId(Context context, String group, String key) {
 		return context.getResources().getIdentifier(key, group, context.getPackageName());
 	}
