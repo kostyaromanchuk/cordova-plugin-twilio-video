@@ -3,6 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_video_coordinatorlayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
@@ -19,32 +20,9 @@
 
 
 
+        <!--BOTTOM BUTTONS-->
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:layout_gravity="bottom"
-            android:orientation="horizontal" >
-
-            <ImageView
-                android:id="@+id/imageViewInCallRemoteMicMuteState"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_marginStart="20dp"
-                app:srcCompat="@drawable/ic_mic_green_24px" />
-
-            <TextView
-                android:id="@+id/textViewInCallRemoteName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:textSize="14sp"
-                android:text="" />
-
-
-        </LinearLayout>
-
-        <LinearLayout
+            android:id="@+id/bottom_buttons_linearlayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
@@ -89,6 +67,32 @@
                 app:backgroundTint="#FF1844"
                 app:fabSize="auto" />
 
+        </LinearLayout>
+
+
+        <!--BOTTOM MIC ICON AND REMOTE NAME - ONLY SHOWN DURING A CALL -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center"
+            android:layout_gravity="bottom"
+            android:orientation="horizontal" >
+
+            <ImageView
+                android:id="@+id/imageViewInCallRemoteMicMuteState"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginStart="20dp"
+                app:srcCompat="@drawable/ic_mic_green_24px" />
+
+            <TextView
+                android:id="@+id/textViewInCallRemoteName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textSize="14sp"
+                android:text="" />
 
         </LinearLayout>
 

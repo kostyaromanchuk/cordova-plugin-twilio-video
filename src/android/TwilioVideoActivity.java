@@ -106,12 +106,15 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private VideoView primaryVideoView;
     private VideoView thumbnailVideoView;
 
-
-
+    //----------------------------------------------------------------------------------------------
+    //APPLYING BLUR
+    private android.widget.FrameLayout video_container;
+    private androidx.coordinatorlayout.widget.CoordinatorLayout activity_video_coordinatorlayout;
     private android.widget.LinearLayout blurredviewgroup;
 
-
-
+    //----------------------------------------------------------------------------------------------
+    //margins for zoom
+    private android.widget.LinearLayout bottom_buttons_linearlayout;
 
     /*
      * Android application UI elements
@@ -173,7 +176,11 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         setContentView(FAKE_R.getLayout("activity_video"));
 
 
+        activity_video_coordinatorlayout = findViewById(FAKE_R.getId("activity_video_coordinatorlayout"));
+        video_container = findViewById(FAKE_R.getId("video_container"));
         blurredviewgroup = findViewById(FAKE_R.getId("blurredviewgroup"));
+        bottom_buttons_linearlayout = findViewById(FAKE_R.getId("bottom_buttons_linearlayout"));
+
 
 
 
@@ -843,8 +850,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     private void hide_inCall_remoteUserNameAndMic(){
 
-        this.imageViewInCallRemoteMicMuteState.setVisibility(View.GONE);
-        this.textViewInCallRemoteName.setVisibility(View.GONE);
+        //DONT use GONE - it moves the buttons down then jumps when it reappears
+        this.imageViewInCallRemoteMicMuteState.setVisibility(View.INVISIBLE);
+        this.textViewInCallRemoteName.setVisibility(View.INVISIBLE);
+
 
     }
 
@@ -859,21 +868,21 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     private void update_imageViewInCallRemoteMicMuteState_isMuted(boolean micIsMuted){
         if(micIsMuted){
-            // [self update_imageViewInCallRemoteMicMuteState:@"no_mic.png"];
-
+            //--------------------------------------------------------------------------------------
+            //DONT USE R its //import capacitor.android.plugins.R;
+            //will break in sea/chat as theres no capacitor
             //imageViewInCallRemoteMicMuteState.setImageResource(R.drawable.ic_mic_off_red_24px);
+            //--------------------------------------------------------------------------------------
             imageViewInCallRemoteMicMuteState.setImageResource(FAKE_R.getDrawable("ic_mic_off_red_24px"));
 
-
-
         }else{
-            //        [self update_imageViewInCallRemoteMicMuteState:@"mic.png"];
-
+            //--------------------------------------------------------------------------------------
             //DONT USE R its //import capacitor.android.plugins.R;
             //will break in sea/chat as theres no capacitor
             //imageViewInCallRemoteMicMuteState.setImageResource(R.drawable.ic_mic_green_24px);
-
+            //--------------------------------------------------------------------------------------
             imageViewInCallRemoteMicMuteState.setImageResource(FAKE_R.getDrawable("ic_mic_green_24px"));
+            //--------------------------------------------------------------------------------------
 
         }
     }
@@ -935,108 +944,99 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     }
 
 
-//    private void show_inCall_remoteUserNameAndMic_isMuted(boolean micIsMuted){
-//        Log.e(TAG, "show_inCall_remoteUserNameAndMic_isMuted: TODO");
+
+
+//    private void shrinkPreview(){
+//        //------------------------------------------------------------------------------------------
+//        //android.widget.FrameLayout video_container = findViewById(FAKE_R.getId("video_container"));
+//        //ViewGroup.LayoutParams layoutParams = ((ViewGroup) video_container).getLayoutParams();
 //
-////            [this.imageViewInCallRemoteMicMuteState setHidden:FALSE];
-////    [this.textViewInCallRemoteName setHidden:FALSE];
+//        android.widget.FrameLayout thumbnail_video_view = findViewById(FAKE_R.getId("thumbnail_video_view"));
+//        ViewGroup.LayoutParams layoutParams = ((ViewGroup) thumbnail_video_view).getLayoutParams();
+//
+//
+//        //setMargins not found - you need to cast it
+//        Log.e(TAG, "onClick: layoutParams:" + layoutParams);
+//
+//        int screen_width_pixels = Resources.getSystem().getDisplayMetrics().widthPixels;
+//        int screen_height_pixels = Resources.getSystem().getDisplayMetrics().heightPixels;
+//
+//        Log.e(TAG, "onClick: screen_width_pixels:" + screen_width_pixels + ",screen_height_pixels:"+ screen_height_pixels );
+//        //1080, 2076
+//
+//        int preview_mini_width = 350;
+//        int preview_mini_height = 650;
+//        int margin = 64;
+//
+//
+//        if (layoutParams instanceof ViewGroup.MarginLayoutParams) {
+//            ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) layoutParams;
+//
+//
+//            int leftMargin = screen_width_pixels - preview_mini_width - margin;
+//            int topMargin  = screen_height_pixels - preview_mini_height - margin;
+//
+//            //OK but sets all
+//            marginLayoutParams.setMargins(leftMargin, topMargin, margin, margin * 6); // left, top, right, bottom
+//
+////// TODO: 27/11/2020 MAY NEED TO CALC margins
+////                    call this first
+////                        the mic button sets height/width and thsi code does unset it
+////                            i pasted this into the plugin
+//            //https://developer.android.com/reference/android/view/ViewGroup.MarginLayoutParams
+//            //((ViewGroup.MarginLayoutParams) layoutParams).topMargin = 0;
+//            //((ViewGroup.MarginLayoutParams) layoutParams).leftMargin = 0;
+//            //((ViewGroup.MarginLayoutParams) layoutParams).bottomMargin = 0;
+//            //((ViewGroup.MarginLayoutParams) layoutParams).rightMargin = 0;
+//
+//
+//            //video_container.requestLayout();
+//
+//            thumbnail_video_view.requestLayout();
+//        } else{
+//            Log.e("MyApp", "Attempted to set the margins on a class that doesn't support margins: video_container");
+//        }
+//        //------------------------------------------------------------------------------------------
+//
+//        //java.lang.ClassCastException: androidx.coordinatorlayout.widget.CoordinatorLayout$LayoutParams cannot be cast to android.widget.FrameLayout$LayoutParams
+//
+////                if (thumbnailVideoView != null) {
+////                    ViewGroup.LayoutParams thumbnailVideoView_layoutParams = thumbnailVideoView.getLayoutParams();
 ////
-////    this.update_imageViewInCallRemoteMicMuteState_isMuted:micIsMuted];
+////                    //thumbnailVideoView_layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
+////                    //thumbnailVideoView_layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
+////                    thumbnailVideoView_layoutParams.width = 100;
+////                    thumbnailVideoView_layoutParams.height = 200;
+////
+////                    //layoutParams.setMargins(10, 20, 30, 40);
+////
+////                    thumbnailVideoView.setLayoutParams(thumbnailVideoView_layoutParams);
+////
+////                    thumbnailVideoView.requestLayout();
+////                } else {
+////                    Log.e(TAG, "onClick: thumbnailVideoView is null");
+////                }
+//        //------------------------------------------------------------------------------------------
+//
+//        //------------------------------------------------------------------------------------------
+//        //                ViewGroup.LayoutParams layoutParams = video_container.getLayoutParams();
+//
+//        //                layoutParams.setMargins(10, 20, 30, 40);
+//
+//
+////        if(thumbnailVideoView != null){
+////            ViewGroup.LayoutParams layoutParams = thumbnailVideoView.getLayoutParams();
+////            layoutParams.width = 96;
+////            layoutParams.height = 96;
+////            thumbnailVideoView.setLayoutParams(layoutParams);
+////        }else{
+////            Log.e(TAG, "onClick: thumbnailVideoView is null");
+////        }
+//
+//
 //    }
 
-
-
-
-    private void shrinkPreview(){
-        //------------------------------------------------------------------------------------------
-        //android.widget.FrameLayout video_container = findViewById(FAKE_R.getId("video_container"));
-        //ViewGroup.LayoutParams layoutParams = ((ViewGroup) video_container).getLayoutParams();
-
-        android.widget.FrameLayout thumbnail_video_view = findViewById(FAKE_R.getId("thumbnail_video_view"));
-        ViewGroup.LayoutParams layoutParams = ((ViewGroup) thumbnail_video_view).getLayoutParams();
-
-
-        //setMargins not found - you need to cast it
-        Log.e(TAG, "onClick: layoutParams:" + layoutParams);
-
-        int screen_width_pixels = Resources.getSystem().getDisplayMetrics().widthPixels;
-        int screen_height_pixels = Resources.getSystem().getDisplayMetrics().heightPixels;
-
-        Log.e(TAG, "onClick: screen_width_pixels:" + screen_width_pixels + ",screen_height_pixels:"+ screen_height_pixels );
-        //1080, 2076
-
-        int preview_mini_width = 350;
-        int preview_mini_height = 650;
-        int margin = 64;
-
-
-        if (layoutParams instanceof ViewGroup.MarginLayoutParams) {
-            ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) layoutParams;
-
-
-            int leftMargin = screen_width_pixels - preview_mini_width - margin;
-            int topMargin  = screen_height_pixels - preview_mini_height - margin;
-
-            //OK but sets all
-            marginLayoutParams.setMargins(leftMargin, topMargin, margin, margin * 6); // left, top, right, bottom
-
-//// TODO: 27/11/2020 MAY NEED TO CALC margins
-//                    call this first
-//                        the mic button sets height/width and thsi code does unset it
-//                            i pasted this into the plugin
-            //https://developer.android.com/reference/android/view/ViewGroup.MarginLayoutParams
-            //((ViewGroup.MarginLayoutParams) layoutParams).topMargin = 0;
-            //((ViewGroup.MarginLayoutParams) layoutParams).leftMargin = 0;
-            //((ViewGroup.MarginLayoutParams) layoutParams).bottomMargin = 0;
-            //((ViewGroup.MarginLayoutParams) layoutParams).rightMargin = 0;
-
-
-            //video_container.requestLayout();
-
-            thumbnail_video_view.requestLayout();
-        } else{
-            Log.e("MyApp", "Attempted to set the margins on a class that doesn't support margins: video_container");
-        }
-        //------------------------------------------------------------------------------------------
-
-        //java.lang.ClassCastException: androidx.coordinatorlayout.widget.CoordinatorLayout$LayoutParams cannot be cast to android.widget.FrameLayout$LayoutParams
-
-//                if (thumbnailVideoView != null) {
-//                    ViewGroup.LayoutParams thumbnailVideoView_layoutParams = thumbnailVideoView.getLayoutParams();
-//
-//                    //thumbnailVideoView_layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
-//                    //thumbnailVideoView_layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
-//                    thumbnailVideoView_layoutParams.width = 100;
-//                    thumbnailVideoView_layoutParams.height = 200;
-//
-//                    //layoutParams.setMargins(10, 20, 30, 40);
-//
-//                    thumbnailVideoView.setLayoutParams(thumbnailVideoView_layoutParams);
-//
-//                    thumbnailVideoView.requestLayout();
-//                } else {
-//                    Log.e(TAG, "onClick: thumbnailVideoView is null");
-//                }
-        //------------------------------------------------------------------------------------------
-
-        //------------------------------------------------------------------------------------------
-        //                ViewGroup.LayoutParams layoutParams = video_container.getLayoutParams();
-
-        //                layoutParams.setMargins(10, 20, 30, 40);
-
-
-//        if(thumbnailVideoView != null){
-//            ViewGroup.LayoutParams layoutParams = thumbnailVideoView.getLayoutParams();
-//            layoutParams.width = 96;
-//            layoutParams.height = 96;
-//            thumbnailVideoView.setLayoutParams(layoutParams);
-//        }else{
-//            Log.e(TAG, "onClick: thumbnailVideoView is null");
-//        }
-
-
-    }
-
+//WITH ANIMATIONS - commented out till I add zoomanimation
 //    private void update_PreviewView_showInFullScreen(boolean changeToFullScreen,
 //                                                     boolean isAnimated,
 //                                                     boolean showBlurView)
@@ -1147,26 +1147,36 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private void showHideBlurView(boolean showBlurView){
 
         if(showBlurView){
-            //if alpha is 0.0 will still be hidden - a;pha is animated below
-            this.blurredviewgroup.setVisibility(View.VISIBLE);
+            if(null != this.blurredviewgroup){
+                //if alpha is 0.0 will still be hidden - a;pha is animated below
+                this.blurredviewgroup.setVisibility(View.VISIBLE);
+            }else{
+            	Log.e(TAG, "this.blurredviewgroup is null");
+            }
+
             //--------------------------------------------------------------------------------------
             //TODO - works but needs tweaking
             //--------------------------------------------------------------------------------------
-            //            if(null != blurredviewgroup){
-            //                //Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(blurredviewgroup);
-            //
-            //                Blurry.with(TwilioVideoActivity.this).radius(10)
-            //                        .sampling(8)
-            //                        .color(Color.argb(66, 255, 255, 0))
-            //                        .async()
-            //                        .animate(500)
-            //                        .onto(blurredviewgroup);
-            //            }else{
-            //                Log.e(TAG, "blurredviewgroup is null");
-            //            }
+//                        if(null != blurredviewgroup){
+//                            Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(this.blurredviewgroup);
+//
+////                            Blurry.with(TwilioVideoActivity.this).radius(10)
+////                                    .sampling(8)
+////                                    .color(Color.argb(66, 255, 255, 0))
+////                                    .async()
+////                                    .animate(500)
+////                                    .onto(blurredviewgroup);
+//                        }else{
+//                            Log.e(TAG, "blurredviewgroup is null");
+//                        }
             //--------------------------------------------------------------------------------------
         }else{
-            this.blurredviewgroup.setVisibility(View.GONE);
+            if(null != this.blurredviewgroup){
+                //if alpha is 0.0 will still be hidden - a;pha is animated below
+                this.blurredviewgroup.setVisibility(View.GONE);
+            }else{
+                Log.e(TAG, "this.blurredviewgroup is null");
+            }
         }
     }
 
@@ -1355,12 +1365,36 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //1080, 2076
 
             int preview_mini_width = 350;
-            int preview_mini_height = 650;
+            int preview_mini_height = 580;
             int margin = 64;
-            int leftMargin = screen_width_pixels - preview_mini_width - margin;
-            int topMargin  = screen_height_pixels - preview_mini_height - margin;
+            int margin_bottom = 364;
 
-            thumbnail_video_view_setmargins(leftMargin, topMargin, margin, margin * 3);
+            if(null != this.bottom_buttons_linearlayout){
+                int[] location = new int[2];
+                this.bottom_buttons_linearlayout.getLocationOnScreen(location);
+
+
+                //    int bottom_buttons_linearlayout_x = location[0];
+                //    int bottom_buttons_linearlayout_y = location[1];
+                //
+                //    int bottom_buttons_linearlayout_top = bottom_buttons_linearlayout_y;
+
+                int leftMargin = screen_width_pixels - preview_mini_width - margin;
+                int topMargin  = screen_height_pixels - preview_mini_height - margin_bottom;
+
+                //thumbnail_video_view_setmargins(leftMargin, topMargin, margin, margin * 4);
+
+                thumbnail_video_view_setmargins(leftMargin, topMargin, margin, margin_bottom);
+                //layout Inspector is in 88dp
+
+
+            }else{
+            	Log.e(TAG, "bottom_buttons_linearlayout is null");
+            }
+
+
+
+
 
             this.previewIsFullScreen = false;
         }
@@ -1412,7 +1446,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         if (mediaPlayer != null) {
             //Plays ringing tone
 //RELEASE PUT BACK
-            mediaPlayer.start();
+//            mediaPlayer.start();
             //--------------------------------------------------------------------------------------
             //use .start() + pause() 
             //not .start() + .stop() seems to kill it, next .play() fails
@@ -1795,7 +1829,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //INCALL remote users name and muted icon
             //------------------------------------------------------------------------------------------
             //default ot muted - AUDIO_TRACK_ADDED will set it to unmuted
-        this.show_inCall_remoteUserNameAndMic_isMuted(true);
+            this.show_inCall_remoteUserNameAndMic_isMuted(true);
 
             //------------------------------------------------------------------------------------------
             //REMOTE user is visible in full screen
@@ -2164,25 +2198,90 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.e(TAG, "switchAudioClickListener.onClick: ");
-                if (audioManager.isSpeakerphoneOn()) {
-                    audioManager.setSpeakerphoneOn(false);
-                } else {
-                    audioManager.setSpeakerphoneOn(true);
-
-                }
-                int icon = audioManager.isSpeakerphoneOn() ?
-                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
-                button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable(
-                        TwilioVideoActivity.this, icon));
+//                Log.e(TAG, "switchAudioClickListener.onClick: ");
+//                if (audioManager.isSpeakerphoneOn()) {
+//                    audioManager.setSpeakerphoneOn(false);
+//                } else {
+//                    audioManager.setSpeakerphoneOn(true);
+//
+//                }
+//                int icon = audioManager.isSpeakerphoneOn() ?
+//                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
+//                button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable(
+//                        TwilioVideoActivity.this, icon));
                 //----------------------------------------------------------------------------------
 //DO NOT RELEASE - DEBUG triggers startCall
-//                publishEvent(CallEvent.DEBUGSTARTACALL);
+                publishEvent(CallEvent.DEBUGSTARTACALL);
                 //----------------------------------------------------------------------------------
+//                applyBlur();
 
 
             }
         };
+    }
+
+    private void applyBlur(){
+
+        //----------------------------------------------------------------------------------
+        //v1 - apply Blurry to Twilio VideoView
+        //WRONG - Can only apply Blurry to a Viewgroup
+        //VideoView is a twilio class
+        //----------------------------------------------------------------------------------
+        //                if(null != primaryVideoView){
+        //                    //Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(blurredviewgroup);
+        //
+        //                    Blurry.with(TwilioVideoActivity.this).radius(10)
+        //                            .sampling(8)
+        //                            .color(Color.argb(66, 255, 255, 0))
+        //                            .async()
+        //                            .animate(500)
+        //                            .onto(primaryVideoView);
+        //                }else{
+        //                    Log.e(TAG, "primaryVideoView is null");
+        //                }
+        //----------------------------------------------------------------------------------
+        //v2 - apply blur to Viewgroup above videoview
+        //----------------------------------------------------------------------------------
+//                if(null != blurredviewgroup){
+//                    //Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(blurredviewgroup);
+//
+//                            Blurry.with(TwilioVideoActivity.this).radius(10)
+//                                    .sampling(8)
+//                                    .color(Color.argb(66, 255, 255, 0))
+//                                    .async()
+//                                    .animate(500)
+//                                    .onto(blurredviewgroup);
+//                }else{
+//                    Log.e(TAG, "blurredviewgroup is null");
+//                }
+        //----------------------------------------------------------------------------------
+//                if(null != video_container){
+//                    Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(video_container);
+//
+////                    Blurry.with(TwilioVideoActivity.this).radius(10)
+////                            .sampling(8)
+////                            .color(Color.argb(66, 255, 255, 0))
+////                            .async()
+////                            .animate(500)
+////                            .onto(video_container);
+//                }else{
+//                    Log.e(TAG, "video_container is null");
+//                }
+        //----------------------------------------------------------------------------------
+//                if(null != activity_video_coordinatorlayout){
+//                    Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(activity_video_coordinatorlayout);
+//
+////                    Blurry.with(TwilioVideoActivity.this).radius(10)
+////                            .sampling(8)
+////                            .color(Color.argb(66, 255, 255, 0))
+////                            .async()
+////                            .animate(500)
+////                            .onto(video_container);
+//                }else{
+//                    Log.e(TAG, "activity_video_coordinatorlayout is null");
+//                }
+        //----------------------------------------------------------------------------------
+
     }
 
     private void configureAudio(boolean enable) {
@@ -2713,11 +2812,15 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             @Override
             public void onAudioTrackEnabled(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication) {
                 Log.e(TAG, "onAudioTrackEnabled: CALLED" );
+
+                show_inCall_remoteUserNameAndMic_isMuted(false);
             }
 
             @Override
             public void onAudioTrackDisabled(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication) {
                 Log.e(TAG, "onAudioTrackDisabled: CALLED" );
+
+                show_inCall_remoteUserNameAndMic_isMuted(true);
             }
 
             @Override
