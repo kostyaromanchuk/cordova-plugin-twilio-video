@@ -27,6 +27,7 @@ import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -59,7 +60,6 @@ import com.squareup.picasso.Picasso;
 //DONT USE it works in this POC but when they integrate with the main sea/chat app theres no capacitor so it breaks
 //import capacitor.android.plugins.R;
 
-import jp.wasabeef.blurry.Blurry;
 
 public class TwilioVideoActivity extends AppCompatActivity implements CallActionObserver {
     public static final String TAG = "TwilioVideoActivity";
@@ -102,9 +102,12 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     /*
      * A VideoView receives frames from a local or remote video track and renders them
      * to an associated view.
+     * //in android the video feed is swapped from fullScreenVideoView to thumbnailVideoView so both can be remote
+     * //in iOS we resize the large one into the smaller
      */
-    private VideoView primaryVideoView;
+    private VideoView fullScreenVideoView;
     private VideoView thumbnailVideoView;
+    private android.widget.FrameLayout thumbnailVideoViewFrameLayout;
 
     //----------------------------------------------------------------------------------------------
     //APPLYING BLUR
@@ -145,9 +148,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
 
     //remote participant image
-    private ImageView imageViewRemoteParticipant;
-    // TODO: 16/12/20   imageViewLocalParticipant
-    private ImageView imageViewLocalParticipant;
+    private ImageView imageViewRemoteParticipantWhilstCalling;
+    private ImageView imageViewRemoteParticipantInCall;
+
+    private ImageView imageViewLocalParticipant1;
 
     private TextView textViewRemoteParticipantName;
     private TextView textViewRemoteParticipantConnectionState;
@@ -182,10 +186,13 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         bottom_buttons_linearlayout = findViewById(FAKE_R.getId("bottom_buttons_linearlayout"));
 
 
+        //openRoom local camera is in  fullScreenVideoView
+        //startACall local moves to  thumbnailVideoView
+        //Remote video feed  is in fullScreenVideoView
+        fullScreenVideoView = findViewById(FAKE_R.getId("fullscreen_video_view"));
 
-
-        primaryVideoView = findViewById(FAKE_R.getId("primary_video_view"));
         thumbnailVideoView = findViewById(FAKE_R.getId("thumbnail_video_view"));
+        thumbnailVideoViewFrameLayout = findViewById(FAKE_R.getId("thumbnail_video_view_framelayout"));
 
         //------------------------------------------------------------------------------------------
         //BOTTOM BUTTONS
@@ -207,7 +214,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //------------------------------------------------------------------------------------------
 
         //filled below from url passed in from cordova via intent
-        imageViewRemoteParticipant = findViewById(FAKE_R.getId("imageViewRemoteParticipant"));
+        imageViewRemoteParticipantWhilstCalling = findViewById(FAKE_R.getId("imageViewRemoteParticipantWhilstCalling"));
+        imageViewRemoteParticipantInCall        = findViewById(FAKE_R.getId("imageViewRemoteParticipantInCall"));
+        imageViewLocalParticipant1               = findViewById(FAKE_R.getId("imageViewLocalParticipant1"));
+
         textViewRemoteParticipantName = findViewById(FAKE_R.getId("textViewRemoteParticipantName"));
         textViewRemoteParticipantConnectionState = findViewById(FAKE_R.getId("textViewRemoteParticipantConnectionState"));
 
@@ -269,7 +279,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
         //------------------------------------------------------------------------------------------
         //FILL USER INFO but dont show yet
-        this.hide_imageViewRemoteParticipant();
+        this.hide_imageViewRemoteParticipantWhilstCalling();
         this.hide_textViewRemoteParticipantName();
         this.hide_textViewRemoteParticipantConnectionState();
 
@@ -587,12 +597,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //----------------------------------------------------------------------------------------------
     // Reset the client ui status
     private void showRoomUI(boolean inRoom) {
-        Log.e(TAG, "showRoomUI: hide mic button");
-
-//TODO        this.micButton.hidden = !inRoom;
-
         this.fillIn_viewRemoteParticipantInfo();
     }
+
     private void setupPreviewView(){
         //HIDE till my camera connected
         this.hide_viewRemoteParticipantInfo();
@@ -671,17 +678,26 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
         }
 
-        fill_imageView_RemoteParticipant();
+        fill_imageViewRemoteParticipantWhilstCalling();
+        fill_imageViewRemoteParticipantInCall();
+
+        fill_imageView_LocalParticipant();
 
         //text set in didConnectToRoom_StartACall*
         this.textViewRemoteParticipantConnectionState.setText("");
     }
 
 
-    private void fill_imageView_RemoteParticipant(){
+    private void fill_imageViewRemoteParticipantWhilstCalling(){
         //DEBUG self.remoteUserPhotoURL = NULL;
 
-        this.loadUserImageInBackground_async(this.remote_user_photo_url, this.imageViewRemoteParticipant);
+        this.loadUserImageInBackground_async(this.remote_user_photo_url, this.imageViewRemoteParticipantWhilstCalling);
+
+    }
+    private void fill_imageViewRemoteParticipantInCall(){
+        //DEBUG self.remoteUserPhotoURL = NULL;
+
+        this.loadUserImageInBackground_async(this.remote_user_photo_url, this.imageViewRemoteParticipantInCall);
 
     }
 
@@ -689,7 +705,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private void fill_imageView_LocalParticipant(){
         //DEBUG DO NOT RELEASE - self.localUserPhotoURL = NULL;
 
-        this.loadUserImageInBackground_async(this.local_user_photo_url, this.imageViewLocalParticipant);
+        this.loadUserImageInBackground_async(this.local_user_photo_url, this.imageViewLocalParticipant1);
 
     }
     
@@ -767,7 +783,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //SHOW REMOTE USER PANEL with image name and state e.g. Dialing..
 
     private void show_viewRemoteParticipantInfoWithState(String state){
-        show_imageViewRemoteParticipant();
+        show_imageViewRemoteParticipantWhilstCalling();
         show_textViewRemoteParticipantName();
         show_textViewRemoteParticipantConnectionState();
 
@@ -775,7 +791,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     }
 
     private void hide_viewRemoteParticipantInfo(){
-        hide_imageViewRemoteParticipant();
+        hide_imageViewRemoteParticipantWhilstCalling();
         hide_textViewRemoteParticipantName();
         hide_textViewRemoteParticipantConnectionState();
         //clear it
@@ -784,21 +800,58 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     //------------------------------------------------------------------------------------------
     //SHOW/HIDE each control
-    private void show_imageViewRemoteParticipant(){
-        if (this.imageViewRemoteParticipant != null) {
-            this.imageViewRemoteParticipant.setVisibility(View.VISIBLE);
+    private void show_imageViewRemoteParticipantWhilstCalling(){
+        if (this.imageViewRemoteParticipantWhilstCalling != null) {
+            this.imageViewRemoteParticipantWhilstCalling.setVisibility(View.VISIBLE);
         }else{
-            Log.e(TAG, "show_imageViewRemoteParticipant: imageViewRemoteParticipant is null");
+            Log.e(TAG, "show_imageViewRemoteParticipantWhilstCalling: imageViewRemoteParticipant is null");
         }
     }
-    private void hide_imageViewRemoteParticipant(){
-        if (this.imageViewRemoteParticipant != null) {
-            this.imageViewRemoteParticipant.setVisibility(View.GONE);
+    private void hide_imageViewRemoteParticipantWhilstCalling(){
+        if (this.imageViewRemoteParticipantWhilstCalling != null) {
+            this.imageViewRemoteParticipantWhilstCalling.setVisibility(View.GONE);
         }else{
-            Log.e(TAG, "hide_imageViewRemoteParticipant: imageViewRemoteParticipant is null");
+            Log.e(TAG, "hide_imageViewRemoteParticipantWhilstCalling: imageViewRemoteParticipant is null");
         }
     }
 
+    //----------------------------------------------------------------------------------------------
+    //SHOW/HIDE each control
+    private void show_imageViewRemoteParticipantInCall(){
+        if (this.imageViewRemoteParticipantInCall != null) {
+            this.imageViewRemoteParticipantInCall.setVisibility(View.VISIBLE);
+        }else{
+            Log.e(TAG, "show_imageViewRemoteParticipantInCall: imageViewRemoteParticipant is null");
+        }
+    }
+    private void hide_imageViewRemoteParticipantInCall(){
+        if (this.imageViewRemoteParticipantInCall != null) {
+            this.imageViewRemoteParticipantInCall.setVisibility(View.GONE);
+        }else{
+            Log.e(TAG, "hide_imageViewRemoteParticipantInCall: imageViewRemoteParticipant is null");
+        }
+    }
+
+    //--------------------------------------------------------------------------------------
+    //REMOTE use has toggle camera ON so show them in the full screen view
+    private void show_fullScreenVideoView(){
+        if (this.fullScreenVideoView != null) {
+            this.fullScreenVideoView.setVisibility(View.VISIBLE);
+        }else{
+            Log.e(TAG, "fullScreenVideoView: remoteVideoView is null");
+        }
+    }
+    //REMOTE use has toggle camera OFF so fullscreenview is frozen so hide it
+    private void hide_fullScreenVideoView(){
+        if (this.fullScreenVideoView != null) {
+            this.fullScreenVideoView.setVisibility(View.GONE);
+        }else{
+            Log.e(TAG, "hide_remoteVideoView: remoteVideoView is null");
+        }
+    }
+
+
+    //----------------------------------------------------------------------------------------------
     //show_textViewRemoteParticipantName
     private void show_textViewRemoteParticipantName(){
         if (this.textViewRemoteParticipantName != null) {
@@ -838,6 +891,23 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     }
 
 
+    //if proximity triggered
+    //if camera button set to off
+    private void thumbnailVideoViewFrameLayout_show(){
+        this.thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
+
+    }
+
+    private void thumbnailVideoViewFrameLayout_hide(){
+        this.thumbnailVideoViewFrameLayout.setVisibility(View.INVISIBLE);
+
+    }
+
+
+
+    //----------------------------------------------------------------------------------------------
+    //MINI VIEW BORDER
+    //----------------------------------------------------------------------------------------------
     private void addBorderToPreview(){
         Log.e(TAG, "addBorderToPreview: TODO" );
     }
@@ -902,32 +972,6 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //------------------------------------------------------------------------------------------
     //DELEGATE > UPDATE UI
     //------------------------------------------------------------------------------------------
-    
-    private void didConnectToRoom_StartACall(){
-        Log.e(TAG, "didConnectToRoom_StartACall: START");
-
-        if(this.previewIsFullScreen){
-            //----------------------------------------------------------------------
-            //Show the dialing panel
-    
-            this.fillIn_viewRemoteParticipantInfo();
-        
-            this.show_viewRemoteParticipantInfoWithState("Calling...");
-
-            //----------------------------------------------------------------------
-            //show LOCAL USER full screen while waiting for other user to answer
-            this.update_PreviewView_showInFullScreen(false, true, true);
-            //----------------------------------------------------------------------
-            //FIRST TIME VERY LOUD - cant set volume to 0
-            //NEXT TIMES too quiet
-            //will start it before room connect in viewDidLoad
-            this.dialing_sound_start();
-            //----------------------------------------------------------------------
-
-        }else{
-            Log.e(TAG, "didConnectToRoom_StartACall: new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL");
-        }
-    }
 
     //On the ANSWERING PHONE it will trigger
     //didConnectToRoom_AnswerACall only
@@ -1338,19 +1382,35 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //FULLSCREEN VIEW
             //------------------------------------------------------------------------------------------
 
-            if (thumbnailVideoView != null) {
-                ViewGroup.LayoutParams thumbnailVideoView_layoutParams = thumbnailVideoView.getLayoutParams();
+//            if (thumbnailVideoView != null) {
+//                ViewGroup.LayoutParams thumbnailVideoView_layoutParams = thumbnailVideoView.getLayoutParams();
+//
+//                thumbnailVideoView_layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
+//                thumbnailVideoView_layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
+//
+//                thumbnailVideoView.setLayoutParams(thumbnailVideoView_layoutParams);
+//
+//                thumbnail_video_view_setmargins(0, 0, 0, 0);
+//
+//                thumbnailVideoView.requestLayout();
+//            } else {
+//                Log.e(TAG, "onClick: thumbnailVideoView is null");
+//            }
 
-                thumbnailVideoView_layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
-                thumbnailVideoView_layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
+            if (thumbnailVideoViewFrameLayout != null) {
+                ViewGroup.LayoutParams thumbnailVideoViewFrameLayout_layoutParams = thumbnailVideoViewFrameLayout.getLayoutParams();
 
-                thumbnailVideoView.setLayoutParams(thumbnailVideoView_layoutParams);
+                thumbnailVideoViewFrameLayout_layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                thumbnailVideoViewFrameLayout_layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
 
-                thumbnail_video_view_setmargins(0, 0, 0, 0);
+                thumbnailVideoViewFrameLayout.setLayoutParams(thumbnailVideoViewFrameLayout_layoutParams);
 
-                thumbnailVideoView.requestLayout();
+                thumbnail_video_view_framelayout_setmargins(0, 0, 0, 0);
+
+                thumbnailVideoViewFrameLayout.requestLayout();
+                //imageViewLocalParticipant.requestLayout();
             } else {
-                Log.e(TAG, "onClick: thumbnailVideoView is null");
+                Log.e(TAG, "onClick: thumbnailVideoViewFrameLayout is null");
             }
 
             this.previewIsFullScreen = true;
@@ -1385,7 +1445,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
                 //thumbnail_video_view_setmargins(leftMargin, topMargin, margin, margin * 4);
 
-                thumbnail_video_view_setmargins(leftMargin, topMargin, margin, margin_bottom);
+                //thumbnail_video_view_setmargins(leftMargin, topMargin, margin, margin_bottom);
+                thumbnail_video_view_framelayout_setmargins(leftMargin, topMargin, margin, margin_bottom);
+
                 //layout Inspector is in 88dp
 
 
@@ -1401,9 +1463,38 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         }
     }
 
-    private void thumbnail_video_view_setmargins(int leftmargin, int topMargin, int rightMargin, int bottomMargin){
-        VideoView thumbnail_video_view = findViewById(FAKE_R.getId("thumbnail_video_view"));
-        ViewGroup.LayoutParams layoutParams = thumbnail_video_view.getLayoutParams();
+    //----------------------------------------------------------------------------------------------
+//CLEANUP
+//    private void thumbnail_video_view_setmargins(int leftmargin, int topMargin, int rightMargin, int bottomMargin){
+//        VideoView thumbnail_video_view = findViewById(FAKE_R.getId("thumbnail_video_view"));
+//        ViewGroup.LayoutParams layoutParams = thumbnail_video_view.getLayoutParams();
+//
+//
+//        if (layoutParams instanceof ViewGroup.MarginLayoutParams) {
+//            ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) layoutParams;
+//
+//            //OK but sets all
+//            marginLayoutParams.setMargins(leftmargin, topMargin, rightMargin, bottomMargin); // left, top, right, bottom
+//
+//            //https://developer.android.com/reference/android/view/ViewGroup.MarginLayoutParams
+//            //((ViewGroup.MarginLayoutParams) layoutParams).topMargin = 0;
+//            //((ViewGroup.MarginLayoutParams) layoutParams).leftMargin = 0;
+//            //((ViewGroup.MarginLayoutParams) layoutParams).bottomMargin = 0;
+//            //((ViewGroup.MarginLayoutParams) layoutParams).rightMargin = 0;
+//
+//            //video_container.requestLayout();
+//            thumbnail_video_view.requestLayout();
+//        } else{
+//            Log.e("MyApp", "Attempted to set the margins on a class that doesn't support margins: video_container");
+//        }
+//    }
+
+
+    private void thumbnail_video_view_framelayout_setmargins(int leftmargin, int topMargin, int rightMargin, int bottomMargin){
+
+        FrameLayout thumbnail_video_view_frameLayout = findViewById(FAKE_R.getId("thumbnail_video_view_framelayout"));
+
+        ViewGroup.LayoutParams layoutParams = thumbnail_video_view_frameLayout.getLayoutParams();
 
 
         if (layoutParams instanceof ViewGroup.MarginLayoutParams) {
@@ -1419,16 +1510,13 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //((ViewGroup.MarginLayoutParams) layoutParams).rightMargin = 0;
 
             //video_container.requestLayout();
-            thumbnail_video_view.requestLayout();
+            thumbnail_video_view_frameLayout.requestLayout();
         } else{
             Log.e("MyApp", "Attempted to set the margins on a class that doesn't support margins: video_container");
         }
     }
 
-
-
-
-
+    //----------------------------------------------------------------------------------------------
 
 
 
@@ -1488,7 +1576,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         Log.e(TAG, "onResume: STARTED" );
 
 
-
+        this.hide_imageViewRemoteParticipantInCall();
+//        imageViewLocalParticipant.setVisibility(View.INVISIBLE);
 
         //------------------------------------------------------------------------------------------
         //PARSE PARAMS FROM Intent
@@ -1789,7 +1878,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //1 local + 0 remote - LOCAL USER is person dialing REMOTE participant.
     //Remote hasnt joined the room yet so hasnt answered so show 'Dialing..'
     //On the CALLING PHONE it will trigger
-    //didConnectToRoom_StartACall >> participantDidConnect_RemoteUserHasAnswered
+    //participantDidConnect_LocalUserAndCallerHaveConnectedToRoom_StartTalking
     private void participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom(){
         Log.w(TAG, "[participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom] START");
     
@@ -2053,22 +2142,36 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             @Override
             public void onClick(View v) {
                 Log.e(TAG, "button_localVideo_OnClickListener.onClick: ");
-                /*
-                 * Enable/disable the local video track
-                 */
+                //Enable/disable the local video track
                 if (localVideoTrack != null) {
-                    boolean enable = !localVideoTrack.isEnabled();
-                    localVideoTrack.enable(enable);
+                    boolean enabled = !localVideoTrack.isEnabled();
+                    localVideoTrack.enable(enabled);
 
                     //------------------------------------------------------------------------------
                     //CHANGE ICON and COLOR
                     //------------------------------------------------------------------------------
                     int icon;
 
-                    if (enable) {
+                    if (enabled) {
+                        //LOCAL CAMERA IS ON
                         icon = FAKE_R.getDrawable("ic_videocam_green_24px");
+
+//                        thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
+//                        thumbnailVideoViewFrameLayout.setBackgroundColor(FAKE_R.getColor("colorButtonUnselected"));
+//PUTBACKTUES                        thumbnailVideoView.setVisibility(View.VISIBLE);
+//  PUTBACKTUES                        imageViewLocalParticipant1.setVisibility(View.INVISIBLE);
+//                        imageViewLocalParticipant.bringToFront();
+
+
                     } else {
+                        //LOCAL CAMERA IS OFF
                         icon = FAKE_R.getDrawable("ic_videocam_off_red_24px");
+//                        thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
+//                        thumbnailVideoViewFrameLayout.setBackgroundColor(FAKE_R.getColor("colorButtonUnselected"));
+//PUTBACKTUES                        thumbnailVideoView.setVisibility(View.INVISIBLE);
+//  PUTBACKTUES                       imageViewLocalParticipant1.setVisibility(View.VISIBLE);
+//                      imageViewLocalParticipant.bringToFront();
+
                     }
 
                     button_fab_localvideo_onoff.setImageDrawable(ContextCompat.getDrawable(TwilioVideoActivity.this, icon));
@@ -2180,7 +2283,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     if (thumbnailVideoView.getVisibility() == View.VISIBLE) {
                         thumbnailVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
                     } else {
-                        primaryVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
+                        fullScreenVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
                     }
                 }
 
@@ -2214,8 +2317,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 //DO NOT RELEASE - DEBUG triggers startCall
 //                publishEvent(CallEvent.DEBUGSTARTACALL);
                 //----------------------------------------------------------------------------------
-//                applyBlur();
-
+                //applyBlur();
+                //----------------------------------------------------------------------------------
 
             }
         };
@@ -2373,19 +2476,27 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
      * Set primary view as renderer for participant video track
      */
     private void addRemoteParticipantVideo(VideoTrack videoTrack) {
-        primaryVideoView.setVisibility(View.VISIBLE);
-        primaryVideoView.setMirror(false);
-        videoTrack.addRenderer(primaryVideoView);
+        fullScreenVideoView.setVisibility(View.VISIBLE);
+        fullScreenVideoView.setMirror(false);
+        videoTrack.addRenderer(fullScreenVideoView);
     }
 
     private void moveLocalVideoToThumbnailView() {
-        Log.e(TAG, "moveLocalVideoToThumbnailView: STARTED" );
-        if (thumbnailVideoView.getVisibility() == View.GONE) {
 
+        Log.e(TAG, "moveLocalVideoToThumbnailView: STARTED" );
+
+        if (thumbnailVideoView.getVisibility() == View.GONE) {
+            Log.e(TAG, "moveLocalVideoToThumbnailView: thumbnailVideoView.setVisibility(View.VISIBLE)" );
+
+            thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
+////  PUTBACKTUES IF YOU COMMENT THIS OUT YOU GET THAT CYAN BACKGROUND I THINKG thumbnailVideoView is fullscreen on startup
             thumbnailVideoView.setVisibility(View.VISIBLE);
+
+////  PUTBACKTUES            imageViewLocalParticipant1.setVisibility(View.INVISIBLE);
+
             //--------------------------------------------------------------------------------------
             if (localVideoTrack != null) {
-                localVideoTrack.removeRenderer(primaryVideoView);
+                localVideoTrack.removeRenderer(fullScreenVideoView);
                 localVideoTrack.addRenderer(thumbnailVideoView);
             }else{
                 Log.e(TAG, "moveLocalVideoToThumbnailView: localVideoTrack is null");
@@ -2399,6 +2510,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //--------------------------------------------------------------------------------------
             //flip camera on horizontal axis?
             thumbnailVideoView.setMirror(cameraCapturer.getCameraSource() == CameraSource.FRONT_CAMERA);
+
+
+            //its moved to the thumbnaiview releoad?
+//            this.fill_imageView_LocalParticipant();
         }
     }
 
@@ -2427,8 +2542,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     }
 
     private void removeParticipantVideo(VideoTrack videoTrack) {
-        primaryVideoView.setVisibility(View.GONE);
-        videoTrack.removeRenderer(primaryVideoView);
+        fullScreenVideoView.setVisibility(View.GONE);
+        videoTrack.removeRenderer(fullScreenVideoView);
     }
 
     /*
@@ -2576,6 +2691,12 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 removeRemoteParticipant(participant);
 
                 participantDidDisconnect(participant.getIdentity());
+
+                //P1 calls p2
+                //P2 turns off camera - remote phot appears in center of P1
+                //P2 disconnects > onParticipantDisconnected > hide the remote photo if visible
+                hide_imageViewRemoteParticipantInCall();
+                //see also Room.Listener onVideoTrackEnabled/onVideoTrackDisabled:
             }
 
             @Override
@@ -2827,15 +2948,24 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
                 show_inCall_remoteUserNameAndMic_isMuted(true);
             }
-
+            //--------------------------------------------------------------------------------------
+            //OTHER USER TURNS VIDEO / ON OFF - hide the video feed and show remote users photo
+            //--------------------------------------------------------------------------------------
             @Override
             public void onVideoTrackEnabled(RemoteParticipant remoteParticipant, RemoteVideoTrackPublication remoteVideoTrackPublication) {
                 Log.e(TAG, "onVideoTrackEnabled: CALLED" );
+
+                show_fullScreenVideoView();
+
+                hide_imageViewRemoteParticipantInCall();
+                //see also Room.Listener onParticipantDisconnected:
             }
 
             @Override
             public void onVideoTrackDisabled(RemoteParticipant remoteParticipant, RemoteVideoTrackPublication remoteVideoTrackPublication) {
                 Log.e(TAG, "onVideoTrackDisabled: CALLED" );
+                hide_fullScreenVideoView();
+                show_imageViewRemoteParticipantInCall();
             }
         };
     }

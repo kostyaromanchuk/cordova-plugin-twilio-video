@@ -7,6 +7,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
+    android:background="#112539"
     tools:context="org.apache.cordova.twiliovideo.TwilioVideoActivity">
 
     <include layout="@layout/content_video" />

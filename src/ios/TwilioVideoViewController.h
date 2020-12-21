@@ -20,7 +20,7 @@
 @property (nonatomic, strong) TVILocalAudioTrack *localAudioTrack;
 
 @property (nonatomic, strong) TVIRemoteParticipant *remoteParticipant;
-@property (nonatomic, weak) TVIVideoView *remoteView;
+@property (nonatomic, weak) TVIVideoView *remoteVideoView;
 
 @property (nonatomic, strong) TVIRoom *room;
 

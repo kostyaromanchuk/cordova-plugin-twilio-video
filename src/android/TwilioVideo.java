@@ -119,7 +119,7 @@ public class TwilioVideo extends CordovaPlugin {
                     intent_TwilioVideoActivity.putExtra("roomId", roomId);
                     intent_TwilioVideoActivity.putExtra("config", config);
                     intent_TwilioVideoActivity.putExtra("local_user_name", local_user_name);
-                    intent_TwilioVideoActivity.putExtra("local_user_name", local_user_name);
+                    intent_TwilioVideoActivity.putExtra("local_user_photo_url", local_user_photo_url);
                     intent_TwilioVideoActivity.putExtra("remote_user_name", remote_user_name);
                     intent_TwilioVideoActivity.putExtra("remote_user_photo_url", remote_user_photo_url);
 
@@ -263,7 +263,7 @@ public class TwilioVideo extends CordovaPlugin {
                     intent_TwilioVideoActivity.putExtra("config", config);
 
                     intent_TwilioVideoActivity.putExtra("local_user_name", local_user_name);
-                    intent_TwilioVideoActivity.putExtra("local_user_name", local_user_name);
+                    intent_TwilioVideoActivity.putExtra("local_user_photo_url", local_user_photo_url);
                     intent_TwilioVideoActivity.putExtra("remote_user_name", remote_user_name);
                     intent_TwilioVideoActivity.putExtra("remote_user_photo_url", remote_user_photo_url);
 

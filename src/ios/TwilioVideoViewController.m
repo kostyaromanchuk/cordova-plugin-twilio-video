@@ -51,7 +51,7 @@ NSString *const CLOSED = @"CLOSED";
 @property (unsafe_unretained, nonatomic) IBOutlet UIView *viewButtonOuter;
 //------------------------------------------------------------------------------------------
 //CALLING PANEL - photo and name and Calling.../Disconnected....
-@property (unsafe_unretained, nonatomic) IBOutlet UIImageView *imageViewRemoteParticipant;
+@property (unsafe_unretained, nonatomic) IBOutlet UIImageView *imageViewRemoteParticipantWhilstCalling;
 @property (unsafe_unretained, nonatomic) IBOutlet UIImageView *imageViewRemoteParticipantInCall;
 @property (unsafe_unretained, nonatomic) IBOutlet UIImageView *imageViewLocalParticipant;
 
@@ -85,6 +85,7 @@ NSString *const CLOSED = @"CLOSED";
 @property (unsafe_unretained, nonatomic) IBOutlet UIView *viewAudioWrapper;
 @property (unsafe_unretained, nonatomic) IBOutlet UIVisualEffectView *uiVisualEffectViewBlur;
 
+@property (unsafe_unretained, nonatomic) IBOutlet UIImageView *imageViewSwitchVideo;
 
 
 @end
@@ -189,7 +190,10 @@ NSString *const CLOSED = @"CLOSED";
     
     //----------------------------------------------------------------------------------------------
     //REMOTE PHOTO - In call
-    [self.imageViewRemoteParticipantInCall setHidden: TRUE];
+    [self hide_imageViewRemoteParticipantInCall];
+    
+    //----------------------------------------------------------------------------------------------
+    [self.imageViewSwitchVideo setHidden:TRUE];
 }
 
 
@@ -224,7 +228,7 @@ NSString *const CLOSED = @"CLOSED";
         
         if(defaultImage){
             //imageViewToFill.backgroundColor = [UIColor clearColor];
-            imageViewToFill.layer.cornerRadius = self.imageViewRemoteParticipant.frame.size.height / 2.0;
+            imageViewToFill.layer.cornerRadius = self.imageViewRemoteParticipantWhilstCalling.frame.size.height / 2.0;
             
             imageViewToFill.image = defaultImage;
             imageViewToFill.image = defaultImage;
@@ -387,7 +391,7 @@ NSString *const CLOSED = @"CLOSED";
 -(void)fill_imageView_RemoteParticipant{
     //DEBUG self.remoteUserPhotoURL = NULL;
     
-    [self loadUserImageInBackground_async: self.remoteUserPhotoURL toImageView:self.imageViewRemoteParticipant];
+    [self loadUserImageInBackground_async: self.remoteUserPhotoURL toImageView:self.imageViewRemoteParticipantWhilstCalling];
 }
 -(void)fill_imageView_RemoteParticipantInCall{
     //DEBUG self.remoteUserPhotoURL = NULL;
@@ -506,6 +510,46 @@ NSString *const CLOSED = @"CLOSED";
 
 
 
+
+#pragma mark -
+#pragma mark REMOTE PHOTOS
+#pragma mark -
+
+//SHOW/HIDE each control
+-(void)show_imageViewRemoteParticipantWhilstCalling{
+    if(self.imageViewRemoteParticipantWhilstCalling){
+        [self.imageViewRemoteParticipantWhilstCalling setHidden:FALSE];
+    }else{
+        [self log_error:@"imageViewRemoteParticipant is null is NULL"];
+    }
+}
+-(void)hide_imageViewRemoteParticipantWhilstCalling{
+    if(self.imageViewRemoteParticipantWhilstCalling){
+        [self.imageViewRemoteParticipantWhilstCalling setHidden:TRUE];
+    }else{
+        [self log_error:@"imageViewRemoteParticipant is null is NULL"];
+    }
+}
+//SHOW/HIDE each control
+-(void)show_imageViewRemoteParticipantInCall{
+    if(self.imageViewRemoteParticipantInCall){
+        [self.imageViewRemoteParticipantInCall setHidden:FALSE];
+    }else{
+        [self log_error:@"imageViewRemoteParticipant is null is NULL"];
+    }
+}
+-(void)hide_imageViewRemoteParticipantInCall{
+    if(self.imageViewRemoteParticipantInCall){
+        [self.imageViewRemoteParticipantInCall setHidden:TRUE];
+    }else{
+        [self log_error:@"imageViewRemoteParticipant is null is NULL"];
+    }
+}
+
+//------------------------------------------------------------------------------------------
+
+
+
 #pragma mark -
 #pragma mark setupPreview
 #pragma mark -
@@ -538,9 +582,13 @@ NSString *const CLOSED = @"CLOSED";
         
         //Dont do here the layer is being updated by the animation so this may not work at first - moved up to update_PreviewView_showInFullScreen
         //[self removeBorderFromView:self.previewView];
+        
+        //------------------------------------------------------------------------------------------
+        [self.imageViewSwitchVideo setHidden:TRUE];
+        //------------------------------------------------------------------------------------------
     }else{
         //------------------------------------------------------------------------------------------
-        
+        //MINI VIEW
         //------------------------------------------------------------------------------------------
         CGFloat screen_width = self.view.frame.size.width;
         CGFloat screen_height = self.view.frame.size.height;
@@ -557,7 +605,7 @@ NSString *const CLOSED = @"CLOSED";
         //
         //UIEdgeInsets screen_safeAreaInsets = self.view.safeAreaInsets;
     
-        CGFloat bottom = (self.viewButtonOuter.frame.size.height + self.view.safeAreaInsets.bottom + 8.0);
+        CGFloat bottom = (self.viewButtonOuter.frame.size.height + self.imageViewInCallRemoteMicMuteState.frame.size.height  + 8.0 + self.view.safeAreaInsets.bottom + 8.0);
         
         self.nsLayoutConstraint_previewView_bottom.constant = bottom;
         
@@ -589,6 +637,10 @@ NSString *const CLOSED = @"CLOSED";
         //        dispatch_async(dispatch_get_main_queue(), ^{
         //            [self addBorderToView:self.previewView withColor:[UIColor redColor] borderWidth: 2.0f];
         //        });
+        
+        //------------------------------------------------------------------------------------------
+        [self.imageViewSwitchVideo setHidden:FALSE];
+        //------------------------------------------------------------------------------------------
         
     }
 }
@@ -750,8 +802,8 @@ NSString *const CLOSED = @"CLOSED";
     
     [self log_debug:@"[TwilioVideoViewController] [openRoom]"];
     
-    //RELEASE
-    [self show_buttonDebugStartACall];
+    //DONT RELEASE
+    //[self show_buttonDebugStartACall];
     
     //----------------------------------------------------------------------------------------------
     //STORE PARAMS
@@ -1013,10 +1065,11 @@ NSString *const CLOSED = @"CLOSED";
         //[self.videoButton setSelected: !self.localVideoTrack.isEnabled];
         if(self.localVideoTrack.isEnabled){
             [self videoButton_changeTo_videoEnabled];
-            [self.viewRemoteCameraDisabled setHidden:TRUE];
+            [self viewRemoteCameraDisabled_hide];
+            
         }else{
             [self videoButton_changeTo_videoDisabled];
-            [self.viewRemoteCameraDisabled setHidden:FALSE];
+            [self viewRemoteCameraDisabled_show];
         }
     }
 }
@@ -1228,6 +1281,7 @@ NSString *const CLOSED = @"CLOSED";
         //FIRST TIME VERY LOUD - cant set volume to 0
         //NEXT TIMES too quiet
         //will start it before room connect in viewDidLoad
+//RELEASE COMMENT IN
         [self dialing_sound_start];
         //----------------------------------------------------------------------
         
@@ -1343,6 +1397,11 @@ NSString *const CLOSED = @"CLOSED";
         //Here remote has disconnected so dont show blur
         
         [self update_PreviewView_showInFullScreen:TRUE animated:TRUE showBlurView:FALSE];
+        
+        [self hide_inCall_remoteUserNameAndMic];
+        
+        //if remote user has turned off their camera before disconnecting then remote phot in center of screen
+        [self hide_imageViewRemoteParticipantInCall];
     }
 }
 - (void)flipCamera {
@@ -1477,9 +1536,9 @@ NSString *const CLOSED = @"CLOSED";
     remoteView.contentMode = UIViewContentModeScaleAspectFill;
 
     [self.view insertSubview:remoteView atIndex:0];
-    self.remoteView = remoteView;
+    self.remoteVideoView = remoteView;
     
-    NSLayoutConstraint *centerX = [NSLayoutConstraint constraintWithItem:self.remoteView
+    NSLayoutConstraint *centerX = [NSLayoutConstraint constraintWithItem:self.remoteVideoView
                                                                attribute:NSLayoutAttributeCenterX
                                                                relatedBy:NSLayoutRelationEqual
                                                                   toItem:self.view
@@ -1487,7 +1546,7 @@ NSString *const CLOSED = @"CLOSED";
                                                               multiplier:1
                                                                 constant:0];
     [self.view addConstraint:centerX];
-    NSLayoutConstraint *centerY = [NSLayoutConstraint constraintWithItem:self.remoteView
+    NSLayoutConstraint *centerY = [NSLayoutConstraint constraintWithItem:self.remoteVideoView
                                                                attribute:NSLayoutAttributeCenterY
                                                                relatedBy:NSLayoutRelationEqual
                                                                   toItem:self.view
@@ -1495,7 +1554,7 @@ NSString *const CLOSED = @"CLOSED";
                                                               multiplier:1
                                                                 constant:0];
     [self.view addConstraint:centerY];
-    NSLayoutConstraint *width = [NSLayoutConstraint constraintWithItem:self.remoteView
+    NSLayoutConstraint *width = [NSLayoutConstraint constraintWithItem:self.remoteVideoView
                                                              attribute:NSLayoutAttributeWidth
                                                              relatedBy:NSLayoutRelationEqual
                                                                 toItem:self.view
@@ -1504,7 +1563,7 @@ NSString *const CLOSED = @"CLOSED";
                                                               constant:0];
     [self.view addConstraint:width];
     
-    NSLayoutConstraint *height = [NSLayoutConstraint constraintWithItem:self.remoteView
+    NSLayoutConstraint *height = [NSLayoutConstraint constraintWithItem:self.remoteVideoView
                                                               attribute:NSLayoutAttributeHeight
                                                               relatedBy:NSLayoutRelationEqual
                                                                  toItem:self.view
@@ -1549,7 +1608,7 @@ NSString *const CLOSED = @"CLOSED";
  
 }
 -(void)show_buttonDebugStartACall{
-    //DEBUG - shows a button to trigger startCall() - NEVER RELEASE
+    //RELEASE DEBUG - shows a button to trigger startCall() - NEVER RELEASE
 //    [self.buttonDebugStartACall setHidden:FALSE];
 //    [self.view bringSubviewToFront:self.buttonDebugStartACall];
     
@@ -1588,8 +1647,8 @@ NSString *const CLOSED = @"CLOSED";
     if (self.remoteParticipant) {
         if ([self.remoteParticipant.videoTracks count] > 0) {
             TVIRemoteVideoTrack *videoTrack = self.remoteParticipant.remoteVideoTracks[0].remoteTrack;
-            [videoTrack removeRenderer:self.remoteView];
-            [self.remoteView removeFromSuperview];
+            [videoTrack removeRenderer:self.remoteVideoView];
+            [self.remoteVideoView removeFromSuperview];
         }
         self.remoteParticipant = nil;
     }
@@ -1860,7 +1919,7 @@ NSString *const CLOSED = @"CLOSED";
 
     if (self.remoteParticipant == participant) {
         [self setupRemoteView];
-        [videoTrack addRenderer:self.remoteView];
+        [videoTrack addRenderer:self.remoteVideoView];
     }
 }
 
@@ -1878,8 +1937,8 @@ NSString *const CLOSED = @"CLOSED";
     [[TwilioVideoManager getInstance] publishEvent: VIDEO_TRACK_REMOVED];
     
     if (self.remoteParticipant == participant) {
-        [videoTrack removeRenderer:self.remoteView];
-        [self.remoteView removeFromSuperview];
+        [videoTrack removeRenderer:self.remoteVideoView];
+        [self.remoteVideoView removeFromSuperview];
     }
 }
 
@@ -1925,9 +1984,11 @@ NSString *const CLOSED = @"CLOSED";
                       participant.identity, publication.trackName]];
     
     //remoteView is the video feed - so unhide this
-    [self.remoteView setHidden: FALSE];
-    //and hide the remote photo
-    [self.imageViewRemoteParticipantInCall setHidden: TRUE];
+    [self.remoteVideoView setHidden: FALSE];
+    
+    //and hide the remote photo in cetner of the screen
+    [self hide_imageViewRemoteParticipantInCall];
+    //see also unPublishVideo - CALLER app enters back ground - Other phone should show remote photo
 }
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didDisableVideoTrack:(nonnull TVIRemoteVideoTrackPublication *)publication {
@@ -1936,8 +1997,10 @@ NSString *const CLOSED = @"CLOSED";
                       participant.identity, publication.trackName]];
     
     //main view is now frozen need to turn it off
-    [self.remoteView setHidden: TRUE];
-    [self.imageViewRemoteParticipantInCall setHidden: FALSE];
+    [self.remoteVideoView setHidden: TRUE];
+
+    //and hide the remote photo in cetner of the screen
+    [self show_imageViewRemoteParticipantInCall];
 
 }
 #pragma mark -

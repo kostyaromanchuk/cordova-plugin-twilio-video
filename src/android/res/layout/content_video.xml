@@ -9,17 +9,38 @@
              tools:showIn="@layout/activity_video">
 
 
-    <com.twilio.video.VideoView
-        android:id="@+id/thumbnail_video_view"
-        app:tviOverlaySurface="true"
-        app:tviMirror="true"
-        android:visibility="gone"
+    <FrameLayout
+        android:id="@+id/thumbnail_video_view_framelayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_gravity="bottom|end"/>
+        android:visibility="gone"
+        android:background="#112539"
+        android:layout_gravity="bottom|end"
+        >
+        <com.twilio.video.VideoView
+            android:id="@+id/thumbnail_video_view"
+            app:tviOverlaySurface="true"
+            app:tviMirror="true"
+            android:visibility="gone"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <!--    IN CALL no border-->
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/imageViewLocalParticipant1"
+            android:layout_width="76dp"
+            android:layout_height="76dp"
+            android:visibility="invisible"
+            android:layout_gravity="center_horizontal|center_vertical"
+            app:civ_border_color="#FFFFFFFF"
+            app:civ_border_width="0dp" />
+
+    </FrameLayout>
+
+
 
     <com.twilio.video.VideoView
-        android:id="@+id/primary_video_view"
+        android:id="@+id/fullscreen_video_view"
         android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
@@ -34,6 +55,7 @@
         android:layout_height="match_parent"
         android:background="#73FFFFFF"
         android:orientation="vertical">
+
     </LinearLayout>
 
     <!--    NO BACKGROUND COLOR - APPLY Blurry effect in code - seems to have no effect if ViewGroup is transparent-->
@@ -54,7 +76,7 @@
 
 
         <de.hdodenhof.circleimageview.CircleImageView
-            android:id="@+id/imageViewRemoteParticipant"
+            android:id="@+id/imageViewRemoteParticipantWhilstCalling"
             android:layout_width="96dp"
             android:layout_height="96dp"
 
@@ -96,6 +118,15 @@
         </LinearLayout>
 
     </LinearLayout>
+
+    <!--    IN CALL no border-->
+    <de.hdodenhof.circleimageview.CircleImageView
+        android:id="@+id/imageViewRemoteParticipantInCall"
+        android:layout_width="76dp"
+        android:layout_height="76dp"
+        android:layout_gravity="center_horizontal|center_vertical"
+        app:civ_border_color="#FFFFFFFF"
+        app:civ_border_width="0dp" />
 
 
 </FrameLayout>
