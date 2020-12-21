@@ -49,6 +49,8 @@
         <resource-file src="src/ios/Resources/switch_camera@3x.png" target="Resources/switch_camera@3x.png" />
         <resource-file src="src/ios/Resources/ringing.mp3" target="Resources/ringing.mp3" />
         <resource-file src="src/ios/Resources/baseline_account_circle_black_18dp.png" target="Resources/baseline_account_circle_black_18dp.png" />
+        <resource-file src="src/ios/Resources/baseline_switch_video_black_18dp.png" target="Resources/baseline_switch_video_black_18dp.png" />
+        <resource-file src="src/ios/Resources/baseline_switch_video_white_18dp.png" target="Resources/baseline_switch_video_white_18dp.png" />
         <resource-file src="src/ios/Resources/alert_in_circle.png" target="Resources/alert_in_circle.png" />
         
 		<resource-file src="src/ios/Resources/no_mic_grey.png" target="Resources/no_mic_grey.png" />

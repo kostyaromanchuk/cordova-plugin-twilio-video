@@ -52,6 +52,7 @@ NSString *const CLOSED = @"CLOSED";
 //------------------------------------------------------------------------------------------
 //CALLING PANEL - photo and name and Calling.../Disconnected....
 @property (unsafe_unretained, nonatomic) IBOutlet UIImageView *imageViewRemoteParticipant;
+@property (unsafe_unretained, nonatomic) IBOutlet UIImageView *imageViewRemoteParticipantInCall;
 @property (unsafe_unretained, nonatomic) IBOutlet UIImageView *imageViewLocalParticipant;
 
 @property (unsafe_unretained, nonatomic) IBOutlet UIView *viewWrapperAnimatedBorder0;
@@ -185,6 +186,10 @@ NSString *const CLOSED = @"CLOSED";
     //INIT BUTTONS
     //----------------------------------------------------------------------------------------------
     [self startProximitySensor];
+    
+    //----------------------------------------------------------------------------------------------
+    //REMOTE PHOTO - In call
+    [self.imageViewRemoteParticipantInCall setHidden: TRUE];
 }
 
 
@@ -331,6 +336,7 @@ NSString *const CLOSED = @"CLOSED";
     }
 
     [self fill_imageView_RemoteParticipant];
+    [self fill_imageView_RemoteParticipantInCall];
     [self fill_imageView_LocalParticipant];
 }
 
@@ -382,6 +388,11 @@ NSString *const CLOSED = @"CLOSED";
     //DEBUG self.remoteUserPhotoURL = NULL;
     
     [self loadUserImageInBackground_async: self.remoteUserPhotoURL toImageView:self.imageViewRemoteParticipant];
+}
+-(void)fill_imageView_RemoteParticipantInCall{
+    //DEBUG self.remoteUserPhotoURL = NULL;
+    
+    [self loadUserImageInBackground_async: self.remoteUserPhotoURL toImageView:self.imageViewRemoteParticipantInCall];
 }
 
 //when LOCAL user is offline we show their image over the disable camera view
@@ -1539,11 +1550,11 @@ NSString *const CLOSED = @"CLOSED";
 }
 -(void)show_buttonDebugStartACall{
     //DEBUG - shows a button to trigger startCall() - NEVER RELEASE
-    [self.buttonDebugStartACall setHidden:FALSE];
-    [self.view bringSubviewToFront:self.buttonDebugStartACall];
+//    [self.buttonDebugStartACall setHidden:FALSE];
+//    [self.view bringSubviewToFront:self.buttonDebugStartACall];
     
-    //RELEASE
-    //[self.buttonDebugStartACall setHidden:TRUE];
+    //FOR A RELEASE - COMMENT THIS IN
+    [self.buttonDebugStartACall setHidden:TRUE];
 }
 
 - (IBAction)buttonDebug_showOffline_Action:(id)sender {
@@ -1885,6 +1896,8 @@ NSString *const CLOSED = @"CLOSED";
     [self log_info:[NSString stringWithFormat:@"Subscribed to audio track:'%@' for Participant '%@'",
                       publication.trackName, participant.identity]];
     [[TwilioVideoManager getInstance] publishEvent: AUDIO_TRACK_ADDED];
+    
+    [self update_imageViewInCallRemoteMicMuteState_isMuted:FALSE];
 }
 
 - (void)didUnsubscribeFromAudioTrack:(nonnull TVIRemoteAudioTrack *)audioTrack
@@ -1899,6 +1912,8 @@ NSString *const CLOSED = @"CLOSED";
     [self log_info:[NSString stringWithFormat:@"Unsubscribed from audio track:'%@' for Participant '%@'",
                       publication.trackName, participant.identity]];
     [[TwilioVideoManager getInstance] publishEvent: AUDIO_TRACK_REMOVED];
+    
+    [self update_imageViewInCallRemoteMicMuteState_isMuted:TRUE];
 }
 
 #pragma mark -
@@ -1906,12 +1921,13 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark -
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didEnableVideoTrack:(nonnull TVIRemoteVideoTrackPublication *)publication {
-    [self log_debug:@"[didEnableVideoTrack][TwilioVideoViewController] [remoteParticipant:didEnableVideoTrack] >> UNHIDE self.remoteView"];
-
     [self log_info:[NSString stringWithFormat:@"[TwilioVideoViewController] [remoteParticipant:didEnableVideoTrack] Participant '%@' enabled video track:'%@' >> remoteView.isHidden = FALSE",
                       participant.identity, publication.trackName]];
     
+    //remoteView is the video feed - so unhide this
     [self.remoteView setHidden: FALSE];
+    //and hide the remote photo
+    [self.imageViewRemoteParticipantInCall setHidden: TRUE];
 }
 
 - (void)remoteParticipant:(nonnull TVIRemoteParticipant *)participant didDisableVideoTrack:(nonnull TVIRemoteVideoTrackPublication *)publication {
@@ -1921,7 +1937,8 @@ NSString *const CLOSED = @"CLOSED";
     
     //main view is now frozen need to turn it off
     [self.remoteView setHidden: TRUE];
-    
+    [self.imageViewRemoteParticipantInCall setHidden: FALSE];
+
 }
 #pragma mark -
 #pragma mark AUDIO TRACK on/off

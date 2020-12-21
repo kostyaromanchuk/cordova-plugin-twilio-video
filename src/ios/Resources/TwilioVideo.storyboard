@@ -330,6 +330,13 @@
                                     <action selector="buttonDebug_showOffline_Action:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="1IZ-sU-Nbh"/>
                                 </connections>
                             </button>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="W4Q-Ml-m6q" userLabel="imageViewRemoteParticipantInCall">
+                                <rect key="frame" x="149.5" y="295.5" width="76" height="76"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="76" id="1Nz-dN-Zye"/>
+                                    <constraint firstAttribute="height" constant="76" id="Prw-wf-xLy"/>
+                                </constraints>
+                            </imageView>
                         </subviews>
                         <color key="backgroundColor" red="0.066666666666666666" green="0.14509803921568626" blue="0.22352941176470587" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
@@ -345,7 +352,9 @@
                             <constraint firstItem="lH3-Ev-8ID" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leading" id="Zo6-UZ-oYd"/>
                             <constraint firstItem="l3a-7A-hrE" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leading" id="bTm-oi-Lbg"/>
                             <constraint firstItem="7RT-Bo-1q4" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leading" constant="239" id="dcc-Xw-QGP"/>
+                            <constraint firstItem="W4Q-Ml-m6q" firstAttribute="centerY" secondItem="3Bh-pO-6uY" secondAttribute="centerY" id="f5e-yv-O76"/>
                             <constraint firstItem="l3a-7A-hrE" firstAttribute="top" secondItem="XQ5-Rc-4OJ" secondAttribute="bottom" constant="8" symbolic="YES" id="fEr-wB-O7Z"/>
+                            <constraint firstItem="W4Q-Ml-m6q" firstAttribute="centerX" secondItem="3Bh-pO-6uY" secondAttribute="centerX" id="fMH-Cm-KvF"/>
                             <constraint firstItem="MOz-y7-RXA" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leadingMargin" id="gqL-ZH-vHm"/>
                             <constraint firstAttribute="bottom" secondItem="7RT-Bo-1q4" secondAttribute="bottom" constant="108" id="jTx-oS-ZoI"/>
                             <constraint firstAttribute="trailing" secondItem="l3a-7A-hrE" secondAttribute="trailing" id="lZ3-lj-wT5"/>
@@ -367,6 +376,7 @@
                         <outlet property="imageViewInCallRemoteMicMuteState" destination="Odv-KL-7KR" id="D3d-lF-oLY"/>
                         <outlet property="imageViewLocalParticipant" destination="bmX-nC-fNS" id="fft-JV-gvz"/>
                         <outlet property="imageViewRemoteParticipant" destination="4rw-7g-hOA" id="4Og-as-WqN"/>
+                        <outlet property="imageViewRemoteParticipantInCall" destination="W4Q-Ml-m6q" id="Yhb-IA-WAj"/>
                         <outlet property="micButton" destination="rwp-9E-VzS" id="SW4-po-OHw"/>
                         <outlet property="nsLayoutConstraint_previewView_bottom" destination="jTx-oS-ZoI" id="nG0-XT-QDQ"/>
                         <outlet property="nsLayoutConstraint_previewView_leading" destination="dcc-Xw-QGP" id="r7b-2R-2Un"/>
