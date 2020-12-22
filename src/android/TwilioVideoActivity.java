@@ -1,6 +1,8 @@
 package org.apache.cordova.twiliovideo;
 
 import android.Manifest;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -148,7 +150,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
 
     //remote participant image
+    //To pulse the border we has a circle view behind it with border and animate its alpha
     private ImageView imageViewRemoteParticipantWhilstCalling;
+    private ImageView imageViewRemoteParticipantWhilstCallingToAnimate;
+
     private ImageView imageViewRemoteParticipantInCall;
 
     private ImageView imageViewLocalParticipant1;
@@ -161,6 +166,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private ImageView imageViewInCallRemoteMicMuteState;
 
     private boolean previewIsFullScreen;
+
+    boolean runAnimation = true;
 
     
     @Override
@@ -215,6 +222,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
         //filled below from url passed in from cordova via intent
         imageViewRemoteParticipantWhilstCalling = findViewById(FAKE_R.getId("imageViewRemoteParticipantWhilstCalling"));
+        imageViewRemoteParticipantWhilstCallingToAnimate = findViewById(FAKE_R.getId("imageViewRemoteParticipantWhilstCallingToAnimate"));
         imageViewRemoteParticipantInCall        = findViewById(FAKE_R.getId("imageViewRemoteParticipantInCall"));
         imageViewLocalParticipant1               = findViewById(FAKE_R.getId("imageViewLocalParticipant1"));
 
@@ -592,6 +600,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
 
 
+
     //----------------------------------------------------------------------------------------------
     //UI
     //----------------------------------------------------------------------------------------------
@@ -618,53 +627,97 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
 
 
-    //border is animated so I cheated and added it to a UIView wraping the remote image view then I animate the alpha whilst Calling..
-    //viewWrapperAnimatedBorder is exact ame frame as imageViewRemoteParticipant
-    //coregraphic border will be outside this frame
-    private void addFakeBordersToRemoteImageView(){
-        Log.e(TAG, "addFakeBordersToRemoteImageView: TODO" );
-        //        this.viewWrapperAnimatedBorder0.layer.cornerRadius = this.viewWrapperAnimatedBorder0.frame.size.height / 2.0;
-    }
-
-    private void animateAlphaBorderForViews_ShowBorder(){
-        Log.e(TAG, "animateAlphaBorderForViews_ShowBorder: TODO" );
-        //TODO
-        // [this.viewWrapperAnimatedBorder0 setHidden:FALSE];
-    }
+//    //border is animated so I cheated and added it to a UIView wraping the remote image view then I animate the alpha whilst Calling..
+//    //viewWrapperAnimatedBorder is exact ame frame as imageViewRemoteParticipant
+//    //coregraphic border will be outside this frame
+//    private void addFakeBordersToRemoteImageView(){
+//        Log.e(TAG, "addFakeBordersToRemoteImageView: TODO" );
+//        //        this.viewWrapperAnimatedBorder0.layer.cornerRadius = this.viewWrapperAnimatedBorder0.frame.size.height / 2.0;
+//    }
+//
+//    private void animateAlphaBorderForViews_ShowBorder(){
+//        Log.e(TAG, "animateAlphaBorderForViews_ShowBorder: TODO" );
+//        //TODO
+//        // [this.viewWrapperAnimatedBorder0 setHidden:FALSE];
+//    }
 
     //Disconnected... just hide the animation is not stopped
     private void animateAlphaBorderForViews_HideBorder(){
-        Log.e(TAG, "animateAlphaBorderForViews_HideBorder: TODO" );
-        //[this.viewWrapperAnimatedBorder0 setHidden(true);
+        Log.e(TAG, "animateAlphaBorderForViews_HideBorder" );
+
+        hide_imageViewRemoteParticipantWhilstCallingToAnimate();
     }
 
     private void animateAlphaBorderForViews(){
-        Log.e(TAG, "animateAlphaBorderForViews: TODO" );
-//        this.animateAlphaBorderForViews_ShowBorder();
-//
-//        this.viewWrapperAnimatedBorder0.alpha = 0.0; //fade in so start at 0, then animate to alpha 1 below
-//
-//        //----------------------------------------------------------------------------------------------
-//        //same duration but 0 has delayed start
-//        NSTimeInterval duration = 2.0;
-//        //----------------------------------------------------------------------------------------------
-//
-//        UIViewAnimationOptions options = UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionRepeat | UIViewAnimationOptionAutoreverse;
-//
-//        //----------------------------------------------------------------------------------------------
-//        [UIView animateWithDuration:duration
-//            delay:0         //START immediately
-//            options:options
-//            animations:^{
-//                this.viewWrapperAnimatedBorder0.alpha = 1.0;  //FADE IN - Autoreverse then means fade out - pulse
-//            }
-//            completion:^(BOOL finished) {
-//
-//            }
-//        ];
-//        //----------------------------------------------------------------------------------------------
 
+        if(null != this.imageViewRemoteParticipantWhilstCallingToAnimate){
+            animateView_start(this.imageViewRemoteParticipantWhilstCallingToAnimate);
+        }else{
+            Log.e(TAG, "this.imageViewRemoteParticipantWhilstCallingToAnimate is null - cant animate");
+        }
     }
+
+
+
+    public void animateView_start(View view){
+        runAnimation = true;
+        animateView_fadeOut(view, 1000);
+    }
+
+    public void animateView_toggle(){
+        runAnimation = !runAnimation;
+    }
+    public void animateView_stop(){
+        runAnimation = !runAnimation;
+    }
+
+
+    public void animateView_fadeOut(View view, long duration){
+        //In transition: (alpha from 0 to 0.5)
+        view.setAlpha(1f);
+        view.setVisibility(View.VISIBLE);
+        view.animate()
+                .alpha(0f)
+                .setDuration(duration)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if(runAnimation){
+                            //Log.e(TAG, "animateView_fadeOut - runAnimation is true - CALL animateView_fadeIn");
+                            animateView_fadeIn(view, duration);
+                        }else{
+                            Log.e(TAG, "animateView_fadeOut - runAnimation is false - STOP ANIMATION");
+                        }
+
+                    }
+                });
+    }
+
+    public void animateView_fadeIn(View view, long duration){
+        view.setAlpha(0f);
+        view.setVisibility(View.VISIBLE);
+        view.animate()
+                .alpha(1f)
+                .setDuration(duration)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if(runAnimation){
+                            //Log.e(TAG, "animateView_fadeIn - runAnimation is true - CALL animateView_fadeOut");
+                            animateView_fadeOut(view,duration);
+                        }else{
+                            Log.e(TAG, "animateView_fadeIn - runAnimation is false - STOP ANIMATION");
+                        }
+                    }
+                });
+    }
+
+
+
+
+
+
+
 
     private void fillIn_viewRemoteParticipantInfo(){
 
@@ -692,6 +745,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //DEBUG self.remoteUserPhotoURL = NULL;
 
         this.loadUserImageInBackground_async(this.remote_user_photo_url, this.imageViewRemoteParticipantWhilstCalling);
+        this.loadUserImageInBackground_async(this.remote_user_photo_url, this.imageViewRemoteParticipantWhilstCallingToAnimate);
 
     }
     private void fill_imageViewRemoteParticipantInCall(){
@@ -801,19 +855,44 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //------------------------------------------------------------------------------------------
     //SHOW/HIDE each control
     private void show_imageViewRemoteParticipantWhilstCalling(){
+
         if (this.imageViewRemoteParticipantWhilstCalling != null) {
             this.imageViewRemoteParticipantWhilstCalling.setVisibility(View.VISIBLE);
         }else{
-            Log.e(TAG, "show_imageViewRemoteParticipantWhilstCalling: imageViewRemoteParticipant is null");
+            Log.e(TAG, "show_imageViewRemoteParticipantWhilstCalling: imageViewRemoteParticipantWhilstCalling is null");
+        }
+
+        if (this.imageViewRemoteParticipantWhilstCallingToAnimate != null) {
+            animateAlphaBorderForViews();
+            this.imageViewRemoteParticipantWhilstCallingToAnimate.setVisibility(View.VISIBLE);
+        }else{
+            Log.e(TAG, "show_imageViewRemoteParticipantWhilstCalling: imageViewRemoteParticipantWhilstCallingToAnimate is null");
         }
     }
     private void hide_imageViewRemoteParticipantWhilstCalling(){
         if (this.imageViewRemoteParticipantWhilstCalling != null) {
             this.imageViewRemoteParticipantWhilstCalling.setVisibility(View.GONE);
         }else{
-            Log.e(TAG, "hide_imageViewRemoteParticipantWhilstCalling: imageViewRemoteParticipant is null");
+            Log.e(TAG, "hide_imageViewRemoteParticipantWhilstCalling: imageViewRemoteParticipantWhilstCalling is null");
+        }
+
+        this.hide_imageViewRemoteParticipantWhilstCallingToAnimate();
+    }
+
+    //called by hide_imageViewRemoteParticipantWhilstCalling
+    //but we also stop the animation whin answerCall() > Disconnected
+    //we show the remote phot but hide the animate circle beihnd it
+    //animateAlphaBorderForViews_HideBorder
+    private void hide_imageViewRemoteParticipantWhilstCallingToAnimate(){
+
+        if (this.imageViewRemoteParticipantWhilstCallingToAnimate != null) {
+            animateView_stop();
+            this.imageViewRemoteParticipantWhilstCallingToAnimate.setVisibility(View.GONE);
+        }else{
+            Log.e(TAG, "hide_imageViewRemoteParticipantWhilstCalling: imageViewRemoteParticipantWhilstCallingToAnimate is null");
         }
     }
+
 
     //----------------------------------------------------------------------------------------------
     //SHOW/HIDE each control
@@ -823,6 +902,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         }else{
             Log.e(TAG, "show_imageViewRemoteParticipantInCall: imageViewRemoteParticipant is null");
         }
+
     }
     private void hide_imageViewRemoteParticipantInCall(){
         if (this.imageViewRemoteParticipantInCall != null) {
@@ -1202,18 +1282,18 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //--------------------------------------------------------------------------------------
             //TODO - works but needs tweaking
             //--------------------------------------------------------------------------------------
-//                        if(null != blurredviewgroup){
-//                            Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(this.blurredviewgroup);
-//
-////                            Blurry.with(TwilioVideoActivity.this).radius(10)
-////                                    .sampling(8)
-////                                    .color(Color.argb(66, 255, 255, 0))
-////                                    .async()
-////                                    .animate(500)
-////                                    .onto(blurredviewgroup);
-//                        }else{
-//                            Log.e(TAG, "blurredviewgroup is null");
-//                        }
+            //                        if(null != blurredviewgroup){
+            //                            Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(this.blurredviewgroup);
+            //
+            ////                            Blurry.with(TwilioVideoActivity.this).radius(10)
+            ////                                    .sampling(8)
+            ////                                    .color(Color.argb(66, 255, 255, 0))
+            ////                                    .async()
+            ////                                    .animate(500)
+            ////                                    .onto(blurredviewgroup);
+            //                        }else{
+            //                            Log.e(TAG, "blurredviewgroup is null");
+            //                        }
             //--------------------------------------------------------------------------------------
         }else{
             if(null != this.blurredviewgroup){
@@ -1241,24 +1321,25 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 //------------------------------------------------------------------
                 //FULL SCREEN + ANIMATED
                 //------------------------------------------------------------------
-//            [UIView animateWithDuration:duration
-//                delay:0
-//                options:UIViewAnimationOptionCurveEaseInOut
-//                animations:^{
-//                    //--------------------------------------------------
-//                                this.update_PreviewView_toFullScreen: TRUE];
-//                    //--------------------------------------------------
-//                    //will resize but animate without this
-//                                [this.view layoutIfNeeded];
-//                    //--------------------------------------------------
-//                }
-//                completion:^(BOOL finished) {
-//                    //ANIMATION DONE
-//
-//                }
-//            ];
-
-             this.update_PreviewView_toFullScreen(true);
+                //            [UIView animateWithDuration:duration
+                //                delay:0
+                //                options:UIViewAnimationOptionCurveEaseInOut
+                //                animations:^{
+                //                    //--------------------------------------------------
+                //                                this.update_PreviewView_toFullScreen: TRUE];
+                //                    //--------------------------------------------------
+                //                    //will resize but animate without this
+                //                                [this.view layoutIfNeeded];
+                //                    //--------------------------------------------------
+                //                }
+                //                completion:^(BOOL finished) {
+                //                    //ANIMATION DONE
+                //
+                //                }
+                //            ];
+                //----------------------------------------------------------------------------------
+                this.update_PreviewView_toFullScreen(true);
+                //----------------------------------------------------------------------------------
 
             }else{
                 //------------------------------------------------------------------
@@ -1272,29 +1353,29 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 //------------------------------------------------------------------
                 //NOT FULL SCREEN + ANIMATED - (dialing ends shrink preview to bottom right)
                 //------------------------------------------------------------------
-//            [UIView animateWithDuration:duration
-//                delay:0
-//                options:UIViewAnimationOptionCurveEaseInOut
-//                animations:^{
-//                    //--------------------------------------------------
-//                this.update_PreviewView_toFullScreen: FALSE];
-//                    //--------------------------------------------------
-//                    //will resize but animate without this
-//                [this.view layoutIfNeeded];
-//                    //--------------------------------------------------
-//                }
-//                completion:^(BOOL finished) {
-//                    //DONE
-//                }
-//             ];
-
+                //            [UIView animateWithDuration:duration
+                //                delay:0
+                //                options:UIViewAnimationOptionCurveEaseInOut
+                //                animations:^{
+                //                    //--------------------------------------------------
+                //                this.update_PreviewView_toFullScreen: FALSE];
+                //                    //--------------------------------------------------
+                //                    //will resize but animate without this
+                //                [this.view layoutIfNeeded];
+                //                    //--------------------------------------------------
+                //                }
+                //                completion:^(BOOL finished) {
+                //                    //DONE
+                //                }
+                //             ];
+                //----------------------------------------------------------------------------------
                 this.update_PreviewView_toFullScreen(false);
+                //----------------------------------------------------------------------------------
 
             }else{
                 //------------------------------------------------------------------
                 //NOT FULL SCREEN + UNANIMATED (preview size jumps to bottom right - unused)
                 //------------------------------------------------------------------
-
                 this.update_PreviewView_toFullScreen(false);
 
             }
@@ -1535,7 +1616,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         if (mediaPlayer != null) {
             //Plays ringing tone
 //RELEASE PUT BACK
-            mediaPlayer.start();
+//            mediaPlayer.start();
             //--------------------------------------------------------------------------------------
             //use .start() + pause() 
             //not .start() + .stop() seems to kill it, next .play() fails
@@ -2156,22 +2237,27 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                         //LOCAL CAMERA IS ON
                         icon = FAKE_R.getDrawable("ic_videocam_green_24px");
 
-//                        thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
+                        thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
 //                        thumbnailVideoViewFrameLayout.setBackgroundColor(FAKE_R.getColor("colorButtonUnselected"));
-//PUTBACKTUES                        thumbnailVideoView.setVisibility(View.VISIBLE);
-//  PUTBACKTUES                        imageViewLocalParticipant1.setVisibility(View.INVISIBLE);
-//                        imageViewLocalParticipant.bringToFront();
+//PUTBACKTUES
+                            thumbnailVideoView.setVisibility(View.VISIBLE);
+//  PUTBACKTUES
+                        imageViewLocalParticipant1.setVisibility(View.INVISIBLE);
+                        //imageViewLocalParticipant.bringToFront();
 
 
                     } else {
                         //LOCAL CAMERA IS OFF
                         icon = FAKE_R.getDrawable("ic_videocam_off_red_24px");
-//                        thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
+                        //WRAPPER - ALWAYS VISIBLE
+                        thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
+                        thumbnailVideoViewFrameLayout.bringToFront();
 //                        thumbnailVideoViewFrameLayout.setBackgroundColor(FAKE_R.getColor("colorButtonUnselected"));
-//PUTBACKTUES                        thumbnailVideoView.setVisibility(View.INVISIBLE);
-//  PUTBACKTUES                       imageViewLocalParticipant1.setVisibility(View.VISIBLE);
-//                      imageViewLocalParticipant.bringToFront();
 
+                        thumbnailVideoView.setVisibility(View.INVISIBLE);
+                        imageViewLocalParticipant1.setVisibility(View.VISIBLE);
+                        imageViewLocalParticipant1.bringToFront();
+//
                     }
 
                     button_fab_localvideo_onoff.setImageDrawable(ContextCompat.getDrawable(TwilioVideoActivity.this, icon));
@@ -2191,9 +2277,11 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                         button_fab_localvideo_onoff.setSelected(true);
                     }
                     //------------------------------------------------------------------------------
+                }else{
+                    Log.e(TAG, "onClick: localVideoTrack is null - TODO" );
                 }
 
-            }
+            }//onClick
         };
     }
 
@@ -2303,19 +2391,19 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             @Override
             public void onClick(View v) {
                 Log.e(TAG, "switchAudioClickListener.onClick: ");
-                if (audioManager.isSpeakerphoneOn()) {
-                    audioManager.setSpeakerphoneOn(false);
-                } else {
-                    audioManager.setSpeakerphoneOn(true);
-
-                }
-                int icon = audioManager.isSpeakerphoneOn() ?
-                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
-                button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable(
-                        TwilioVideoActivity.this, icon));
+//                if (audioManager.isSpeakerphoneOn()) {
+//                    audioManager.setSpeakerphoneOn(false);
+//                } else {
+//                    audioManager.setSpeakerphoneOn(true);
+//
+//                }
+//                int icon = audioManager.isSpeakerphoneOn() ?
+//                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
+//                button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable(
+//                        TwilioVideoActivity.this, icon));
                 //----------------------------------------------------------------------------------
 //DO NOT RELEASE - DEBUG triggers startCall
-//                publishEvent(CallEvent.DEBUGSTARTACALL);
+                publishEvent(CallEvent.DEBUGSTARTACALL);
                 //----------------------------------------------------------------------------------
                 //applyBlur();
                 //----------------------------------------------------------------------------------
@@ -2492,7 +2580,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 ////  PUTBACKTUES IF YOU COMMENT THIS OUT YOU GET THAT CYAN BACKGROUND I THINKG thumbnailVideoView is fullscreen on startup
             thumbnailVideoView.setVisibility(View.VISIBLE);
 
-////  PUTBACKTUES            imageViewLocalParticipant1.setVisibility(View.INVISIBLE);
+//  PUTBACKTUES
+            imageViewLocalParticipant1.setVisibility(View.INVISIBLE);
 
             //--------------------------------------------------------------------------------------
             if (localVideoTrack != null) {
@@ -2510,10 +2599,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //--------------------------------------------------------------------------------------
             //flip camera on horizontal axis?
             thumbnailVideoView.setMirror(cameraCapturer.getCameraSource() == CameraSource.FRONT_CAMERA);
-
-
-            //its moved to the thumbnaiview releoad?
-//            this.fill_imageView_LocalParticipant();
+            //--------------------------------------------------------------------------------------
+            Log.e(TAG, "moveLocalVideoToThumbnailView: DEBUG");
+        }else{
+            Log.e(TAG, "moveLocalVideoToThumbnailView: thumbnailVideoView.getVisibility() not View.GONE - skip");
         }
     }
 
@@ -2847,6 +2936,19 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                         remoteVideoTrack.getName()));
                 publishEvent(CallEvent.VIDEO_TRACK_ADDED);
                 addRemoteParticipantVideo(remoteVideoTrack);
+
+                //p1 calls p2
+                //if p2 answers with their camera off then show their photo
+                //see also onVideoTrackEnabled/onVideoTrackDisabled
+                if(remoteVideoTrack.isEnabled()){
+                    show_fullScreenVideoView();
+                    hide_imageViewRemoteParticipantInCall();
+                }else{
+                	Log.e(TAG, "remoteVideoTrack.isEnabled():TRUE");
+                    hide_fullScreenVideoView();
+                    show_imageViewRemoteParticipantInCall();
+                }
+
             }
 
             @Override
@@ -2959,13 +3061,17 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
                 hide_imageViewRemoteParticipantInCall();
                 //see also Room.Listener onParticipantDisconnected:
+                //see also onVideoTrackSubscribed
             }
 
             @Override
             public void onVideoTrackDisabled(RemoteParticipant remoteParticipant, RemoteVideoTrackPublication remoteVideoTrackPublication) {
                 Log.e(TAG, "onVideoTrackDisabled: CALLED" );
+
                 hide_fullScreenVideoView();
+
                 show_imageViewRemoteParticipantInCall();
+                //see also onVideoTrackSubscribed
             }
         };
     }

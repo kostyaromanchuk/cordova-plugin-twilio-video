@@ -9,6 +9,14 @@
              tools:showIn="@layout/activity_video">
 
 
+    <!--    FULL SCREEN VIEW - moved to very back-->
+    <com.twilio.video.VideoView
+        android:id="@+id/fullscreen_video_view"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!--    THUMBNAIL VIEW-->
     <FrameLayout
         android:id="@+id/thumbnail_video_view_framelayout"
         android:layout_width="match_parent"
@@ -30,7 +38,7 @@
             android:id="@+id/imageViewLocalParticipant1"
             android:layout_width="76dp"
             android:layout_height="76dp"
-            android:visibility="invisible"
+            android:visibility="visible"
             android:layout_gravity="center_horizontal|center_vertical"
             app:civ_border_color="#FFFFFFFF"
             app:civ_border_width="0dp" />
@@ -39,11 +47,7 @@
 
 
 
-    <com.twilio.video.VideoView
-        android:id="@+id/fullscreen_video_view"
-        android:visibility="gone"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+
 
 
 
@@ -75,16 +79,39 @@
         android:orientation="horizontal">
 
 
-        <de.hdodenhof.circleimageview.CircleImageView
-            android:id="@+id/imageViewRemoteParticipantWhilstCalling"
-            android:layout_width="96dp"
-            android:layout_height="96dp"
 
-            android:layout_marginLeft="16dp"
+
+        <!--  PULSE ANIMATION ON REMOTE IMAGE WHEN CALLING- have two circle views one with border one without - animate one-->
+        <FrameLayout
+            android:id="@+id/framelayout_circleviews_remoteparticipant"
+            android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            >
+            <!--  back circle view has border. you nust set its image else it doesnt appear - size is front circle + border-->
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/imageViewRemoteParticipantWhilstCallingToAnimate"
+                android:layout_width="96dp"
+                android:layout_height="96dp"
 
-            app:civ_border_color="#FFFFFFFF"
-            app:civ_border_width="4dp" />
+                android:layout_gravity="center_horizontal|center_vertical"
+                app:civ_border_color="#5AC8FA"
+                app:civ_border_width="8dp" />
+
+
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/imageViewRemoteParticipantWhilstCalling"
+                android:layout_width="88dp"
+                android:layout_height="88dp"
+
+                android:layout_gravity="center_horizontal|center_vertical"
+                app:civ_border_color="#FFFFFFFF"
+                app:civ_border_width="0dp" />
+
+        </FrameLayout>
+
+
 
         <LinearLayout
             android:layout_width="match_parent"

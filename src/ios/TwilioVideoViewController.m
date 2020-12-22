@@ -538,6 +538,7 @@ NSString *const CLOSED = @"CLOSED";
         [self log_error:@"imageViewRemoteParticipant is null is NULL"];
     }
 }
+
 -(void)hide_imageViewRemoteParticipantInCall{
     if(self.imageViewRemoteParticipantInCall){
         [self.imageViewRemoteParticipantInCall setHidden:TRUE];
@@ -546,6 +547,13 @@ NSString *const CLOSED = @"CLOSED";
     }
 }
 
+-(void)sendtoback_imageViewRemoteParticipantInCall{
+    if(self.imageViewRemoteParticipantInCall){
+        [self.view sendSubviewToBack:self.imageViewRemoteParticipantInCall];
+    }else{
+        [self log_error:@"imageViewRemoteParticipant is null is NULL"];
+    }
+}
 //------------------------------------------------------------------------------------------
 
 
@@ -803,7 +811,7 @@ NSString *const CLOSED = @"CLOSED";
     [self log_debug:@"[TwilioVideoViewController] [openRoom]"];
     
     //DONT RELEASE
-    //[self show_buttonDebugStartACall];
+    [self showhide_buttonDebugStartACall];
     
     //----------------------------------------------------------------------------------------------
     //STORE PARAMS
@@ -892,6 +900,13 @@ NSString *const CLOSED = @"CLOSED";
     [self log_debug:@"[TwilioVideoViewController] [ startCall:]"];
     
     [self.buttonDebugStartACall setHidden:TRUE];
+    
+//cleanup VIDEO_TRACK_ADDED always called bu enabled is false if remote is off
+//    //if remote camera is off then we should show the remote users photo
+//    //if remote camera is on then this will be hidden later when P2 remote user turns their camera back on and triggers remoteParticipant:didEnableVideoTrack
+//    [self show_imageViewRemoteParticipantInCall];
+//    //if remote camera is ok can be infront of it
+//    [self sendtoback_imageViewRemoteParticipantInCall];
     
     self.roomName = room;
     self.accessToken = token;
@@ -1070,6 +1085,7 @@ NSString *const CLOSED = @"CLOSED";
         }else{
             [self videoButton_changeTo_videoDisabled];
             [self viewRemoteCameraDisabled_show];
+
         }
     }
 }
@@ -1282,7 +1298,7 @@ NSString *const CLOSED = @"CLOSED";
         //NEXT TIMES too quiet
         //will start it before room connect in viewDidLoad
 //RELEASE COMMENT IN
-        [self dialing_sound_start];
+//        [self dialing_sound_start];
         //----------------------------------------------------------------------
         
     }else{
@@ -1607,13 +1623,13 @@ NSString *const CLOSED = @"CLOSED";
     [self.viewAlert setHidden:TRUE];
  
 }
--(void)show_buttonDebugStartACall{
-    //RELEASE DEBUG - shows a button to trigger startCall() - NEVER RELEASE
-//    [self.buttonDebugStartACall setHidden:FALSE];
-//    [self.view bringSubviewToFront:self.buttonDebugStartACall];
+-(void)showhide_buttonDebugStartACall{
+    //DO NOT RELEASE - shows a button to trigger startCall() - NEVER RELEASE
+    [self.buttonDebugStartACall setHidden:FALSE];
+    [self.view bringSubviewToFront:self.buttonDebugStartACall];
     
-    //FOR A RELEASE - COMMENT THIS IN
-    [self.buttonDebugStartACall setHidden:TRUE];
+    //FOR RELEASE - COMMENT THIS IN
+//    [self.buttonDebugStartACall setHidden:TRUE];
 }
 
 - (IBAction)buttonDebug_showOffline_Action:(id)sender {
@@ -1920,6 +1936,33 @@ NSString *const CLOSED = @"CLOSED";
     if (self.remoteParticipant == participant) {
         [self setupRemoteView];
         [videoTrack addRenderer:self.remoteVideoView];
+        
+        //if remote camera is off when P1 calls startACall() then photo can be missing
+        //so in startACall: we show it by default
+        //here we hide it once a remote video feed connects
+        
+        
+        if(videoTrack.enabled){
+            [self log_error:@"VIDEO_TRACK_ADDED - videoTrack.enabled:TRUE"];
+            [self hide_imageViewRemoteParticipantInCall];
+        }else{
+            [self log_error:@"VIDEO_TRACK_ADDED - videoTrack.enabled:FALSE"];
+            [self show_imageViewRemoteParticipantInCall];
+            //of p1 camera is on then turned off the remote photo can appear above the localcamer till its shrunk to mini view
+            [self sendtoback_imageViewRemoteParticipantInCall];
+        }
+        
+        if(videoTrack.state == TVITrackStateLive){
+            [self log_error:@"VIDEO_TRACK_ADDED - videoTrack.state:TVITrackStateLive"];
+        }
+        else if(videoTrack.state == TVITrackStateEnded){
+            [self log_error:@"VIDEO_TRACK_ADDED - videoTrack.state:TVITrackStateEnded"];
+        }
+        else
+        {
+            [self log_error:@"VIDEO_TRACK_ADDED - videoTrack.state:UNHANDLED"];
+        }
+        
     }
 }
 
