@@ -22,7 +22,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone"
-        android:background="#112539"
+        android:background="@drawable/border"
         android:layout_gravity="bottom|end"
         >
         <com.twilio.video.VideoView

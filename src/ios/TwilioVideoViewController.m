@@ -810,7 +810,6 @@ NSString *const CLOSED = @"CLOSED";
     
     [self log_debug:@"[TwilioVideoViewController] [openRoom]"];
     
-    //DONT RELEASE
     [self showhide_buttonDebugStartACall];
     
     //----------------------------------------------------------------------------------------------
@@ -1298,7 +1297,7 @@ NSString *const CLOSED = @"CLOSED";
         //NEXT TIMES too quiet
         //will start it before room connect in viewDidLoad
 //RELEASE COMMENT IN
-//        [self dialing_sound_start];
+        [self dialing_sound_start];
         //----------------------------------------------------------------------
         
     }else{
@@ -1625,11 +1624,11 @@ NSString *const CLOSED = @"CLOSED";
 }
 -(void)showhide_buttonDebugStartACall{
     //DO NOT RELEASE - shows a button to trigger startCall() - NEVER RELEASE
-    [self.buttonDebugStartACall setHidden:FALSE];
-    [self.view bringSubviewToFront:self.buttonDebugStartACall];
+//    [self.buttonDebugStartACall setHidden:FALSE];
+//    [self.view bringSubviewToFront:self.buttonDebugStartACall];
     
     //FOR RELEASE - COMMENT THIS IN
-//    [self.buttonDebugStartACall setHidden:TRUE];
+    [self.buttonDebugStartACall setHidden:TRUE];
 }
 
 - (IBAction)buttonDebug_showOffline_Action:(id)sender {

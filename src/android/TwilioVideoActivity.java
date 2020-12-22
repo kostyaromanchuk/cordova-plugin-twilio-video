@@ -12,6 +12,10 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
@@ -135,9 +139,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private FloatingActionButton button_fab_disconnect;
 
 
-
-
     private AudioManager audioManager;
+
     private String participantIdentity;
 
     private int previousAudioMode;
@@ -148,6 +151,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //play ringing.mp3
     private MediaPlayer mediaPlayer;
 
+    //if hone near ear - turn of local camera - else remote user sees your ear
+    SensorManager mSensorManager;
+    Sensor mSensor;
 
     //remote participant image
     //To pulse the border we has a circle view behind it with border and animate its alpha
@@ -239,6 +245,12 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //AUDIO
         //------------------------------------------------------------------------------------------
         onCreate_configureAudio();
+
+
+        //------------------------------------------------------------------------------------------
+        //PROXIMITY SENSOR
+        //------------------------------------------------------------------------------------------
+        onCreate_configureProximitySensor();
 
         //------------------------------------------------------------------------------------------
         //LOCAL CAMERA VIEW
@@ -411,6 +423,92 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         }
         //------------------------------------------------------------------------------------------
     }
+
+    //turn of local camera if phone near your ear
+    //REQUIRES <uses-permission android:name="android.hardware.sensor.proximity"/>
+    private void onCreate_configureProximitySensor(){
+
+        SensorEventListener proximitySensorEventListener
+                = new SensorEventListener() {
+            @Override
+            public void onAccuracyChanged(Sensor sensor, int accuracy) {
+                // TODO Auto-generated method stub
+            }
+            @Override
+            public void onSensorChanged(SensorEvent event) {
+                // TODO Auto-generated method stub
+                if (event.sensor.getType() == Sensor.TYPE_PROXIMITY) {
+                    if (event.values[0] == 0) {
+                        //--------------------------------------------------------------------------
+                        //PHONE is NEAR to  ear - turn off local camera
+                        //--------------------------------------------------------------------------
+                        Log.e(TAG, "onSensorChanged: NEAR >> localVideoTrack.enable(false)");
+
+                        //--------------------------------------------------------------------------
+                        //during openRoom we havent
+                        if(null != localVideoTrack){
+                            localVideoTrack.enable(false);
+                        }else{
+                        	Log.e(TAG, "localVideoTrack is null");
+                        }
+
+
+                        //--------------------------------------------------------------------------
+                        //WRAPPER - ALWAYS VISIBLE
+                        ///thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
+                        //thumbnailVideoViewFrameLayout.bringToFront();
+
+                        thumbnailVideoView.setVisibility(View.INVISIBLE);
+                        imageViewLocalParticipant1.setVisibility(View.VISIBLE);
+                        //imageViewLocalParticipant1.bringToFront();
+
+                        //BACKGROUND is the solid fill in border.xml
+                        //BORDER is stroke in border.xml
+                        //--------------------------------------------------------------------------
+
+                    } else {
+                        //--------------------------------------------------------------------------
+                        //PHONE is AWAY from  ear
+                        //--------------------------------------------------------------------------
+                        Log.e(TAG, "onSensorChanged: AWAY >> localVideoTrack.enable(true)");
+                        //--------------------------------------------------------------------------
+
+                        if(null != localVideoTrack){
+                            localVideoTrack.enable(true);
+                        }else{
+                            Log.e(TAG, "localVideoTrack is null");
+                        }
+                        //--------------------------------------------------------------------------
+                        //WRAPPER - ALWAYS VISIBLE
+                        //thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
+
+                        thumbnailVideoView.setVisibility(View.VISIBLE);
+                        imageViewLocalParticipant1.setVisibility(View.INVISIBLE);
+                        //imageViewLocalParticipant.bringToFront();
+                        //--------------------------------------------------------------------------
+                    }
+                }
+            }
+        };
+
+        //------------------------------------------------------------------------------------------
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+        //------------------------------------------------------------------------------------------
+        if (mSensor == null) {
+            Log.e(TAG, "onCreate_configureProximitySensor: mSensor is null - cant access Phone Proximity Sensor");
+        } else {
+            //--------------------------------------------------------------------------------------
+            mSensorManager.registerListener(proximitySensorEventListener,
+                                            mSensor,
+                                            SensorManager.SENSOR_DELAY_NORMAL);
+            //--------------------------------------------------------------------------------------
+        }
+    }
+
+
+    //----------------------------------------------------------------------------------------------
+
 
     private void action_openRoom(  String room,
                             String token,
@@ -1616,7 +1714,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         if (mediaPlayer != null) {
             //Plays ringing tone
 //RELEASE PUT BACK
-//            mediaPlayer.start();
+            mediaPlayer.start();
             //--------------------------------------------------------------------------------------
             //use .start() + pause() 
             //not .start() + .stop() seems to kill it, next .play() fails
@@ -2237,11 +2335,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                         //LOCAL CAMERA IS ON
                         icon = FAKE_R.getDrawable("ic_videocam_green_24px");
 
+                        //WRAPPER - ALWAYS VISIBLE
                         thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
-//                        thumbnailVideoViewFrameLayout.setBackgroundColor(FAKE_R.getColor("colorButtonUnselected"));
-//PUTBACKTUES
-                            thumbnailVideoView.setVisibility(View.VISIBLE);
-//  PUTBACKTUES
+
+                        thumbnailVideoView.setVisibility(View.VISIBLE);
                         imageViewLocalParticipant1.setVisibility(View.INVISIBLE);
                         //imageViewLocalParticipant.bringToFront();
 
@@ -2249,15 +2346,15 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     } else {
                         //LOCAL CAMERA IS OFF
                         icon = FAKE_R.getDrawable("ic_videocam_off_red_24px");
+
                         //WRAPPER - ALWAYS VISIBLE
                         thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
                         thumbnailVideoViewFrameLayout.bringToFront();
-//                        thumbnailVideoViewFrameLayout.setBackgroundColor(FAKE_R.getColor("colorButtonUnselected"));
 
                         thumbnailVideoView.setVisibility(View.INVISIBLE);
                         imageViewLocalParticipant1.setVisibility(View.VISIBLE);
                         imageViewLocalParticipant1.bringToFront();
-//
+
                     }
 
                     button_fab_localvideo_onoff.setImageDrawable(ContextCompat.getDrawable(TwilioVideoActivity.this, icon));
@@ -2391,19 +2488,19 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             @Override
             public void onClick(View v) {
                 Log.e(TAG, "switchAudioClickListener.onClick: ");
-//                if (audioManager.isSpeakerphoneOn()) {
-//                    audioManager.setSpeakerphoneOn(false);
-//                } else {
-//                    audioManager.setSpeakerphoneOn(true);
-//
-//                }
-//                int icon = audioManager.isSpeakerphoneOn() ?
-//                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
-//                button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable(
-//                        TwilioVideoActivity.this, icon));
+                if (audioManager.isSpeakerphoneOn()) {
+                    audioManager.setSpeakerphoneOn(false);
+                } else {
+                    audioManager.setSpeakerphoneOn(true);
+
+                }
+                int icon = audioManager.isSpeakerphoneOn() ?
+                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
+                button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable(
+                        TwilioVideoActivity.this, icon));
                 //----------------------------------------------------------------------------------
 //DO NOT RELEASE - DEBUG triggers startCall
-                publishEvent(CallEvent.DEBUGSTARTACALL);
+//                publishEvent(CallEvent.DEBUGSTARTACALL);
                 //----------------------------------------------------------------------------------
                 //applyBlur();
                 //----------------------------------------------------------------------------------
