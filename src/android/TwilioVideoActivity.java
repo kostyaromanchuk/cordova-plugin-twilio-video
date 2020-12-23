@@ -33,6 +33,7 @@ import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -171,6 +172,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private TextView textViewInCallRemoteName;
     private ImageView imageViewInCallRemoteMicMuteState;
 
+    private Button buttonHiddenSwitchVideo;
+
     private boolean previewIsFullScreen;
 
     boolean runAnimation = true;
@@ -239,8 +242,26 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         imageViewInCallRemoteMicMuteState = findViewById(FAKE_R.getId("imageViewInCallRemoteMicMuteState"));
         textViewInCallRemoteName = findViewById(FAKE_R.getId("textViewInCallRemoteName"));
 
+        //hidden button no text over thrumbnail tap to flip camera
+        buttonHiddenSwitchVideo = findViewById(FAKE_R.getId("buttonHiddenSwitchVideo"));
+        buttonHiddenSwitchVideo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.e(TAG, "onClick: buttonHiddenSwitchVideo TODO");
 
-
+                if (cameraCapturer != null) {
+                    CameraSource cameraSource = cameraCapturer.getCameraSource();
+                    cameraCapturer.switchCamera();
+                    if (thumbnailVideoView.getVisibility() == View.VISIBLE) {
+                        thumbnailVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
+                    } else {
+                        fullScreenVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
+                    }
+                }else{
+                	Log.e(TAG, "cameraCapturer is null");
+                }
+            }
+        });
         //------------------------------------------------------------------------------------------
         //AUDIO
         //------------------------------------------------------------------------------------------
@@ -2620,11 +2641,6 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
         }
     }
-
-
-
-
-
 
 
 

@@ -21,7 +21,7 @@
 
 
 
-        <!--BOTTOM BUTTONS-->
+        <!-- BOTTOM 4 BUTTONS-->
         <LinearLayout
             android:id="@+id/bottom_buttons_linearlayout"
             android:layout_width="match_parent"

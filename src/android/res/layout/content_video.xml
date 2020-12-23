@@ -43,15 +43,27 @@
             app:civ_border_color="#FFFFFFFF"
             app:civ_border_width="0dp" />
 
+        <ImageView
+            android:id="@+id/imageViewThumbnailSwitchVideo"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="20dp"
+            android:layout_gravity="top|end"
+            app:srcCompat="@drawable/ic_switch_video_white_24dp" />
+
+        <Button
+            android:id="@+id/buttonHiddenSwitchVideo"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"
+            android:text="" />
+
     </FrameLayout>
 
 
 
-
-
-
-
     <!-- Z-AXIZ - the more lower down in this layout.xml the more to the front on the device it appears-->
+
     <!--    V1 - background color with alpha is only effect-->
     <LinearLayout
         android:id="@+id/blurredviewgroup"
@@ -77,8 +89,6 @@
         android:layout_gravity="top|center_vertical"
         android:gravity="top"
         android:orientation="horizontal">
-
-
 
 
         <!--  PULSE ANIMATION ON REMOTE IMAGE WHEN CALLING- have two circle views one with border one without - animate one-->
@@ -112,7 +122,7 @@
         </FrameLayout>
 
 
-
+        <!-- TEXT BOXES with Name and Calling.../Disconnnected...-->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -125,7 +135,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
 
-                android:layout_marginLeft="16dp"
+                android:layout_marginStart="16dp"
                 android:layout_marginTop="16dp"
 
                 android:text=""
@@ -136,7 +146,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
 
-                android:layout_marginLeft="16dp"
+                android:layout_marginStart="16dp"
                 android:layout_marginTop="8dp"
 
                 android:text=""
@@ -146,7 +156,7 @@
 
     </LinearLayout>
 
-    <!--    IN CALL no border-->
+    <!-- REMOTE USERS PHOTO - SHOWN DURING CALL if they turn off the camera - no border / centered in device screen -->
     <de.hdodenhof.circleimageview.CircleImageView
         android:id="@+id/imageViewRemoteParticipantInCall"
         android:layout_width="76dp"
