@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="something_went_wrong">Something went wrong</string>
+    <string name="we_re_trying_to_reconnect_you">We\'re trying to reconnect you</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="switch_audio">Switch Audio</string>
+    <string name="toggle_audio">Toggle audio</string>
+    <string name="toggle_camera">Toggle Camera</string>
+</resources>

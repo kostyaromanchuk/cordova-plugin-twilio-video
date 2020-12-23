@@ -18,6 +18,9 @@ public class CallConfig implements Serializable {
     private static final String HANDLE_ERROR_IN_APP = "handleErrorInApp";
     private static final String HANG_UP_IN_APP = "hangUpInApp";
 
+    private static final String STARTWITHVIDEOOFF = "startWithVideoOff";
+    private static final String STARTWITHAUDIOOFF = "startWithAudioOff";
+
     private static final String i18n_CONNECTION_ERROR_DEF_TEXT = "It was not possible to join the room";
     private static final String i18n_DISCONNECTED_WITH_ERROR_DEF_TEXT = "Disconnected";
     private static final String i18n_ACCEPT_DEF_TEXT = "Accept";
@@ -29,6 +32,9 @@ public class CallConfig implements Serializable {
     private String i18nAccept;
     private boolean handleErrorInApp;
     private boolean hangUpInApp;
+
+    private boolean startWithVideoOff;
+    private boolean startWithAudioOff;
 
     public void parse(JSONObject config) {
         if (config == null) { return; }
@@ -48,6 +54,9 @@ public class CallConfig implements Serializable {
         }
         this.handleErrorInApp = config.optBoolean(HANDLE_ERROR_IN_APP, false);
         this.hangUpInApp = config.optBoolean(HANG_UP_IN_APP, false);
+
+        this.startWithVideoOff = config.optBoolean(STARTWITHVIDEOOFF, false);
+        this.startWithAudioOff = config.optBoolean(STARTWITHAUDIOOFF, false);
     }
 
     public String getPrimaryColorHex() {
@@ -77,4 +86,13 @@ public class CallConfig implements Serializable {
     public boolean isHangUpInApp() {
         return hangUpInApp;
     }
+
+    public boolean isStartWithVideoOff() {
+        return startWithVideoOff;
+    }
+
+    public boolean isStartWithAudioOff() {
+        return startWithAudioOff;
+    }
+
 }

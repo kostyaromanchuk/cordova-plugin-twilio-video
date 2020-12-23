@@ -37,16 +37,18 @@
                 android:layout_margin="@dimen/fab_margin"
                 android:src="@drawable/ic_videocam_green_24px"
                 app:backgroundTint="#2296F3"
-                app:fabSize="auto" />
+                app:fabSize="auto"
+                android:contentDescription="@string/toggle_camera" />
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/mute_action_fab"
+                android:id="@+id/local_audio_action_fab"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="@dimen/fab_margin"
                 android:src="@drawable/ic_mic_green_24px"
                 app:backgroundTint="#2296F3"
-                app:fabSize="auto" />
+                app:fabSize="auto"
+                android:contentDescription="@string/toggle_audio" />
 
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -56,7 +58,8 @@
                 android:layout_margin="@dimen/fab_margin"
                 android:src="@drawable/ic_phonelink_ring_white_24dp"
                 app:backgroundTint="#2296F3"
-                app:fabSize="auto" />
+                app:fabSize="auto"
+                android:contentDescription="@string/switch_audio" />
 
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -66,7 +69,8 @@
                 android:layout_margin="@dimen/fab_margin"
                 android:src="@drawable/ic_call_white_24px"
                 app:backgroundTint="#FF1844"
-                app:fabSize="auto" />
+                app:fabSize="auto"
+                android:contentDescription="@string/disconnect" />
 
         </LinearLayout>
 
@@ -96,6 +100,42 @@
                 android:text="" />
 
         </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- SHOW OFFLINE VIEW SHOULD COVER WHOLE SCREEN -->
+    <LinearLayout
+        android:id="@+id/viewAlert"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center_horizontal|center_vertical"
+        android:background="#112539"
+        android:visibility="gone"
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/imageAlertInCircle"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_marginTop="100dp"
+            android:layout_gravity="center_horizontal"
+            app:srcCompat="@mipmap/ic_alert_in_circle" />
+
+        <TextView
+            android:id="@+id/textViewAlertTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAlignment="center"
+            android:layout_marginTop="8dp"
+            android:textSize="20sp"
+            android:text="@string/something_went_wrong" />
+        <TextView
+            android:id="@+id/textViewAlertSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAlignment="center"
+            android:textSize="18sp"
+            android:text="@string/we_re_trying_to_reconnect_you" />
 
     </LinearLayout>
 

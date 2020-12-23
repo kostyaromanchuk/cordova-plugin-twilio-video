@@ -36,6 +36,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.twilio.video.CameraCapturer;
@@ -134,7 +135,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private LocalVideoTrack localVideoTrack;
 
     private FloatingActionButton button_fab_localvideo_onoff;
-    private FloatingActionButton button_fab_audio_onoff;
+    private FloatingActionButton button_fab_localaudio_onoff;
     private FloatingActionButton button_fab_switchaudio;
     private FloatingActionButton button_fab_switchcamera;
     private FloatingActionButton button_fab_disconnect;
@@ -156,6 +157,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     SensorManager mSensorManager;
     Sensor mSensor;
 
+    private boolean localVideoTrack_wasOnBeforeMovedPhoneToEar;
+
+
     //remote participant image
     //To pulse the border we has a circle view behind it with border and animate its alpha
     private ImageView imageViewRemoteParticipantWhilstCalling;
@@ -163,7 +167,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     private ImageView imageViewRemoteParticipantInCall;
 
-    private ImageView imageViewLocalParticipant1;
+    private ImageView imageViewLocalParticipant;
 
     private TextView textViewRemoteParticipantName;
     private TextView textViewRemoteParticipantConnectionState;
@@ -174,9 +178,13 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     private Button buttonHiddenSwitchVideo;
 
+    private ImageView imageViewSwitchVideo;
+
     private boolean previewIsFullScreen;
 
     boolean runAnimation = true;
+
+    private LinearLayout viewAlert;
 
     
     @Override
@@ -192,7 +200,6 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //------------------------------------------------------------------------------------------
         //ContentView
         //------------------------------------------------------------------------------------------
-//        setContentView(R.layout.activity_video);
         setContentView(FAKE_R.getLayout("activity_video"));
 
 
@@ -201,6 +208,22 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         blurredviewgroup = findViewById(FAKE_R.getId("blurredviewgroup"));
         bottom_buttons_linearlayout = findViewById(FAKE_R.getId("bottom_buttons_linearlayout"));
 
+        //------------------------------------------------------------------------------------------
+        //ALERT  - hidden covers all controls
+        // triggered by cordova.showOffline() >> action_showOffline > VISIBLE
+        // hiddden   by cordova.showOnline() >> action_showOnline   > INVISIBLE
+        //------------------------------------------------------------------------------------------
+        viewAlert = findViewById(FAKE_R.getId("viewAlert"));
+        //------------------------------------------------------------
+        //DEFAULT TO HIDDEN AS BLOCK THE WHOLE WINDOW
+        //    <LinearLayout
+        //        android:id="@+id/viewAlert"
+        //        ...
+        //        android:visibility="gone"
+
+        //------------------------------------------------------------
+        this.viewAlert.setVisibility(View.INVISIBLE);
+        //------------------------------------------------------------------------------------------
 
         //openRoom local camera is in  fullScreenVideoView
         //startACall local moves to  thumbnailVideoView
@@ -210,6 +233,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         thumbnailVideoView = findViewById(FAKE_R.getId("thumbnail_video_view"));
         thumbnailVideoViewFrameLayout = findViewById(FAKE_R.getId("thumbnail_video_view_framelayout"));
 
+
+
+
         //------------------------------------------------------------------------------------------
         //BOTTOM BUTTONS
         //------------------------------------------------------------------------------------------
@@ -217,7 +243,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         button_fab_localvideo_onoff = findViewById(FAKE_R.getId("local_video_action_fab"));
 
         //MUTE AUDIO
-        button_fab_audio_onoff = findViewById(FAKE_R.getId("mute_action_fab"));
+        button_fab_localaudio_onoff = findViewById(FAKE_R.getId("local_audio_action_fab"));
 
         //FLIP CAMERA
         button_fab_switchcamera = findViewById(FAKE_R.getId("switch_camera_action_fab"));
@@ -233,7 +259,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         imageViewRemoteParticipantWhilstCalling = findViewById(FAKE_R.getId("imageViewRemoteParticipantWhilstCalling"));
         imageViewRemoteParticipantWhilstCallingToAnimate = findViewById(FAKE_R.getId("imageViewRemoteParticipantWhilstCallingToAnimate"));
         imageViewRemoteParticipantInCall        = findViewById(FAKE_R.getId("imageViewRemoteParticipantInCall"));
-        imageViewLocalParticipant1               = findViewById(FAKE_R.getId("imageViewLocalParticipant1"));
+        imageViewLocalParticipant = findViewById(FAKE_R.getId("imageViewLocalParticipant"));
 
         textViewRemoteParticipantName = findViewById(FAKE_R.getId("textViewRemoteParticipantName"));
         textViewRemoteParticipantConnectionState = findViewById(FAKE_R.getId("textViewRemoteParticipantConnectionState"));
@@ -242,24 +268,36 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         imageViewInCallRemoteMicMuteState = findViewById(FAKE_R.getId("imageViewInCallRemoteMicMuteState"));
         textViewInCallRemoteName = findViewById(FAKE_R.getId("textViewInCallRemoteName"));
 
+        imageViewSwitchVideo = findViewById(FAKE_R.getId("imageViewSwitchVideo"));
+        //dont show in fullscreen
+        imageViewSwitchVideo.setVisibility(View.INVISIBLE);
+
+
         //hidden button no text over thrumbnail tap to flip camera
         buttonHiddenSwitchVideo = findViewById(FAKE_R.getId("buttonHiddenSwitchVideo"));
         buttonHiddenSwitchVideo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Log.e(TAG, "onClick: buttonHiddenSwitchVideo TODO");
+                Log.d(TAG, "onClick: buttonHiddenSwitchVideo tapped - flip camera if not in full screen");
 
-                if (cameraCapturer != null) {
-                    CameraSource cameraSource = cameraCapturer.getCameraSource();
-                    cameraCapturer.switchCamera();
-                    if (thumbnailVideoView.getVisibility() == View.VISIBLE) {
-                        thumbnailVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
-                    } else {
-                        fullScreenVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
-                    }
+                //dont flip  if in full screen in openRoom - can be trigger too easily when you tap on 4 main buttons
+                if(previewIsFullScreen){
+                    Log.d(TAG, "previewIsFullScreen is true - dont flip camera - too near the big buttons");
                 }else{
-                	Log.e(TAG, "cameraCapturer is null");
+                    if (cameraCapturer != null) {
+                        CameraSource cameraSource = cameraCapturer.getCameraSource();
+                        cameraCapturer.switchCamera();
+
+                        if (thumbnailVideoView.getVisibility() == View.VISIBLE) {
+                            thumbnailVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
+                        } else {
+                            fullScreenVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
+                        }
+                    }else{
+                        Log.e(TAG, "cameraCapturer is null");
+                    }
                 }
+
             }
         });
         //------------------------------------------------------------------------------------------
@@ -281,39 +319,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
         hide_inCall_remoteUserNameAndMic();
 
-//        //------------------------------------------------------------------------------------------
-//        //PARSE PARAMS FROM Intent
-//        //------------------------------------------------------------------------------------------
-//        //    P1 CALLER
-//        //        - openRoom
-//        //            - startActivity
-//        //                - onCreate
-//        //                    - instance 699
-//        //                    - get Intents
-//        //                        - action > openRoom
-//        //                - onResume
-//        //        - startCall
-//        //            - startActivity
-//        //                - doesnt call onCreate due to FLAG_ACTIVITY_REORDER_TO_FRONT
-//        //                - onResume
-//        //                    - same instance
-//        //                    - ISSUE - Intents parsed in onCreate
-//        //    P2 - PERSON BEING CALLED
-//        //            - answerCall()
-//        //                - startActivity
-//        //                    - onCreate
-//        //                        - instance 699
-//        //                        - get Intents
-//        //                        - action > openRoom
-//        //                      - onResume
-//        //------------------------------------------------------------------------------------------
-//        parse_Intents();
-//        //------------------------------------------------------------------------------------------
 
         //initializeUI requires config - the other Intent values are handle in onResume as thats always called
         Intent intent = getIntent();
         this.config = (CallConfig) intent.getSerializableExtra("config");
-
 
         //requires config to be parsed in parse_Intents()
         initializeUI();
@@ -356,14 +365,14 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 //this.config = (CallConfig) intent.getSerializableExtra("config");
                 //----------------------------------------------------------------------------------
 
-// TODO: 15/12/2020 CHECK FOR JS NULL > NSNull
+                //CHECK FOR JS NULL > "null" done in TwilioPlugin
                 String local_user_name = intent.getStringExtra("local_user_name");
                 String local_user_photo_url = intent.getStringExtra("local_user_photo_url");
 
                 String remote_user_name = intent.getStringExtra("remote_user_name");
                 String remote_user_photo_url = intent.getStringExtra("remote_user_photo_url");
 
-                Log.e(TAG, "onCreate: INTENT > action:'"  + action + "' >> CALL this.openRoom()");
+                Log.d(TAG, "onCreate: INTENT > action:'"  + action + "' >> CALL this.openRoom()");
                 this.action_openRoom(roomId, token, local_user_name, local_user_photo_url, remote_user_name, remote_user_photo_url);
 
             }
@@ -378,7 +387,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 //needed for flow after onRequestPermissionsResult
                 this.action_current = TwilioVideoActivityNextAction.action_startCall;
 
-                Log.e(TAG, "onCreate: INTENT > action:'"  + action + "' >> CALL this.startCall()");
+                Log.d(TAG, "onCreate: INTENT > action:'"  + action + "' >> CALL this.startCall()");
                 this.action_startCall(roomId, token);
 
             }
@@ -387,11 +396,11 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 //----------------------------------------------------------------------------------
                 //CORDOVA > answerCall()
                 //----------------------------------------------------------------------------------
-                Log.e(TAG, "onCreate: INTENT > action:'"  + action + "' >> CALL this.answerCall()");
+                Log.d(TAG, "onCreate: INTENT > action:'"  + action + "' >> CALL this.answerCall()");
                 String token = intent.getStringExtra("token");
                 String roomId = intent.getStringExtra("roomId");
 
-                // TODO: 15/12/2020 CHECK FOR JS NULL > NSNull
+                //CHECK FOR JS NULL > "null" done in TwilioPlugin
                 String local_user_name = intent.getStringExtra("local_user_name");
                 String local_user_photo_url = intent.getStringExtra("local_user_photo_url");
 
@@ -404,6 +413,31 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 this.action_current = TwilioVideoActivityNextAction.action_answerCall;
 
                 this.action_answerCall(roomId, token, local_user_name, local_user_photo_url, remote_user_name, remote_user_photo_url);
+
+            }
+            else if(action.equals(TwilioVideoActivityNextAction.action_showOffline))
+            {
+                //----------------------------------------------------------------------------------
+                //CORDOVA > showOffline()
+                //----------------------------------------------------------------------------------
+                //needed for flow after onRequestPermissionsResult
+                this.action_current = TwilioVideoActivityNextAction.action_showOffline;
+
+                Log.d(TAG, "onCreate: INTENT > action:'"  + action + "' >> CALL this.showOffline()");
+                this.action_showOffline();
+
+            }
+            else if(action.equals(TwilioVideoActivityNextAction.action_showOnline))
+            {
+                //----------------------------------------------------------------------------------
+                //CORDOVA > showOnline()
+                //----------------------------------------------------------------------------------
+
+                //needed for flow after onRequestPermissionsResult
+                this.action_current = TwilioVideoActivityNextAction.action_showOnline;
+
+                Log.d(TAG, "onCreate: INTENT > action:'"  + action + "' >> CALL this.showOnline()");
+                this.action_showOnline();
 
             }
             else{
@@ -457,56 +491,114 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             }
             @Override
             public void onSensorChanged(SensorEvent event) {
+
                 // TODO Auto-generated method stub
                 if (event.sensor.getType() == Sensor.TYPE_PROXIMITY) {
                     if (event.values[0] == 0) {
                         //--------------------------------------------------------------------------
-                        //PHONE is NEAR to  ear - turn off local camera
+                        //PHONE is NEAR to ear - ALWAYS turn off local camera
                         //--------------------------------------------------------------------------
-                        Log.e(TAG, "onSensorChanged: NEAR >> localVideoTrack.enable(false)");
+                        Log.d(TAG, "onSensorChanged: NEAR");
 
                         //--------------------------------------------------------------------------
                         //during openRoom we havent
                         if(null != localVideoTrack){
-                            localVideoTrack.enable(false);
+
+                            if(localVideoTrack.isEnabled()){
+
+                                //Camera was ON when user moved phone to their ear.
+                                //later when user moves phone away from ear
+                                //and onSensorChanged triggered again
+                                //we should turn camera back on
+                                localVideoTrack_wasOnBeforeMovedPhoneToEar = true;
+
+
+
+                                //TURN IF OFF
+                                localVideoTrack.enable(false);
+
+
+                                //------------------------------------------------------------------
+                                //WRAPPER - ALWAYS VISIBLE
+                                ///thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
+                                //thumbnailVideoViewFrameLayout.bringToFront();
+
+                                thumbnailVideoView.setVisibility(View.INVISIBLE);
+                                imageViewLocalParticipant.setVisibility(View.VISIBLE);
+                                //imageViewLocalParticipant1.bringToFront();
+
+                                //BACKGROUND is the solid fill in border.xml
+                                //BORDER is stroke in border.xml
+                                //------------------------------------------------------------------
+
+                            }else{
+                                //------------------------------------------------------------------
+                                //Camera was OFF when user moved phone to their ear.
+                                //later when user moves phone away from ear >  proximityStateDidChange called again
+                                //we should NOT turn camera back on
+                                //------------------------------------------------------------------
+                                localVideoTrack_wasOnBeforeMovedPhoneToEar = false;
+                                //------------------------------------------------------------------
+                            	Log.d(TAG, "PROXIMITY:NEAR - localVideoTrack.isEnabled(): false - Video already off - DO NOTHING");
+                                //------------------------------------------------------------------
+                            }
                         }else{
-                        	Log.e(TAG, "localVideoTrack is null");
+                        	Log.e(TAG, "localVideoTrack is null - cant enable or disable it for PROXIMITY:NEAR");
                         }
-
-
-                        //--------------------------------------------------------------------------
-                        //WRAPPER - ALWAYS VISIBLE
-                        ///thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
-                        //thumbnailVideoViewFrameLayout.bringToFront();
-
-                        thumbnailVideoView.setVisibility(View.INVISIBLE);
-                        imageViewLocalParticipant1.setVisibility(View.VISIBLE);
-                        //imageViewLocalParticipant1.bringToFront();
-
-                        //BACKGROUND is the solid fill in border.xml
-                        //BORDER is stroke in border.xml
-                        //--------------------------------------------------------------------------
 
                     } else {
                         //--------------------------------------------------------------------------
+                        //PROXIMITY: FALSE - phone is not near face
+                        //turn on video ONLY IF it had been previously ON
+                        //--------------------------------------------------------------------------
                         //PHONE is AWAY from  ear
                         //--------------------------------------------------------------------------
-                        Log.e(TAG, "onSensorChanged: AWAY >> localVideoTrack.enable(true)");
+                        Log.d(TAG, "onSensorChanged: AWAY");
                         //--------------------------------------------------------------------------
 
-                        if(null != localVideoTrack){
-                            localVideoTrack.enable(true);
+                        //NOTE - localVideoTrack_wasOnBeforeMovedPhoneToEar normally set in this closure
+                        //but is also set in preventProximityTurningCameraOn - if cordova sets config.startWithVideoOff
+                        //when proximity sensor in init in android it triggers an AWAY (ios doesnt)
+                        //so it can overide startWithVideoOff
+
+                        if(localVideoTrack_wasOnBeforeMovedPhoneToEar){
+                            //----------------------------------------------------------------------
+                            //CAMERA was ON > proximity:NEAR > turn camera off > proximity:FAR > turn camera back on
+                            //----------------------------------------------------------------------
+                            //turn it back on when you move phone away from ear
+                            if(null != localVideoTrack){
+                                localVideoTrack.enable(true);
+                            }else{
+                                Log.e(TAG, "localVideoTrack is null");
+                            }
+                            //----------------------------------------------------------------------
+                            //WRAPPER - ALWAYS VISIBLE
+                            thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
+
+                            thumbnailVideoView.setVisibility(View.VISIBLE);
+                            imageViewLocalParticipant.setVisibility(View.INVISIBLE);
+                            //imageViewLocalParticipant.bringToFront();
+                            //----------------------------------------------------------------------
                         }else{
-                            Log.e(TAG, "localVideoTrack is null");
-                        }
-                        //--------------------------------------------------------------------------
-                        //WRAPPER - ALWAYS VISIBLE
-                        //thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
+                            //----------------------------------------------------------------------
+                            //CAMERA was OFF > proximity:NEAR > camera stays off > proximity:FAR > DO NOT turn camera back on
+                            //-------------- --------------------------------------------------------
 
-                        thumbnailVideoView.setVisibility(View.VISIBLE);
-                        imageViewLocalParticipant1.setVisibility(View.INVISIBLE);
-                        //imageViewLocalParticipant.bringToFront();
-                        //--------------------------------------------------------------------------
+                            //user moved phone away from ear but they had VIDEO off before
+                            //so dont automatically turn it back on
+
+                        	Log.d(TAG, "onSensorChanged: PROXIMITY:AWAY - localVideoTrack_wasOnBeforeMovedPhoneToEar is false - DONT TURN CAMERA BACK ON");
+                            //----------------------------------------------------------------------
+
+                            //----------------------------------------------------------------------
+                            //WRAPPER - ALWAYS VISIBLE
+                            thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
+
+                            thumbnailVideoView.setVisibility(View.INVISIBLE);
+                            imageViewLocalParticipant.setVisibility(View.VISIBLE);
+                            //imageViewLocalParticipant.bringToFront();
+                            //----------------------------------------------------------------------
+                        }
                     }
                 }
             }
@@ -529,8 +621,6 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
 
     //----------------------------------------------------------------------------------------------
-
-
     private void action_openRoom(  String room,
                             String token,
                             String localUserName,
@@ -538,9 +628,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                             String remoteUserName,
                             String remoteUserPhotoURL)
     {
-
-        Log.e(TAG, "action_openRoom: STARTED");
-
+        //------------------------------------------------------------------------------------------
+        Log.d(TAG, "action_openRoom: STARTED");
+        //------------------------------------------------------------------------------------------
 
         this.roomId = room;
         this.accessToken = token;
@@ -553,7 +643,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         this.remote_user_photo_url = remoteUserPhotoURL;
 
 
-        showRoomUI(true);
+        showRoomUI();
 
         //------------------------------------------------------------------------------------------
         //CAMERA PERMISSIONS
@@ -577,16 +667,16 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
 
     private void action_startCall(  String room,
-                            String token)
+                                    String token)
     {
-        Log.e(TAG, "action_startCall: STARTED");
+        Log.d(TAG, "action_startCall: STARTED");
 
         this.roomId = room;
         this.accessToken = token;
 
         //------------------------------------------------------------------------------------------
         //enable mic button
-        this.showRoomUI(true);
+        this.showRoomUI();
 
         //------------------------------------------------------------------------------------------
         //CAMERA PERMISSIONS
@@ -609,6 +699,30 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     }
 
+    private void action_showOffline()
+    {
+        Log.d(TAG, "action_showOffline: show viewAlert");
+
+        if(null != this.viewAlert){
+            this.viewAlert.setVisibility(View.VISIBLE);
+        }else{
+        	Log.e(TAG, "[action_showOffline] this.viewAlert is null");
+        }
+    }
+
+    private void action_showOnline()
+    {
+        Log.d(TAG, "action_showOnline: hide viewAlert");
+
+        if(null != this.viewAlert){
+            this.viewAlert.setVisibility(View.INVISIBLE);
+        }else {
+            Log.e(TAG, "[action_showOnline] this.viewAlert is null");
+        }
+    }
+
+
+
     private void action_answerCall( String room,
                                     String token,
                                     String localUserName,
@@ -616,7 +730,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                                     String remoteUserName,
                                     String remoteUserPhotoURL)
     {
-        Log.e(TAG, "action_answerCall: STARTED");
+        Log.d(TAG, "action_answerCall: STARTED");
 
         this.roomId = room;
         this.accessToken = token;
@@ -631,7 +745,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
         //------------------------------------------------------------------------------------------
         //enable mic button
-        this.showRoomUI(true);
+        this.showRoomUI();
 
         //------------------------------------------------------------------------------------------
         //CAMERA PERMISSIONS
@@ -682,8 +796,37 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         }
     }
 
+    private void preventProximityTurningCameraOn(){
+        //ISSUE - the proximity sensor is triggered as AWAY when it starts
+        //This turn local camera on
+        //but we might have wanted to startWithVideoOff:true
+        //localVideoTrack_wasOnBeforeMovedPhoneToEar prevents the camera turning back on if it was off
+        //camera off > Proximity:near > leave camera off > Proximity: Away > DONT turn camera back on if it was off before NEAR triggered
+        //camera on  > Proximity:near > turn camera off  > Proximity: Away > turn camera back on
+
+        //default to on
+        localVideoTrack_wasOnBeforeMovedPhoneToEar = true;
+
+        if(null != config){
+            if(config.isStartWithVideoOff()){
+                localVideoTrack_wasOnBeforeMovedPhoneToEar = false;
+            }else{
+                Log.d(TAG, "config.isStartWithVideoOff() is false - no need to intercept proximity AWAY");
+            }
+        }else{
+            Log.e(TAG, "config is null");
+        }
+    }
+
     private void permissionOk(){
+
+
+        preventProximityTurningCameraOn();
+
+
         if(this.action_current.equals(TwilioVideoActivityNextAction.action_openRoom)){
+
+
 
             //--------------------------------------------------------------------------------------
             //SETUP LOCAL CAMERA AND AUDIO
@@ -694,6 +837,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //p1 - wait for P2 to call room.connect() then backend will send startCall() to P1
             //--------------------------------------------------------------------------------------
             displayCallWaiting();
+
+            //if localCameraTrack.enable is true so still on here even though config.startWithVideoOff:true
+            // may be the proximity sensor
+
 
         }
         else if(this.action_current.equals(TwilioVideoActivityNextAction.action_startCall))
@@ -724,7 +871,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //UI
     //----------------------------------------------------------------------------------------------
     // Reset the client ui status
-    private void showRoomUI(boolean inRoom) {
+    private void showRoomUI() {
         this.fillIn_viewRemoteParticipantInfo();
     }
 
@@ -745,24 +892,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
 
 
-
-//    //border is animated so I cheated and added it to a UIView wraping the remote image view then I animate the alpha whilst Calling..
-//    //viewWrapperAnimatedBorder is exact ame frame as imageViewRemoteParticipant
-//    //coregraphic border will be outside this frame
-//    private void addFakeBordersToRemoteImageView(){
-//        Log.e(TAG, "addFakeBordersToRemoteImageView: TODO" );
-//        //        this.viewWrapperAnimatedBorder0.layer.cornerRadius = this.viewWrapperAnimatedBorder0.frame.size.height / 2.0;
-//    }
-//
-//    private void animateAlphaBorderForViews_ShowBorder(){
-//        Log.e(TAG, "animateAlphaBorderForViews_ShowBorder: TODO" );
-//        //TODO
-//        // [this.viewWrapperAnimatedBorder0 setHidden:FALSE];
-//    }
-
     //Disconnected... just hide the animation is not stopped
     private void animateAlphaBorderForViews_HideBorder(){
-        Log.e(TAG, "animateAlphaBorderForViews_HideBorder" );
+        Log.d(TAG, "animateAlphaBorderForViews_HideBorder" );
 
         hide_imageViewRemoteParticipantWhilstCallingToAnimate();
     }
@@ -787,7 +919,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         runAnimation = !runAnimation;
     }
     public void animateView_stop(){
-        runAnimation = !runAnimation;
+        runAnimation = false;
     }
 
 
@@ -802,10 +934,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         if(runAnimation){
-                            //Log.e(TAG, "animateView_fadeOut - runAnimation is true - CALL animateView_fadeIn");
+                            //Log.d(TAG, "animateView_fadeOut - runAnimation is true - CALL animateView_fadeIn");
                             animateView_fadeIn(view, duration);
                         }else{
-                            Log.e(TAG, "animateView_fadeOut - runAnimation is false - STOP ANIMATION");
+                            Log.d(TAG, "animateView_fadeOut - runAnimation is false - STOP ANIMATION");
                         }
 
                     }
@@ -822,10 +954,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         if(runAnimation){
-                            //Log.e(TAG, "animateView_fadeIn - runAnimation is true - CALL animateView_fadeOut");
+                            //Log.d(TAG, "animateView_fadeIn - runAnimation is true - CALL animateView_fadeOut");
                             animateView_fadeOut(view,duration);
                         }else{
-                            Log.e(TAG, "animateView_fadeIn - runAnimation is false - STOP ANIMATION");
+                            Log.d(TAG, "animateView_fadeIn - runAnimation is false - STOP ANIMATION");
                         }
                     }
                 });
@@ -875,10 +1007,11 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     }
 
     //when LOCAL user is offline we show their image over the disable camera view
+    //when LOCAL user is offline we show their image over the disable camera view
     private void fill_imageView_LocalParticipant(){
         //DEBUG DO NOT RELEASE - self.localUserPhotoURL = NULL;
 
-        this.loadUserImageInBackground_async(this.local_user_photo_url, this.imageViewLocalParticipant1);
+        this.loadUserImageInBackground_async(this.local_user_photo_url, this.imageViewLocalParticipant);
 
     }
     
@@ -890,67 +1023,23 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //------------------------------------------------------------------------------------------
         //"https://sealogin-trfm-prd-cdn.azureedge.net/API/1_3/User/picture?imageUrl=673623fdc8b39b5b05b3167765019398.jpg"
         //------------------------------------------------------------------------------------------
+        int defaultImage = FAKE_R.getDrawable("ic_account_circle_white_24dp");
 
-        if (userPhotoURL != null) {
-            if (imageView != null) {
-                Picasso.get().load(userPhotoURL).into(imageView);
+
+        if (imageView != null) {
+            if (userPhotoURL != null) {
+                Picasso.get().load(userPhotoURL).placeholder(defaultImage).into(imageView);
 
             }else{
-                Log.e(TAG, "loadUserImageInBackground_async: imageView is null");
+                Log.d(TAG, "loadUserImageInBackground_async: userPhotoURL is null - use default image");
+
+                imageView.setImageResource(defaultImage);
             }
         }else{
-            Log.e(TAG, "loadUserImageInBackground_async: userPhotoURL is null");
+            Log.e(TAG, "loadUserImageInBackground_async: imageView is null - cant set image to default or otherwise");
         }
     }
 
-
-    //Rounded Image - with border
-    //https://android--examples.blogspot.com/2015/11/android-how-to-create-circular.html
-    private RoundedBitmapDrawable createRoundedBitmapDrawableWithBorder(Bitmap bitmap){
-        int bitmapWidth = bitmap.getWidth();
-        int bitmapHeight = bitmap.getHeight();
-        int borderWidthHalf = 10; // In pixels
-        //Toast.makeText(mContext,""+bitmapWidth+"|"+bitmapHeight,Toast.LENGTH_SHORT).show();
-
-        // Calculate the bitmap radius
-        int bitmapRadius = Math.min(bitmapWidth,bitmapHeight)/2;
-
-        int bitmapSquareWidth = Math.min(bitmapWidth,bitmapHeight);
-        //Toast.makeText(mContext,""+bitmapMin,Toast.LENGTH_SHORT).show();
-
-        int newBitmapSquareWidth = bitmapSquareWidth+borderWidthHalf;
-        //Toast.makeText(mContext,""+newBitmapMin,Toast.LENGTH_SHORT).show();
-
-        Bitmap roundedBitmap = Bitmap.createBitmap(newBitmapSquareWidth,newBitmapSquareWidth,Bitmap.Config.ARGB_8888);
-
-        // Initialize a new Canvas to draw empty bitmap
-        Canvas canvas = new Canvas(roundedBitmap);
-
-        //fill canvas
-        canvas.drawColor(Color.RED);
-
-        // Calculation to draw bitmap at the circular bitmap center position
-        int x = borderWidthHalf + bitmapSquareWidth - bitmapWidth;
-        int y = borderWidthHalf + bitmapSquareWidth - bitmapHeight;
-
-        canvas.drawBitmap(bitmap, x, y, null);
-
-        // Initializing a new Paint instance to draw circular border
-        Paint borderPaint = new Paint();
-        borderPaint.setStyle(Paint.Style.STROKE);
-        //borderPaint.setStrokeWidth(borderWidthHalf*2);//too thick
-        borderPaint.setStrokeWidth(5.0f);
-        borderPaint.setColor(Color.WHITE);
-
-        canvas.drawCircle(canvas.getWidth()/2, canvas.getWidth()/2, newBitmapSquareWidth/2, borderPaint);
-
-        RoundedBitmapDrawable roundedBitmapDrawable = RoundedBitmapDrawableFactory.create(getResources(),roundedBitmap);
-
-        roundedBitmapDrawable.setCornerRadius(bitmapRadius);
-        roundedBitmapDrawable.setAntiAlias(true);
-
-        return roundedBitmapDrawable;
-    }
 
     //------------------------------------------------------------------------------------------
     //SHOW REMOTE USER PANEL with image name and state e.g. Dialing..
@@ -1107,16 +1196,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //----------------------------------------------------------------------------------------------
     //MINI VIEW BORDER
     //----------------------------------------------------------------------------------------------
-    private void addBorderToPreview(){
-        Log.e(TAG, "addBorderToPreview: TODO" );
-    }
-    private void removeBorderFromPreview(){
-        Log.e(TAG, "removeBorderFromPreview: TODO" );
-    }
-
 
     //In Call - NAME and MIC state
-
     private void hide_inCall_remoteUserNameAndMic(){
 
         //DONT use GONE - it moves the buttons down then jumps when it reappears
@@ -1175,7 +1256,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //On the ANSWERING PHONE it will trigger
     //didConnectToRoom_AnswerACall only
     private void didConnectToRoom_AnswerACall(){
-        Log.e(TAG, "didConnectToRoom_AnswerACall: START");
+        Log.d(TAG, "didConnectToRoom_AnswerACall: START");
         
         if(this.previewIsFullScreen){
             this.show_viewRemoteParticipantInfoWithState("Connecting...");
@@ -1187,206 +1268,6 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         }
     }
 
-
-
-
-//    private void shrinkPreview(){
-//        //------------------------------------------------------------------------------------------
-//        //android.widget.FrameLayout video_container = findViewById(FAKE_R.getId("video_container"));
-//        //ViewGroup.LayoutParams layoutParams = ((ViewGroup) video_container).getLayoutParams();
-//
-//        android.widget.FrameLayout thumbnail_video_view = findViewById(FAKE_R.getId("thumbnail_video_view"));
-//        ViewGroup.LayoutParams layoutParams = ((ViewGroup) thumbnail_video_view).getLayoutParams();
-//
-//
-//        //setMargins not found - you need to cast it
-//        Log.e(TAG, "onClick: layoutParams:" + layoutParams);
-//
-//        int screen_width_pixels = Resources.getSystem().getDisplayMetrics().widthPixels;
-//        int screen_height_pixels = Resources.getSystem().getDisplayMetrics().heightPixels;
-//
-//        Log.e(TAG, "onClick: screen_width_pixels:" + screen_width_pixels + ",screen_height_pixels:"+ screen_height_pixels );
-//        //1080, 2076
-//
-//        int preview_mini_width = 350;
-//        int preview_mini_height = 650;
-//        int margin = 64;
-//
-//
-//        if (layoutParams instanceof ViewGroup.MarginLayoutParams) {
-//            ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) layoutParams;
-//
-//
-//            int leftMargin = screen_width_pixels - preview_mini_width - margin;
-//            int topMargin  = screen_height_pixels - preview_mini_height - margin;
-//
-//            //OK but sets all
-//            marginLayoutParams.setMargins(leftMargin, topMargin, margin, margin * 6); // left, top, right, bottom
-//
-////// TODO: 27/11/2020 MAY NEED TO CALC margins
-////                    call this first
-////                        the mic button sets height/width and thsi code does unset it
-////                            i pasted this into the plugin
-//            //https://developer.android.com/reference/android/view/ViewGroup.MarginLayoutParams
-//            //((ViewGroup.MarginLayoutParams) layoutParams).topMargin = 0;
-//            //((ViewGroup.MarginLayoutParams) layoutParams).leftMargin = 0;
-//            //((ViewGroup.MarginLayoutParams) layoutParams).bottomMargin = 0;
-//            //((ViewGroup.MarginLayoutParams) layoutParams).rightMargin = 0;
-//
-//
-//            //video_container.requestLayout();
-//
-//            thumbnail_video_view.requestLayout();
-//        } else{
-//            Log.e("MyApp", "Attempted to set the margins on a class that doesn't support margins: video_container");
-//        }
-//        //------------------------------------------------------------------------------------------
-//
-//        //java.lang.ClassCastException: androidx.coordinatorlayout.widget.CoordinatorLayout$LayoutParams cannot be cast to android.widget.FrameLayout$LayoutParams
-//
-////                if (thumbnailVideoView != null) {
-////                    ViewGroup.LayoutParams thumbnailVideoView_layoutParams = thumbnailVideoView.getLayoutParams();
-////
-////                    //thumbnailVideoView_layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
-////                    //thumbnailVideoView_layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
-////                    thumbnailVideoView_layoutParams.width = 100;
-////                    thumbnailVideoView_layoutParams.height = 200;
-////
-////                    //layoutParams.setMargins(10, 20, 30, 40);
-////
-////                    thumbnailVideoView.setLayoutParams(thumbnailVideoView_layoutParams);
-////
-////                    thumbnailVideoView.requestLayout();
-////                } else {
-////                    Log.e(TAG, "onClick: thumbnailVideoView is null");
-////                }
-//        //------------------------------------------------------------------------------------------
-//
-//        //------------------------------------------------------------------------------------------
-//        //                ViewGroup.LayoutParams layoutParams = video_container.getLayoutParams();
-//
-//        //                layoutParams.setMargins(10, 20, 30, 40);
-//
-//
-////        if(thumbnailVideoView != null){
-////            ViewGroup.LayoutParams layoutParams = thumbnailVideoView.getLayoutParams();
-////            layoutParams.width = 96;
-////            layoutParams.height = 96;
-////            thumbnailVideoView.setLayoutParams(layoutParams);
-////        }else{
-////            Log.e(TAG, "onClick: thumbnailVideoView is null");
-////        }
-//
-//
-//    }
-
-//WITH ANIMATIONS - commented out till I add zoomanimation
-//    private void update_PreviewView_showInFullScreen(boolean changeToFullScreen,
-//                                                     boolean isAnimated,
-//                                                     boolean showBlurView)
-//    {
-//        Log.e(TAG, "update_PreviewView_showInFullScreen: TODO");
-////TODO BLURRED VIEW
-////        //animation in and out should be same number of secs
-////        NSTimeInterval duration = 1.0;
-////
-////        //When you show "Disconnected.." you dont show the blur - other use has hung up
-////        if(showBlurView){
-////        [this.uiVisualEffectViewBlur setHidden:FALSE];
-////            //if alpha is 0.0 will still be hidden - a;pha is animated below
-////        }else{
-////        [this.uiVisualEffectViewBlur setHidden(true);
-////        }
-//
-//
-//        if(changeToFullScreen){
-//
-//            if(isAnimated){
-//                //------------------------------------------------------------------
-//                //FULL SCREEN + ANIMATED
-//                //------------------------------------------------------------------
-////TODO ANIMATE ZOOM
-////                [UIView animateWithDuration:duration
-////                    delay:0
-////                    options:UIViewAnimationOptionCurveEaseInOut
-////                    animations:^{
-//                //--------------------------------------------------
-//                this.update_PreviewView_toFullScreen(true);
-//
-//                //--------------------------------------------------
-////TODO BLUR
-////                        //may still be hidden if uiVisualEffectViewBlur setHidden: not changed above
-////                        this.uiVisualEffectViewBlur.alpha = BLURRED_VIEW_ALPHA_ON;
-//
-//                //--------------------------------------------------
-////                        //will resize but animate without this
-////                        [this.view layoutIfNeeded];
-//                //--------------------------------------------------
-////                    }
-////                    completion:^(BOOL finished) {
-////                        //ANIMATION DONE
-//                this.removeBorderFromPreview();
-////                    }
-////                ];
-//
-//            }else{
-//                //------------------------------------------------------------------
-//                //FULL SCREEN + UNANIMATED (when app starts)
-//                //------------------------------------------------------------------
-//                this.update_PreviewView_toFullScreen(true);
-////TODO BLUR ON
-////                this.uiVisualEffectViewBlur.alpha = BLURRED_VIEW_ALPHA_ON;
-//
-//                this.removeBorderFromPreview();
-//            }
-//        }else{
-//            //------------------------------------------------------------------------------------------
-//            //MINI VIEW
-//            //------------------------------------------------------------------------------------------
-//
-//            //------------------------------------------------------------------------------------------
-//            if(isAnimated){
-//                //------------------------------------------------------------------
-//                //NOT FULL SCREEN + ANIMATED - (dialing ends shrink preview to bottom right)
-//                //------------------------------------------------------------------
-////                [UIView animateWithDuration:duration
-////                    delay:0
-////                    options:UIViewAnimationOptionCurveEaseInOut
-////                    animations:^{
-//                //-------------------------------------------------
-//                this.update_PreviewView_toFullScreen(false);
-//                //--------------------------------------------------
-////TODO BLUR OFF/alpha 0
-////                        this.uiVisualEffectViewBlur.alpha = 0.0;
-//                //--------------------------------------------------
-//                //will resize but animate without this
-////                        [this.view layoutIfNeeded];
-////                        //--------------------------------------------------
-////                    }
-////                    completion:^(BOOL finished) {
-//                //DONE
-//                this.addBorderToPreview();
-////                    }
-////                ];
-//
-//            }else{
-//                //------------------------------------------------------------------
-//                //NOT FULL SCREEN + UNANIMATED (preview size jumps to bottom right - unused)
-//                //------------------------------------------------------------------
-//                this.update_PreviewView_toFullScreen(false);
-//                //--------------------------------------------------
-//                //FADE OUT
-////TODO - alpha out
-////                this.uiVisualEffectViewBlur.alpha = 0.0;
-//                //--------------------------------------------------
-//
-//                this.addBorderToPreview();
-//
-//            }
-//        }
-//
-//        //[this.view setNeedsUpdateConstraints];
-//    }
 
     private void showHideBlurView(boolean showBlurView){
 
@@ -1575,27 +1456,12 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
 
     private void update_PreviewView_toFullScreen(boolean fullScreen) {
-        Log.e(TAG, "update_PreviewView_toFullScreen: START");
+        Log.d(TAG, "update_PreviewView_toFullScreen: START");
         if(fullScreen){
 
-            //------------------------------------------------------------------------------------------
+            //--------------------------------------------------------------------------------------
             //FULLSCREEN VIEW
-            //------------------------------------------------------------------------------------------
-
-//            if (thumbnailVideoView != null) {
-//                ViewGroup.LayoutParams thumbnailVideoView_layoutParams = thumbnailVideoView.getLayoutParams();
-//
-//                thumbnailVideoView_layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
-//                thumbnailVideoView_layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
-//
-//                thumbnailVideoView.setLayoutParams(thumbnailVideoView_layoutParams);
-//
-//                thumbnail_video_view_setmargins(0, 0, 0, 0);
-//
-//                thumbnailVideoView.requestLayout();
-//            } else {
-//                Log.e(TAG, "onClick: thumbnailVideoView is null");
-//            }
+            //--------------------------------------------------------------------------------------
 
             if (thumbnailVideoViewFrameLayout != null) {
                 ViewGroup.LayoutParams thumbnailVideoViewFrameLayout_layoutParams = thumbnailVideoViewFrameLayout.getLayoutParams();
@@ -1607,11 +1473,14 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
                 thumbnail_video_view_framelayout_setmargins(0, 0, 0, 0);
 
+
                 thumbnailVideoViewFrameLayout.requestLayout();
                 //imageViewLocalParticipant.requestLayout();
             } else {
                 Log.e(TAG, "onClick: thumbnailVideoViewFrameLayout is null");
             }
+
+            imageViewSwitchVideo.setVisibility(View.INVISIBLE);
 
             this.previewIsFullScreen = true;
         }else{
@@ -1622,7 +1491,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             int screen_width_pixels = Resources.getSystem().getDisplayMetrics().widthPixels;
             int screen_height_pixels = Resources.getSystem().getDisplayMetrics().heightPixels;
 
-            Log.e(TAG, "onClick: screen_width_pixels:" + screen_width_pixels + ",screen_height_pixels:"+ screen_height_pixels );
+            Log.d(TAG, "onClick: screen_width_pixels:" + screen_width_pixels + ",screen_height_pixels:"+ screen_height_pixels );
             //1080, 2076
 
             int preview_mini_width = 350;
@@ -1648,16 +1517,15 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 //thumbnail_video_view_setmargins(leftMargin, topMargin, margin, margin_bottom);
                 thumbnail_video_view_framelayout_setmargins(leftMargin, topMargin, margin, margin_bottom);
 
-                //layout Inspector is in 88dp
+
+
 
 
             }else{
             	Log.e(TAG, "bottom_buttons_linearlayout is null");
             }
 
-
-
-
+            imageViewSwitchVideo.setVisibility(View.VISIBLE);
 
             this.previewIsFullScreen = false;
         }
@@ -1773,7 +1641,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     @Override
     protected void onResume() {
         super.onResume();
-        Log.e(TAG, "onResume: STARTED" );
+        Log.d(TAG, "onResume: STARTED" );
 
 
         this.hide_imageViewRemoteParticipantInCall();
@@ -1821,16 +1689,31 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //If the local video track was released when the app was put in the background, recreate.
         if (localVideoTrack == null) {
 
-            Log.e(TAG, "onResume: localVideoTrack == null >> recreate" );
+            Log.d(TAG, "onResume: localVideoTrack == null >> recreate" );
 
             if (hasPermissionForCameraAndMicrophone()) {
 
-                Log.e(TAG, "onResume: hasPermissionForCameraAndMicrophone(): TRUE - recreate" );
+                Log.d(TAG, "onResume: hasPermissionForCameraAndMicrophone(): TRUE - recreate" );
 
                 if(null != cameraCapturer){
                     //------------------------------------------------------------------------------
+                    boolean enableVideoAtStart = true;
+
+                    if(config.isStartWithVideoOff()){
+                        Log.i(TAG, "isStartWithAudioOff: TRUE - AUDIO disabled at start");
+                        enableVideoAtStart = false;
+                    }else{
+                        enableVideoAtStart = true;
+                    }
+
+                    //------------------------------------------------------------------------------
+                    //NOTE - proximity sensor in android triggers a single proximity:AWAY when its starts
+                    //proximity:AWAY sets localVideoTrack.enabled to true so overwrites what you set here
+                    // you need to make sure it doesnt start the camera if config.startWithVideoOff:true
+                    // done in preventProximityTurningCameraOn()
+                    //------------------------------------------------------------------------------
                     localVideoTrack = LocalVideoTrack.create(this,
-                            true,
+                            enableVideoAtStart,
                             cameraCapturer.getVideoCapturer(),
                             LOCAL_VIDEO_TRACK_NAME);
                     //------------------------------------------------------------------------------
@@ -1877,7 +1760,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             if (hasPermissionForCameraAndMicrophone()) {
 
-                Log.e(TAG, "onResume: hasPermissionForCameraAndMicrophone(): TRUE - recreate" );
+                Log.d(TAG, "onResume: hasPermissionForCameraAndMicrophone(): TRUE - recreate" );
 
                 if (localParticipant != null) {
                     localParticipant.publishTrack(localVideoTrack);
@@ -1999,36 +1882,85 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     private void createAudioAndVideoTracks() {
         //------------------------------------------------------------------------------------------
-        //AUDIO -  Share your microphone
+        //AUDIO
         //------------------------------------------------------------------------------------------
+        //cordova can start call with audio off config.startWithAudioOff:true
+        boolean enableAudioAtStart = true;
 
-        localAudioTrack = LocalAudioTrack.create(this, true, LOCAL_AUDIO_TRACK_NAME);
-
+        if(config.isStartWithAudioOff()){
+            Log.i(TAG, "isStartWithAudioOff: TRUE - AUDIO disabled at start");
+            enableAudioAtStart = false;
+        }else{
+            enableAudioAtStart = true;
+        }
+        //--------------------------------------------------------------
+        localAudioTrack = LocalAudioTrack.create(this,
+                                                 enableAudioAtStart,
+                                                 LOCAL_AUDIO_TRACK_NAME);
+        //--------------------------------------------------------------
         if(null != localAudioTrack){
-            Log.e(TAG, "localAudioTrack is created ok from  callers audio source");
+            Log.d(TAG, "localAudioTrack is created ok from  callers audio source");
+            //--------------------------------------------------------------------------------------
+            //UPDATE BUTTON STATE TO MATCH VIDEO ON/OFF
+            //WHEN you TAP on a button to turn OFF video or AUDIO the button is SELECTED -
+            //so if video/audio is enabled then button is unselected
+            //--------------------------------------------------------------------------------------
+            update_button_fab_localaudio_onoff(localAudioTrack.isEnabled());
+            //--------------------------------------------------------------------------------------
 
         }else{
             Log.e(TAG, "localAudioTrack is null - failed to create from  callers audio source");
         }
 
         //------------------------------------------------------------------------------------------
-        //LOCAL CAMERA -  Share your camera
+        //VIDEO - CALLERS LOCAL CAMERA
+        //------------------------------------------------------------------------------------------
         cameraCapturer = new CameraCapturerCompat(this, getAvailableCameraSource());
         //------------------------------------------------------------------------------------------
+
+        boolean enableVideoAtStart = true;
+
+        if(config.isStartWithVideoOff()){
+            Log.i(TAG, "isStartWithAudioOff: TRUE - AUDIO disabled at start");
+            enableVideoAtStart = false;
+        }else{
+            enableVideoAtStart = true;
+        }
+        //------------------------------------------------------------------------------------------
+        //NOTE - proximity sensor in android triggers a single proximity:AWAY when its starts
+        //proximity:AWAY sets localVideoTrack.enabled to true so overwrites what you set here
+        // you need to make sure it doesnt start the camera if config.startWithVideoOff:true
+        // done in preventProximityTurningCameraOn()
+
+        //------------------------------------------------------------------------------------------
         localVideoTrack = LocalVideoTrack.create(this,
-                                                 true,
+                                                  enableVideoAtStart,
                                                   cameraCapturer.getVideoCapturer(),
                                                   LOCAL_VIDEO_TRACK_NAME);
 
         if(null != localVideoTrack){
-            Log.e(TAG, "localVideoTrack is created ok from camera capture");
+            //--------------------------------------------------------------------------------------
+            Log.d(TAG, "localVideoTrack is created ok from camera capture");
+
+            //--------------------------------------------------------------------------------------
+            //UPDATE BUTTON STATE TO MATCH VIDEO ON/OFF
+            //WHEN you TAP on a button to turn OFF video or AUDIO the button is SELECTED -
+            //so if video/audio is enabled then button is unselected
+            //--------------------------------------------------------------------------------------
+
+            update_button_fab_localvideo_onoff(localVideoTrack.isEnabled());
+            //--------------------------------------------------------------------------------------
 
         }else{
         	Log.e(TAG, "localVideoTrack is null - failed to create from camera capture");
         }
 
+        //------------------------------------------------------------------------------------------
         this.moveLocalVideoToThumbnailView();
+        //------------------------------------------------------------------------------------------
+
     }
+
 
     private CameraSource getAvailableCameraSource() {
         return (CameraCapturer.isSourceAvailable(CameraSource.FRONT_CAMERA)) ?
@@ -2202,7 +2134,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
      * The initial state when there is no active conversation.
      */
     private void initializeUI() {
-
+        //------------------------------------------------------------------------------------------
+        //unused config params - dont remove primaryColor is used in styles.xml and can break main sea/chat app
         //------------------------------------------------------------------------------------------
         //        if(null != this.config){
         //            if (config.getPrimaryColorHex() != null) {
@@ -2234,7 +2167,6 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //------------------------------------------------------------------------------------------
         //DISCONNECT - always RED
         //------------------------------------------------------------------------------------------
-//        int colorButtonDisconnect = ContextCompat.getColor(this, R.color.colorButtonDisconnect);
         int colorButtonDisconnect = ContextCompat.getColor(this, FAKE_R.getColor("colorButtonDisconnect"));
 
 
@@ -2245,17 +2177,17 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //------------------------------------------------------------------------------------------
         //OTHER BUTTONS
         //------------------------------------------------------------------------------------------
-//DONT USE R. doesnt work
-//        int colorButtonSelected   = ContextCompat.getColor(this, R.color.colorButtonSelected);
-//        int colorButtonUnselected = ContextCompat.getColor(this, R.color.colorButtonUnselected);
-
+        //DONT USE R. doesnt work
+        //        int colorButtonSelected   = ContextCompat.getColor(this, R.color.colorButtonSelected);
+        //        int colorButtonUnselected = ContextCompat.getColor(this, R.color.colorButtonUnselected);
 
         int colorButtonSelected = ContextCompat.getColor(this, FAKE_R.getColor("colorButtonSelected"));
         int colorButtonUnselected = ContextCompat.getColor(this, FAKE_R.getColor("colorButtonUnselected"));
 
 
-
-
+        //------------------------------------------------------------------------------------------
+        //FABS
+        //------------------------------------------------------------------------------------------
         //Doesnt work properly with FABs
         //        button_fab_localvideo_onoff.setBackgroundColor(colorButtonOn);
 
@@ -2268,9 +2200,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         button_fab_localvideo_onoff.setOnClickListener(button_localVideo_OnClickListener());
 
         //------------------------------------------------------------------------------------------
-        button_fab_audio_onoff.setBackgroundTintList(colorStateList);
-        button_fab_audio_onoff.show();
-        button_fab_audio_onoff.setOnClickListener(button_mute_OnClickListener());
+        button_fab_localaudio_onoff.setBackgroundTintList(colorStateList);
+        button_fab_localaudio_onoff.show();
+        button_fab_localaudio_onoff.setOnClickListener(button_mute_OnClickListener());
 
         //------------------------------------------------------------------------------------------
         //dont use ColorStateList - same color for all states
@@ -2281,8 +2213,6 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //DONT USE R its capacitor...R
         //button_fab_switchaudio.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.colorButtonUnselected));
         button_fab_switchaudio.setBackgroundTintList(ContextCompat.getColorStateList(this, FAKE_R.getColor("colorButtonUnselected")));
-
-
 
         button_fab_switchaudio.show();
         button_fab_switchaudio.setOnClickListener(button_switchAudio_OnClickListener());
@@ -2335,13 +2265,81 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
      **********************************************************************************************/
 
     //----------------------------------------------------------------------------------------------
+    //BUTTON STATES for VIDEO/MIC
+    //----------------------------------------------------------------------------------------------
+    //change icon
+    //set selected - colors in ColorStateList
+
+    //called by createAudioAndVideoTracks - cordova can pass in config.startWithAudioOff:true
+    //called by button listener
+
+    private void update_button_fab_localvideo_onoff( boolean enabled){
+        //------------------------------------------------------------------------------------------
+        //BUTTON BACKGROUND TINT
+        //------------------------------------------------------------------------------------------
+        //this doesnt work properly for FABs - use ColorStateList + setSelected(..)
+        //  button_fab_localvideo_onoff.setBackgroundColor(colorButton);
+        //------------------------------------------------------------------------------------------
+        //colors setup in ColorStateList above
+        //we just need to set setSelected
+        //------------------------------------------------------------------------------------------
+        int icon;
+
+        if (enabled) {
+            button_fab_localvideo_onoff.setSelected(false);
+            icon = FAKE_R.getDrawable("ic_videocam_green_24px");
+        }
+        else {
+            button_fab_localvideo_onoff.setSelected(true);
+            icon = FAKE_R.getDrawable("ic_videocam_off_red_24px"); //bad name its grey
+        }
+
+        //------------------------------------------------------------------------------------------
+        //BUTTON ICON
+        button_fab_localvideo_onoff.setImageDrawable(ContextCompat.getDrawable(TwilioVideoActivity.this, icon));
+        //------------------------------------------------------------------------------------------
+    }
+
+    //called by createAudioAndVideoTracks - cordova can pass in config.startWithAudioOff:true
+    //called by button listener
+    private void update_button_fab_localaudio_onoff( boolean enabled){
+        //------------------------------------------------------------------------------------------
+        //BUTTON BACKGROUND TINT
+        //------------------------------------------------------------------------------------------
+        //doesnt work properly for FABs
+        //button_fab_localaudio_onoff.setBackgroundColor(colorButton);
+        //------------------------------------------------------------------------------------------
+        //colors setup in ColorStateList above
+        //we just need to set state
+        //------------------------------------------------------------------------------------------
+        int icon;
+
+        if (enabled) {
+            button_fab_localaudio_onoff.setSelected(false);
+            icon = FAKE_R.getDrawable("ic_mic_green_24px");
+        }
+        else {
+            button_fab_localaudio_onoff.setSelected(true);
+            icon = FAKE_R.getDrawable("ic_mic_off_red_24px"); //bad name its grey
+        }
+
+        //------------------------------------------------------------------------------------------
+        //BUTTON ICON
+        button_fab_localaudio_onoff.setImageDrawable(ContextCompat.getDrawable(TwilioVideoActivity.this, icon));
+        //------------------------------------------------------------------------------------------
+    }
+
+
+
+
+    //----------------------------------------------------------------------------------------------
     //BUTTON - CAMERA ON/OFF
     //----------------------------------------------------------------------------------------------
     private View.OnClickListener button_localVideo_OnClickListener() {
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.e(TAG, "button_localVideo_OnClickListener.onClick: ");
+                Log.d(TAG, "button_localVideo_OnClickListener.onClick: ");
                 //Enable/disable the local video track
                 if (localVideoTrack != null) {
                     boolean enabled = !localVideoTrack.isEnabled();
@@ -2350,51 +2348,37 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     //------------------------------------------------------------------------------
                     //CHANGE ICON and COLOR
                     //------------------------------------------------------------------------------
-                    int icon;
 
-                    if (enabled) {
-                        //LOCAL CAMERA IS ON
-                        icon = FAKE_R.getDrawable("ic_videocam_green_24px");
-
-                        //WRAPPER - ALWAYS VISIBLE
-                        thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
-
-                        thumbnailVideoView.setVisibility(View.VISIBLE);
-                        imageViewLocalParticipant1.setVisibility(View.INVISIBLE);
-                        //imageViewLocalParticipant.bringToFront();
-
-
-                    } else {
-                        //LOCAL CAMERA IS OFF
-                        icon = FAKE_R.getDrawable("ic_videocam_off_red_24px");
-
-                        //WRAPPER - ALWAYS VISIBLE
-                        thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
-                        thumbnailVideoViewFrameLayout.bringToFront();
-
-                        thumbnailVideoView.setVisibility(View.INVISIBLE);
-                        imageViewLocalParticipant1.setVisibility(View.VISIBLE);
-                        imageViewLocalParticipant1.bringToFront();
-
-                    }
-
-                    button_fab_localvideo_onoff.setImageDrawable(ContextCompat.getDrawable(TwilioVideoActivity.this, icon));
-
+//                    if (enabled) {
+//                        //--------------------------------------------------------------------------
+//                        //LOCAL CAMERA IS ON
+//                        //--------------------------------------------------------------------------
+//                        //WRAPPER - ALWAYS VISIBLE
+//                        thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
+//
+//                        thumbnailVideoView.setVisibility(View.VISIBLE);
+//                        imageViewLocalParticipant.setVisibility(View.INVISIBLE);
+//                        //imageViewLocalParticipant.bringToFront();
+//                        //--------------------------------------------------------------------------
+//
+//                    } else {
+//                        //--------------------------------------------------------------------------
+//                        //LOCAL CAMERA IS OFF
+//                        //--------------------------------------------------------------------------
+//                        //WRAPPER - ALWAYS VISIBLE
+//                        thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
+//                        thumbnailVideoViewFrameLayout.bringToFront();
+//
+//                        thumbnailVideoView.setVisibility(View.INVISIBLE);
+//                        imageViewLocalParticipant.setVisibility(View.VISIBLE);
+//                        imageViewLocalParticipant.bringToFront();
+//                        //--------------------------------------------------------------------------
+//                    }
+                    enable_disable_localcamera(enabled);
                     //------------------------------------------------------------------------------
-                    //BUTTON BACKGROUND TINT
+                    update_button_fab_localvideo_onoff(enabled);
                     //------------------------------------------------------------------------------
-                    //doesnt work properly for FABs
-                    //button_fab_localvideo_onoff.setBackgroundColor(colorButton);
 
-                    //colors setup in ColorStateList above
-                    //we just need to set state
-                    if (button_fab_localvideo_onoff.isSelected()) {
-                        button_fab_localvideo_onoff.setSelected(false);
-                    }
-                    else {
-                        button_fab_localvideo_onoff.setSelected(true);
-                    }
-                    //------------------------------------------------------------------------------
                 }else{
                     Log.e(TAG, "onClick: localVideoTrack is null - TODO" );
                 }
@@ -2402,6 +2386,34 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             }//onClick
         };
     }
+    private void enable_disable_localcamera(boolean enabled){
+        if (enabled) {
+            //--------------------------------------------------------------------------
+            //LOCAL CAMERA IS ON
+            //--------------------------------------------------------------------------
+            //WRAPPER - ALWAYS VISIBLE
+            thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
+
+            thumbnailVideoView.setVisibility(View.VISIBLE);
+            imageViewLocalParticipant.setVisibility(View.INVISIBLE);
+            //imageViewLocalParticipant.bringToFront();
+            //--------------------------------------------------------------------------
+
+        } else {
+            //--------------------------------------------------------------------------
+            //LOCAL CAMERA IS OFF
+            //--------------------------------------------------------------------------
+            //WRAPPER - ALWAYS VISIBLE
+            thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
+            thumbnailVideoViewFrameLayout.bringToFront();
+
+            thumbnailVideoView.setVisibility(View.INVISIBLE);
+            imageViewLocalParticipant.setVisibility(View.VISIBLE);
+            imageViewLocalParticipant.bringToFront();
+            //--------------------------------------------------------------------------
+        }
+    }
+
 
     //----------------------------------------------------------------------------------------------
     //BUTTON - AUDIO ON/OFF
@@ -2410,7 +2422,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.e(TAG, "muteClickListener.onClick: ");
+                Log.d(TAG, "muteClickListener.onClick: ");
 
                 /*
                  * Enable/disable the local audio track. The results of this operation are
@@ -2422,29 +2434,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     localAudioTrack.enable(enable);
 
                     //------------------------------------------------------------------------------
-                    //BUTTON ICON - badly named OFF is grey not red - see svg
+                    //BUTTON BACKGROUND and ICON for state
+                    update_button_fab_localaudio_onoff(enable);
                     //------------------------------------------------------------------------------
-                    int icon = enable ? FAKE_R.getDrawable("ic_mic_green_24px") : FAKE_R.getDrawable("ic_mic_off_red_24px");
 
-                    button_fab_audio_onoff.setImageDrawable(ContextCompat.getDrawable(TwilioVideoActivity.this, icon));
-
-
-
-                    //------------------------------------------------------------------------------
-                    //BUTTON BACKGROUND TINT
-                    //------------------------------------------------------------------------------
-                    //doesnt work properly for FABs
-                    //button_fab_localvideo_onoff.setBackgroundColor(colorButton);
-
-                    //colors setup in ColorStateList above
-                    //we just need to set state
-                    if (button_fab_audio_onoff.isSelected()) {
-                        button_fab_audio_onoff.setSelected(false);
-                    }
-                    else {
-                        button_fab_audio_onoff.setSelected(true);
-                    }
-                    //------------------------------------------------------------------------------
 
                 }else{
                     Log.e(TAG, "onClick: localAudioTrack is null");
@@ -2454,6 +2447,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             }
         };
     }
+
 
 
     //----------------------------------------------------------------------------------------------
@@ -2476,12 +2470,13 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //----------------------------------------------------------------------------------------------
     //BUTTON - FLIP FRONT and BACk camera - tap on mini view
     //----------------------------------------------------------------------------------------------
+    //CLEANUP - hidden button now
     private View.OnClickListener button_switchCamera_OnClickListener() {
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                Log.e(TAG, "onClick: switchCameraClickListener" );
+                Log.d(TAG, "onClick: switchCameraClickListener" );
 
                 if (cameraCapturer != null) {
                     CameraSource cameraSource = cameraCapturer.getCameraSource();
@@ -2508,17 +2503,17 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.e(TAG, "switchAudioClickListener.onClick: ");
-                if (audioManager.isSpeakerphoneOn()) {
-                    audioManager.setSpeakerphoneOn(false);
-                } else {
-                    audioManager.setSpeakerphoneOn(true);
-
-                }
-                int icon = audioManager.isSpeakerphoneOn() ?
-                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
-                button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable(
-                        TwilioVideoActivity.this, icon));
+                Log.d(TAG, "switchAudioClickListener.onClick: ");
+//                if (audioManager.isSpeakerphoneOn()) {
+//                    audioManager.setSpeakerphoneOn(false);
+//                } else {
+//                    audioManager.setSpeakerphoneOn(true);
+//
+//                }
+//                int icon = audioManager.isSpeakerphoneOn() ?
+//                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
+//                button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable(
+//                        TwilioVideoActivity.this, icon));
                 //----------------------------------------------------------------------------------
 //DO NOT RELEASE - DEBUG triggers startCall
 //                publishEvent(CallEvent.DEBUGSTARTACALL);
@@ -2530,6 +2525,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         };
     }
 
+    // TODO: 23/12/20 REMOVE IF LEE HAPPY WITH CURRENT BLURRED VIEW
     private void applyBlur(){
 
         //----------------------------------------------------------------------------------
@@ -2552,44 +2548,44 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //----------------------------------------------------------------------------------
         //v2 - apply blur to Viewgroup above videoview
         //----------------------------------------------------------------------------------
-//                if(null != blurredviewgroup){
-//                    //Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(blurredviewgroup);
-//
-//                            Blurry.with(TwilioVideoActivity.this).radius(10)
-//                                    .sampling(8)
-//                                    .color(Color.argb(66, 255, 255, 0))
-//                                    .async()
-//                                    .animate(500)
-//                                    .onto(blurredviewgroup);
-//                }else{
-//                    Log.e(TAG, "blurredviewgroup is null");
-//                }
-        //----------------------------------------------------------------------------------
-//                if(null != video_container){
-//                    Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(video_container);
-//
-////                    Blurry.with(TwilioVideoActivity.this).radius(10)
-////                            .sampling(8)
-////                            .color(Color.argb(66, 255, 255, 0))
-////                            .async()
-////                            .animate(500)
-////                            .onto(video_container);
-//                }else{
-//                    Log.e(TAG, "video_container is null");
-//                }
-        //----------------------------------------------------------------------------------
-//                if(null != activity_video_coordinatorlayout){
-//                    Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(activity_video_coordinatorlayout);
-//
-////                    Blurry.with(TwilioVideoActivity.this).radius(10)
-////                            .sampling(8)
-////                            .color(Color.argb(66, 255, 255, 0))
-////                            .async()
-////                            .animate(500)
-////                            .onto(video_container);
-//                }else{
-//                    Log.e(TAG, "activity_video_coordinatorlayout is null");
-//                }
+        //                if(null != blurredviewgroup){
+        //                    //Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(blurredviewgroup);
+        //
+        //                            Blurry.with(TwilioVideoActivity.this).radius(10)
+        //                                    .sampling(8)
+        //                                    .color(Color.argb(66, 255, 255, 0))
+        //                                    .async()
+        //                                    .animate(500)
+        //                                    .onto(blurredviewgroup);
+        //                }else{
+        //                    Log.e(TAG, "blurredviewgroup is null");
+        //                }
+                //----------------------------------------------------------------------------------
+        //                if(null != video_container){
+        //                    Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(video_container);
+        //
+        ////                    Blurry.with(TwilioVideoActivity.this).radius(10)
+        ////                            .sampling(8)
+        ////                            .color(Color.argb(66, 255, 255, 0))
+        ////                            .async()
+        ////                            .animate(500)
+        ////                            .onto(video_container);
+        //                }else{
+        //                    Log.e(TAG, "video_container is null");
+        //                }
+                //----------------------------------------------------------------------------------
+        //                if(null != activity_video_coordinatorlayout){
+        //                    Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(activity_video_coordinatorlayout);
+        //
+        ////                    Blurry.with(TwilioVideoActivity.this).radius(10)
+        ////                            .sampling(8)
+        ////                            .color(Color.argb(66, 255, 255, 0))
+        ////                            .async()
+        ////                            .animate(500)
+        ////                            .onto(video_container);
+        //                }else{
+        //                    Log.e(TAG, "activity_video_coordinatorlayout is null");
+        //                }
         //----------------------------------------------------------------------------------
 
     }
@@ -2684,17 +2680,17 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     private void moveLocalVideoToThumbnailView() {
 
-        Log.e(TAG, "moveLocalVideoToThumbnailView: STARTED" );
+        Log.d(TAG, "moveLocalVideoToThumbnailView: STARTED" );
 
         if (thumbnailVideoView.getVisibility() == View.GONE) {
-            Log.e(TAG, "moveLocalVideoToThumbnailView: thumbnailVideoView.setVisibility(View.VISIBLE)" );
+            Log.d(TAG, "moveLocalVideoToThumbnailView: thumbnailVideoView.setVisibility(View.VISIBLE)" );
 
             thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
-////  PUTBACKTUES IF YOU COMMENT THIS OUT YOU GET THAT CYAN BACKGROUND I THINKG thumbnailVideoView is fullscreen on startup
+
+            //IF YOU COMMENT THIS OUT YOU GET THAT CYAN BACKGROUND I THINK thumbnailVideoView is fullscreen on startup
             thumbnailVideoView.setVisibility(View.VISIBLE);
 
-//  PUTBACKTUES
-            imageViewLocalParticipant1.setVisibility(View.INVISIBLE);
+            imageViewLocalParticipant.setVisibility(View.INVISIBLE);
 
             //--------------------------------------------------------------------------------------
             if (localVideoTrack != null) {
@@ -2713,7 +2709,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //flip camera on horizontal axis?
             thumbnailVideoView.setMirror(cameraCapturer.getCameraSource() == CameraSource.FRONT_CAMERA);
             //--------------------------------------------------------------------------------------
-            Log.e(TAG, "moveLocalVideoToThumbnailView: DEBUG");
+
         }else{
             Log.e(TAG, "moveLocalVideoToThumbnailView: thumbnailVideoView.getVisibility() not View.GONE - skip");
         }
@@ -2759,7 +2755,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 //----------------------------------------------------------------------------------
                 //ROOM - onConnected
                 //----------------------------------------------------------------------------------
-                Log.e(TAG, "Room.Listener onConnected: ");
+                Log.d(TAG, "Room.Listener onConnected: ");
 
                 localParticipant = room.getLocalParticipant();
 
@@ -2775,7 +2771,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                         //--------------------------------------------------------------------------
                         //1..1 CALL - no remote users so I am DIALING the REMOTE USER
                         //--------------------------------------------------------------------------
-                        Log.e(TAG, "Room.Listener onConnected: room.remoteParticipants count is 0 >> LOCAL USER is STARTING A 1..1 CALL");
+                        Log.d(TAG, "Room.Listener onConnected: room.remoteParticipants count is 0 >> LOCAL USER is STARTING A 1..1 CALL");
 
                         //--------------------------------------------------------------------------
                         didConnectToRoom_AnswerACall();
@@ -2786,7 +2782,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                         //----------------------------------------------------------------------
                         //1..1 CALL - 1 remote user in room so LOCAL USER is ANSWERING a CALL
                         //----------------------------------------------------------------------
-                        Log.e(TAG, "Room.Listener onConnected: room.remoteParticipants count:%lu >> LOCAL USER is CONNECTING TO ROOM AFTER REMOTE for A 1..1 CALL");
+                        Log.d(TAG, "Room.Listener onConnected: room.remoteParticipants count:%lu >> LOCAL USER is CONNECTING TO ROOM AFTER REMOTE for A 1..1 CALL");
                         //----------------------------------------------------------------------
                         participantDidConnect_LocalUserAndCallerHaveConnectedToRoom_StartTalking();
                     }
@@ -2800,7 +2796,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onConnectFailure(Room room, TwilioException e) {
-                Log.e(TAG, "Room.Listener onConnectFailure: ");
+                Log.d(TAG, "Room.Listener onConnectFailure: ");
 
                 publishEvent(CallEvent.CONNECT_FAILURE, TwilioVideoUtils.convertToJSON(e));
                 TwilioVideoActivity.this.handleConnectionError(config.getI18nConnectionError());
@@ -2808,14 +2804,14 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onReconnecting(@NonNull Room room, @NonNull TwilioException e) {
-                Log.e(TAG, "Room.Listener onReconnecting: ");
+                Log.d(TAG, "Room.Listener onReconnecting: ");
 
                 publishEvent(CallEvent.RECONNECTING, TwilioVideoUtils.convertToJSON(e));
             }
 
             @Override
             public void onReconnected(@NonNull Room room) {
-                Log.e(TAG, "Room.Listener onReconnected: ");
+                Log.d(TAG, "Room.Listener onReconnected: ");
 
                 publishEvent(CallEvent.RECONNECTED);
             }
@@ -2825,7 +2821,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 //----------------------------------------------------------------------------------
                 //ROOM - onDisconnected
                 //----------------------------------------------------------------------------------
-                Log.e(TAG, "Room.Listener onDisconnected: ");
+                Log.d(TAG, "Room.Listener onDisconnected: ");
 
 
                 localParticipant = null;
@@ -2847,7 +2843,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 //PARTICIPANT - onParticipantConnected
                 //----------------------------------------------------------------------------------
 
-                Log.e(TAG, "Room.Listener onParticipantConnected: ");
+                Log.d(TAG, "Room.Listener onParticipantConnected: ");
 
                 publishEvent(CallEvent.PARTICIPANT_CONNECTED);
                 addRemoteParticipant(participant);
@@ -2861,7 +2857,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                         //----------------------------------------------------------------------
                         //1..1 CALL - no remote users so I an STARTING A CALL
                         //----------------------------------------------------------------------
-                        Log.e(TAG, "onParticipantConnected: oom.remoteParticipants count:0 >> LOCAL USER is STARTING A 1..1 CALL");
+                        Log.d(TAG, "onParticipantConnected: oom.remoteParticipants count:0 >> LOCAL USER is STARTING A 1..1 CALL");
                         //----------------------------------------------------------------------
                         //this.participantDidConnect_AnswerACall];
                         //used didConnectToRoom_AnswerACall instead
@@ -2873,7 +2869,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                         //----------------------------------------------------------------------
                         //1..1 CALL - 1 remote user in room so LOCAL USER is ANSWERING a CALL
                         //----------------------------------------------------------------------
-                        Log.e(TAG, "onParticipantConnected: room.remoteParticipants count:1 >>  room.remoteParticipants count:%lu >> REMOTE USER is ANSWERING A 1..1 CALL >> participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom");
+                        Log.d(TAG, "onParticipantConnected: room.remoteParticipants count:1 >>  room.remoteParticipants count:%lu >> REMOTE USER is ANSWERING A 1..1 CALL >> participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom");
                         //----------------------------------------------------------------------
                         participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom();
                     }
@@ -2887,7 +2883,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onParticipantDisconnected(Room room, RemoteParticipant participant) {
-                Log.e(TAG, "Room.Listener onParticipantDisconnected: ");
+                Log.d(TAG, "Room.Listener onParticipantDisconnected: ");
 
                 publishEvent(CallEvent.PARTICIPANT_DISCONNECTED);
                 removeRemoteParticipant(participant);
@@ -2903,7 +2899,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onRecordingStarted(Room room) {
-                Log.e(TAG, "Room.Listener onRecordingStarted: ");
+                Log.d(TAG, "Room.Listener onRecordingStarted: ");
                 /*
                  * Indicates when media shared to a Room is being recorded. Note that
                  * recording is only available in our Group Rooms developer preview.
@@ -2913,7 +2909,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onRecordingStopped(Room room) {
-                Log.e(TAG, "Room.Listener onRecordingStopped: ");
+                Log.d(TAG, "Room.Listener onRecordingStopped: ");
                 /*
                  * Indicates when media shared to a Room is no longer being recorded. Note that
                  * recording is only available in our Group Rooms developer preview.
@@ -2928,7 +2924,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onAudioTrackPublished(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication) {
-                Log.e(TAG, "RemoteParticipant.Listener onAudioTrackPublished: ");
+                Log.d(TAG, "RemoteParticipant.Listener onAudioTrackPublished: ");
 
                 Log.e(TwilioVideo.TAG, String.format("onAudioTrackPublished: " +
                                 "[RemoteParticipant: identity=%s], " +
@@ -2943,7 +2939,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onAudioTrackUnpublished(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication) {
-                Log.e(TAG, "RemoteParticipant.Listener onAudioTrackUnpublished: ");
+                Log.d(TAG, "RemoteParticipant.Listener onAudioTrackUnpublished: ");
 
                 Log.i(TwilioVideo.TAG, String.format("onAudioTrackUnpublished: " +
                                 "[RemoteParticipant: identity=%s], " +
@@ -2958,7 +2954,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onAudioTrackSubscribed(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication, RemoteAudioTrack remoteAudioTrack) {
-                Log.e(TAG, "RemoteParticipant.Listener onAudioTrackSubscribed: ");
+                Log.d(TAG, "RemoteParticipant.Listener onAudioTrackSubscribed: ");
 
                 Log.i(TwilioVideo.TAG, String.format("onAudioTrackSubscribed: " +
                                 "[RemoteParticipant: identity=%s], " +
@@ -2974,7 +2970,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onAudioTrackSubscriptionFailed(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication, TwilioException twilioException) {
-                Log.e(TAG, "RemoteParticipant.Listener onAudioTrackSubscriptionFailed: ");
+                Log.d(TAG, "RemoteParticipant.Listener onAudioTrackSubscriptionFailed: ");
 
 
                 Log.i(TwilioVideo.TAG, String.format("onAudioTrackSubscriptionFailed: " +
@@ -2990,7 +2986,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onAudioTrackUnsubscribed(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication, RemoteAudioTrack remoteAudioTrack) {
-                Log.e(TAG, "RemoteParticipant.Listener onAudioTrackUnsubscribed: ");
+                Log.d(TAG, "RemoteParticipant.Listener onAudioTrackUnsubscribed: ");
 
 
                 Log.i(TwilioVideo.TAG, String.format("onAudioTrackUnsubscribed: " +
@@ -3007,7 +3003,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onVideoTrackPublished(RemoteParticipant remoteParticipant, RemoteVideoTrackPublication remoteVideoTrackPublication) {
-                Log.e(TAG, "RemoteParticipant.Listener onVideoTrackPublished: ");
+                Log.d(TAG, "RemoteParticipant.Listener onVideoTrackPublished: ");
 
 
                 Log.i(TwilioVideo.TAG, String.format("onVideoTrackPublished: " +
@@ -3023,7 +3019,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onVideoTrackUnpublished(RemoteParticipant remoteParticipant, RemoteVideoTrackPublication remoteVideoTrackPublication) {
-                Log.e(TAG, "RemoteParticipant.Listener onVideoTrackUnpublished: ");
+                Log.d(TAG, "RemoteParticipant.Listener onVideoTrackUnpublished: ");
 
 
                 Log.i(TwilioVideo.TAG, String.format("onVideoTrackUnpublished: " +
@@ -3039,7 +3035,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onVideoTrackSubscribed(RemoteParticipant remoteParticipant, RemoteVideoTrackPublication remoteVideoTrackPublication, RemoteVideoTrack remoteVideoTrack) {
-                Log.e(TAG, "RemoteParticipant.Listener onVideoTrackSubscribed: ");
+                Log.d(TAG, "RemoteParticipant.Listener onVideoTrackSubscribed: ");
 
                 Log.i(TwilioVideo.TAG, String.format("onVideoTrackSubscribed: " +
                                 "[RemoteParticipant: identity=%s], " +
@@ -3057,7 +3053,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     show_fullScreenVideoView();
                     hide_imageViewRemoteParticipantInCall();
                 }else{
-                	Log.e(TAG, "remoteVideoTrack.isEnabled():TRUE");
+                	Log.d(TAG, "remoteVideoTrack.isEnabled():TRUE");
                     hide_fullScreenVideoView();
                     show_imageViewRemoteParticipantInCall();
                 }
@@ -3066,7 +3062,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onVideoTrackSubscriptionFailed(RemoteParticipant remoteParticipant, RemoteVideoTrackPublication remoteVideoTrackPublication, TwilioException twilioException) {
-                Log.e(TAG, "RemoteParticipant.Listener onVideoTrackSubscriptionFailed: ");
+                Log.d(TAG, "RemoteParticipant.Listener onVideoTrackSubscriptionFailed: ");
 
                 Log.e(TwilioVideo.TAG, String.format("onVideoTrackSubscriptionFailed: " +
                                 "[RemoteParticipant: identity=%s], " +
@@ -3152,14 +3148,14 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onAudioTrackEnabled(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication) {
-                Log.e(TAG, "onAudioTrackEnabled: CALLED" );
+                Log.d(TAG, "onAudioTrackEnabled: CALLED" );
 
                 show_inCall_remoteUserNameAndMic_isMuted(false);
             }
 
             @Override
             public void onAudioTrackDisabled(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication) {
-                Log.e(TAG, "onAudioTrackDisabled: CALLED" );
+                Log.d(TAG, "onAudioTrackDisabled: CALLED" );
 
                 show_inCall_remoteUserNameAndMic_isMuted(true);
             }
@@ -3168,7 +3164,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //--------------------------------------------------------------------------------------
             @Override
             public void onVideoTrackEnabled(RemoteParticipant remoteParticipant, RemoteVideoTrackPublication remoteVideoTrackPublication) {
-                Log.e(TAG, "onVideoTrackEnabled: CALLED" );
+                Log.d(TAG, "onVideoTrackEnabled: CALLED" );
 
                 show_fullScreenVideoView();
 
@@ -3179,7 +3175,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onVideoTrackDisabled(RemoteParticipant remoteParticipant, RemoteVideoTrackPublication remoteVideoTrackPublication) {
-                Log.e(TAG, "onVideoTrackDisabled: CALLED" );
+                Log.d(TAG, "onVideoTrackDisabled: CALLED" );
 
                 hide_fullScreenVideoView();
 

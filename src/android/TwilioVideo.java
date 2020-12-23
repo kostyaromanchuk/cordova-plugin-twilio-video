@@ -42,7 +42,7 @@ public class TwilioVideo extends CordovaPlugin {
 
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) {
         this.callbackContext = callbackContext;
-        Log.e(TAG, "execute: choose path for action" + action );
+        Log.d(TAG, "execute: choose path for action:'" + action + "'" );
         switch (action) {
             case "openRoom":
                 this.registerCallListener(callbackContext);
@@ -55,6 +55,14 @@ public class TwilioVideo extends CordovaPlugin {
             case "answerCall":
                 this.registerCallListener(callbackContext);
                 this.answerCall(args);
+                break;
+            case "showOffline":
+                this.registerCallListener(callbackContext);
+                this.showOffline(args);
+                break;
+            case "showOnline":
+                this.registerCallListener(callbackContext);
+                this.showOnline(args);
                 break;
             case "closeRoom":
                 this.closeRoom(callbackContext);
@@ -80,10 +88,78 @@ public class TwilioVideo extends CordovaPlugin {
             String remote_user_name = args.getString(4);
             String remote_user_photo_url = args.getString(5);
 
+            //--------------------------------------------------------------------------------------
+            //JS null gets mapped to String "null" not JAVA null - set it back to java null
+            //--------------------------------------------------------------------------------------
+            //    let global_local_user_photo_url = null;
+            //    let global_local_user_name = null;
+            //
+            //    let global_remote_user_photo_url = null;
+            //    let global_remote_user_name = null;
+            //------------------------------------------------------------
+            //    String local_user_name >>> "null" NOT null;
+            //    String local_user_photo_url >>> "null" NOT null;
+            //    String remote_user_name >>> "null" NOT null;
+            //    String remote_user_photo_url >>> "null" NOT null;
+            //------------------------------------------------------------
+            if(null != local_user_name){
+                if(local_user_name.equals("null")){
+                    //JS null gets mapped to string "null" not java null
+                    local_user_name = null;
+
+                }else{
+                    //OK string is not null or "null"
+                }
+            }else{
+            	Log.e(TAG, "local_user_name is null");
+            }
+            //------------------------------------------------------------
+            if(null != local_user_photo_url){
+                if(local_user_photo_url.equals("null")){
+                    //JS null gets mapped to string "null" not java null
+                    local_user_photo_url = null;
+
+                }else{
+                    //OK string is not null or "null"
+                }
+            }else{
+                Log.e(TAG, "local_user_photo_url is null");
+            }
+            //------------------------------------------------------------
+            if(null != remote_user_name){
+                if(remote_user_name.equals("null")){
+                    //JS null gets mapped to string "null" not java null
+                    remote_user_name = null;
+
+                }else{
+                    //OK string is not null or "null"
+                }
+            }else{
+                Log.e(TAG, "remote_user_name is null");
+            }
+            //------------------------------------------------------------
+            if(null != remote_user_photo_url){
+                if(remote_user_photo_url.equals("null")){
+                    //JS null gets mapped to string "null" not java null
+                    remote_user_photo_url = null;
+
+                }else{
+                    //OK string is not null or "null"
+                }
+            }else{
+                Log.e(TAG, "remote_user_photo_url is null");
+            }
+            //--------------------------------------------------------------------------------------
 
             final CordovaPlugin that = this;
             final String room = this.token;
             final String roomId = this.roomId;
+
+            final String final_local_user_name = local_user_name;
+            final String final_local_user_photo_url = local_user_photo_url;
+            final String final_remote_user_name = remote_user_name;
+            final String final_remote_user_photo_url = remote_user_photo_url;
+
 
             //param:config moved to position 5
             if (args.length() > 6) {
@@ -113,15 +189,19 @@ public class TwilioVideo extends CordovaPlugin {
                     //for startCall only onResume is called so getIntent still shows "openRoom"
 
                     TwilioVideoActivityNextAction.setNextAction(nextAction);
-                    //------------------------------------------------------------------------------
 
+                    //--------------------------------------------------------------------------------------
+                    //putExtra can throw error: local variables referenced from an inner class must be final or effectively final
+                    //so copy values into final versions of same
+                    //--------------------------------------------------------------------------------------
                     intent_TwilioVideoActivity.putExtra("token", token);
                     intent_TwilioVideoActivity.putExtra("roomId", roomId);
                     intent_TwilioVideoActivity.putExtra("config", config);
-                    intent_TwilioVideoActivity.putExtra("local_user_name", local_user_name);
-                    intent_TwilioVideoActivity.putExtra("local_user_photo_url", local_user_photo_url);
-                    intent_TwilioVideoActivity.putExtra("remote_user_name", remote_user_name);
-                    intent_TwilioVideoActivity.putExtra("remote_user_photo_url", remote_user_photo_url);
+
+                    intent_TwilioVideoActivity.putExtra("local_user_name", final_local_user_name);
+                    intent_TwilioVideoActivity.putExtra("local_user_photo_url", final_local_user_photo_url);
+                    intent_TwilioVideoActivity.putExtra("remote_user_name", final_remote_user_name);
+                    intent_TwilioVideoActivity.putExtra("remote_user_photo_url", final_remote_user_photo_url);
 
                     intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
 
@@ -141,6 +221,11 @@ public class TwilioVideo extends CordovaPlugin {
         try {
             this.token = args.getString(0);
             this.roomId = args.getString(1);
+
+            //--------------------------------------------------------------------------------------
+            //putExtra can throw error: local variables referenced from an inner class must be final or effectively final
+            //so copy values into final versions of same
+            //--------------------------------------------------------------------------------------
 
             final CordovaPlugin that = this;
             final String room = this.token;
@@ -220,10 +305,87 @@ public class TwilioVideo extends CordovaPlugin {
             String remote_user_name = args.getString(4);
             String remote_user_photo_url = args.getString(5);
 
+
+            //--------------------------------------------------------------------------------------
+            //JS null gets mapped to String "null" not JAVA null - set it back to java null
+            //--------------------------------------------------------------------------------------
+            //    let global_local_user_photo_url = null;
+            //    let global_local_user_name = null;
+            //
+            //    let global_remote_user_photo_url = null;
+            //    let global_remote_user_name = null;
+            //------------------------------------------------------------
+            //    String local_user_name >>> "null" NOT null;
+            //    String local_user_photo_url >>> "null" NOT null;
+            //    String remote_user_name >>> "null" NOT null;
+            //    String remote_user_photo_url >>> "null" NOT null;
+            //------------------------------------------------------------
+            if(null != local_user_name){
+                if(local_user_name.equals("null")){
+                    //JS null gets mapped to string "null" not java null
+                    local_user_name = null;
+
+                }else{
+                    //OK string is not null or "null"
+                }
+            }else{
+                Log.e(TAG, "local_user_name is null");
+            }
+            //------------------------------------------------------------
+            if(null != local_user_photo_url){
+                if(local_user_photo_url.equals("null")){
+                    //JS null gets mapped to string "null" not java null
+                    local_user_photo_url = null;
+
+                }else{
+                    //OK string is not null or "null"
+                }
+            }else{
+                Log.e(TAG, "local_user_photo_url is null");
+            }
+            //------------------------------------------------------------
+            if(null != remote_user_name){
+                if(remote_user_name.equals("null")){
+                    //JS null gets mapped to string "null" not java null
+                    remote_user_name = null;
+
+                }else{
+                    //OK string is not null or "null"
+                }
+            }else{
+                Log.e(TAG, "remote_user_name is null");
+            }
+            //------------------------------------------------------------
+            if(null != remote_user_photo_url){
+                if(remote_user_photo_url.equals("null")){
+                    //JS null gets mapped to string "null" not java null
+                    remote_user_photo_url = null;
+
+                }else{
+                    //OK string is not null or "null"
+                }
+            }else{
+                Log.e(TAG, "remote_user_photo_url is null");
+            }
+
+            //--------------------------------------------------------------------------------------
+            //putExtra can throw error: local variables referenced from an inner class must be final or effectively final
+            //so copy values into final versions of same
+            //--------------------------------------------------------------------------------------
+
             final CordovaPlugin that = this;
 
             final String room = this.token;
             final String roomId = this.roomId;
+
+            final String final_local_user_name = local_user_name;
+            final String final_local_user_photo_url = local_user_photo_url;
+            final String final_remote_user_name = remote_user_name;
+            final String final_remote_user_photo_url = remote_user_photo_url;
+
+
+
+
 
             //param:config moved to position 5
             if (args.length() > 6) {
@@ -262,10 +424,15 @@ public class TwilioVideo extends CordovaPlugin {
                     intent_TwilioVideoActivity.putExtra("roomId", roomId);
                     intent_TwilioVideoActivity.putExtra("config", config);
 
-                    intent_TwilioVideoActivity.putExtra("local_user_name", local_user_name);
-                    intent_TwilioVideoActivity.putExtra("local_user_photo_url", local_user_photo_url);
-                    intent_TwilioVideoActivity.putExtra("remote_user_name", remote_user_name);
-                    intent_TwilioVideoActivity.putExtra("remote_user_photo_url", remote_user_photo_url);
+                    //--------------------------------------------------------------------------------------
+                    //putExtra can throw error: local variables referenced from an inner class must be final or effectively final
+                    //so copy values into final versions of same
+                    //--------------------------------------------------------------------------------------
+
+                    intent_TwilioVideoActivity.putExtra("local_user_name", final_local_user_name);
+                    intent_TwilioVideoActivity.putExtra("local_user_photo_url", final_local_user_photo_url);
+                    intent_TwilioVideoActivity.putExtra("remote_user_name", final_remote_user_name);
+                    intent_TwilioVideoActivity.putExtra("remote_user_photo_url", final_remote_user_photo_url);
 
                     //------------------------------------------------------------------------------
                     //startActivity - answerCall on P2 SHOULD CREATE NEW INSTANCE
@@ -293,6 +460,125 @@ public class TwilioVideo extends CordovaPlugin {
         }
     }
 
+    public void showOffline(final JSONArray args) {
+        //no params try catch not needed
+        //--------------------------------------------------------------------------------------
+        //putExtra can throw error: local variables referenced from an inner class must be final or effectively final
+        //so copy values into final versions of same
+        //--------------------------------------------------------------------------------------
+
+        final CordovaPlugin that = this;
+
+
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                Intent intent_TwilioVideoActivity = new Intent(Intent.ACTION_VIEW);
+
+                intent_TwilioVideoActivity.setClass(that.cordova.getActivity().getBaseContext(), TwilioVideoActivity.class);
+                intent_TwilioVideoActivity.setPackage(that.cordova.getActivity().getApplicationContext().getPackageName());
+
+
+                //------------------------------------------------------------------------------
+                //Android same activity
+                String nextAction = TwilioVideoActivityNextAction.action_showOffline;
+                intent_TwilioVideoActivity.putExtra("action", nextAction);
+
+                //getIntent() only gets the intent set startActivity > onCreate
+                //for showOffline only onResume is called so getIntent still shows "openRoom"
+
+                TwilioVideoActivityNextAction.setNextAction(nextAction);
+                //------------------------------------------------------------------------------
+
+
+
+                //------------------------------------------------------------------------------
+                //prevent showOffline > startActivity from creating new instance
+                //------------------------------------------------------------------------------
+                //openRoom() and showOffline() both call startActivity on  TwilioVideoActivity
+                //    - openRoom on P1 and answerCall on P2 SHOULD CREATE NEW INSTANCE
+                //        - startActivity
+                //            - onCreate
+                //                - instance 699
+                //    - showOffline/showOnline / startCall - SHOULD REUSE EXISTING Activity
+                //        - startActivity
+                //            - onResume  NOT onCreate so add FLAG_ACTIVITY_REORDER_TO_FRONT
+                //                - same instance
+                //------------------------------------------------------------------------------
+                //but showOffline should use existing instance
+                intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+
+                //------------------------------------------------------------------------------
+                //DEBUG its MainActivity
+                //Activity cordova_activity = that.cordova.getActivity();
+
+                that.cordova.getActivity().startActivity(intent_TwilioVideoActivity);
+
+            }
+
+        });
+
+    }
+
+
+    public void showOnline(final JSONArray args) {
+        //no params try catch not needed
+        //--------------------------------------------------------------------------------------
+        //putExtra can throw error: local variables referenced from an inner class must be final or effectively final
+        //so copy values into final versions of same
+        //--------------------------------------------------------------------------------------
+
+        final CordovaPlugin that = this;
+
+
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                Intent intent_TwilioVideoActivity = new Intent(Intent.ACTION_VIEW);
+
+                intent_TwilioVideoActivity.setClass(that.cordova.getActivity().getBaseContext(), TwilioVideoActivity.class);
+                intent_TwilioVideoActivity.setPackage(that.cordova.getActivity().getApplicationContext().getPackageName());
+
+
+                //------------------------------------------------------------------------------
+                //Android same activity
+                String nextAction = TwilioVideoActivityNextAction.action_showOnline;
+                intent_TwilioVideoActivity.putExtra("action", nextAction);
+
+                //getIntent() only gets the intent set startActivity > onCreate
+                //for showOnline only onResume is called so getIntent still shows "openRoom"
+
+                TwilioVideoActivityNextAction.setNextAction(nextAction);
+                //------------------------------------------------------------------------------
+
+
+
+                //------------------------------------------------------------------------------
+                //prevent showOnline > startActivity from creating new instance
+                //------------------------------------------------------------------------------
+                //openRoom() and showOnline() both call startActivity on  TwilioVideoActivity
+                //    - openRoom on P1 and answerCall on P2 SHOULD CREATE NEW INSTANCE
+                //        - startActivity
+                //            - onCreate
+                //                - instance 699
+                //    - showOnline/showOnline / startCall - SHOULD REUSE EXISTING Activity
+                //        - startActivity
+                //            - onResume  NOT onCreate so add FLAG_ACTIVITY_REORDER_TO_FRONT
+                //                - same instance
+                //------------------------------------------------------------------------------
+                //but showOnline should use existing instance
+                intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+
+                //------------------------------------------------------------------------------
+                //DEBUG its MainActivity
+                //Activity cordova_activity = that.cordova.getActivity();
+
+                that.cordova.getActivity().startActivity(intent_TwilioVideoActivity);
+
+            }
+
+        });
+
+    }
+
 
     private void registerCallListener(final CallbackContext callbackContext) {
         if (callbackContext == null) {
@@ -318,6 +604,8 @@ public class TwilioVideo extends CordovaPlugin {
             }
         });
     }
+
+
 
     private void closeRoom(CallbackContext callbackContext) {
         if (TwilioVideoManager.getInstance().publishDisconnection()) {

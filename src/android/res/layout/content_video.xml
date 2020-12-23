@@ -35,7 +35,7 @@
 
         <!--    IN CALL no border-->
         <de.hdodenhof.circleimageview.CircleImageView
-            android:id="@+id/imageViewLocalParticipant1"
+            android:id="@+id/imageViewLocalParticipant"
             android:layout_width="76dp"
             android:layout_height="76dp"
             android:visibility="visible"
@@ -44,10 +44,11 @@
             app:civ_border_width="0dp" />
 
         <ImageView
-            android:id="@+id/imageViewThumbnailSwitchVideo"
+            android:id="@+id/imageViewSwitchVideo"
             android:layout_width="20dp"
             android:layout_height="20dp"
-            android:layout_marginStart="20dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="4dp"
             android:layout_gravity="top|end"
             app:srcCompat="@drawable/ic_switch_video_white_24dp" />
 

@@ -118,8 +118,19 @@
         <resource-file src="src/android/res/drawable/ic_volume_headhphones_white_24dp.xml" target="res/drawable/ic_volume_headhphones_white_24dp.xml" />
         <resource-file src="src/android/res/drawable/ic_flip_camera_ios_white_18dp.xml" target="res/drawable/ic_flip_camera_ios_white_18dp.xml" />
         <resource-file src="src/android/res/drawable/ic_mic_off_white_24px.xml" target="res/drawable/ic_mic_off_white_24px.xml" />
+       	
        	<resource-file src="src/android/res/drawable/border.xml" target="res/drawable/border.xml" />
+        
         <resource-file src="src/android/res/drawable/ic_switch_video_white_24dp.xml" target="res/drawable/ic_switch_video_white_24dp.xml" />
+        
+        <resource-file src="src/android/res/drawable/ic_account_circle_black_24dp.xml" target="res/drawable/ic_account_circle_black_24dp.xml" />
+        <resource-file src="src/android/res/drawable/ic_account_circle_white_24dp.xml" target="res/drawable/ic_account_circle_white_24dp.xml" />
+
+    	<resource-file src="src/android/res/mipmap-hdpi/ic_alert_in_circle.png" target="res/mipmap-hdpi/ic_alert_in_circle.png" />
+    	<resource-file src="src/android/res/mipmap-mdpi/ic_alert_in_circle.png" target="res/mipmap-mdpi/ic_alert_in_circle.png" />
+    	<resource-file src="src/android/res/mipmap-xhdpi/ic_alert_in_circle.png" target="res/mipmap-xhdpi/ic_alert_in_circle.png" />
+    	<resource-file src="src/android/res/mipmap-xxhdpi/ic_alert_in_circle.png" target="res/mipmap-xxhdpi/ic_alert_in_circle.png" />
+    	<resource-file src="src/android/res/mipmap-xxxhdpi/ic_alert_in_circle.png" target="res/mipmap-xxxhdpi/ic_alert_in_circle.png" />
 
 
         <resource-file src="src/android/res/layout/activity_video.xml" target="res/layout/activity_video.xml" />
@@ -130,6 +141,8 @@
         <resource-file src="src/android/res/values/dimens.xml" target="res/values/dimens.xml" />
         <resource-file src="src/android/res/values/styles.xml" target="res/values/styles.xml" />
         <resource-file src="src/android/res/values-v21/styles.xml" target="res/values-v21/styles.xml" />
+        
+        <resource-file src="src/android/res/values/strings.xml" target="res/values/strings.xml" />
        
         <resource-file src="src/android/res/anim/zoom_in.xml" target="res/anim/zoom_in.xml" />
         <resource-file src="src/android/res/anim/zoom_out.xml" target="res/anim/zoom_out.xml" />

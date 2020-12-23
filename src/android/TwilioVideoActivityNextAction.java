@@ -17,6 +17,8 @@ class TwilioVideoActivityNextAction {
     static String action_openRoom = "openRoom";
     static String action_startCall = "startCall";
     static String action_answerCall = "answerCall";
+    static String action_showOffline = "showOffline";
+    static String action_showOnline = "showOnline";
 
     //"openRoom"
     //"startCall"

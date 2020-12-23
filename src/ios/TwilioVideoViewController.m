@@ -113,7 +113,7 @@ NSString *const CLOSED = @"CLOSED";
     
     //---------------------------------------------------------
     //when camera off show caller photo - hide this on startup
-    [self viewRemoteCameraDisabled_hide];
+    [self viewLocalCameraDisabled_hide];
     
     //---------------------------------------------------------
     //this view has border whos alpha will be animated when Calling...
@@ -1055,6 +1055,27 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 
+
+#pragma mark -
+#pragma mark MAIN BUTTON - VIDEO ON/OFF
+#pragma mark -
+- (IBAction)videoButtonPressed:(id)sender {
+    if(self.localVideoTrack){
+        self.localVideoTrack.enabled = !self.localVideoTrack.isEnabled;
+        //changes icon
+        //[self.videoButton setSelected: !self.localVideoTrack.isEnabled];
+        if(self.localVideoTrack.isEnabled){
+            [self videoButton_changeTo_videoEnabled];
+            [self viewLocalCameraDisabled_hide];
+            
+        }else{
+            [self videoButton_changeTo_videoDisabled];
+            [self viewLocalCameraDisabled_show];
+
+        }
+    }
+}
+
 //MUTE VIDEO BUTTON
 -(void)videoButton_changeTo_videoEnabled{
     //icons for SELECTED/UNSELECTED are set in setup_button_states
@@ -1072,36 +1093,9 @@ NSString *const CLOSED = @"CLOSED";
     [self.videoButton setBackgroundColor:[self button_backGroundColor_disabled]];
 }
 
-- (IBAction)videoButtonPressed:(id)sender {
-    if(self.localVideoTrack){
-        self.localVideoTrack.enabled = !self.localVideoTrack.isEnabled;
-        //changes icon
-        //[self.videoButton setSelected: !self.localVideoTrack.isEnabled];
-        if(self.localVideoTrack.isEnabled){
-            [self videoButton_changeTo_videoEnabled];
-            [self viewRemoteCameraDisabled_hide];
-            
-        }else{
-            [self videoButton_changeTo_videoDisabled];
-            [self viewRemoteCameraDisabled_show];
-
-        }
-    }
-}
-
-//MUTE VIDEO BUTTON
--(void)micButton_changeIconTo_on{
-    //[self.micButton setSelected: TRUE];
-    
-    [self update_button:self.micButton imageName:@"mic"];
-    [self.micButton setBackgroundColor:[self button_backGroundColor_enabled]];
-}
--(void)micButton_changeIconTo_off{
-    //[self.micButton setSelected: FALSE];
-    [self update_button:self.micButton imageName:@"no_mic_grey"];
-    [self.micButton setBackgroundColor:[self button_backGroundColor_disabled]];
-}
-
+#pragma mark -
+#pragma mark MAIN BUTTON - VIDEO ON/OFF
+#pragma mark -
 - (IBAction)micButtonPressed:(id)sender {
     // We will toggle the mic to mute/unmute and change the title according to the user action.
     
@@ -1123,6 +1117,18 @@ NSString *const CLOSED = @"CLOSED";
     //DEBUG [self dialing_sound_stop];
 }
 
+//MUTE VIDEO BUTTON
+-(void)micButton_changeIconTo_on{
+    //[self.micButton setSelected: TRUE];
+    
+    [self update_button:self.micButton imageName:@"mic"];
+    [self.micButton setBackgroundColor:[self button_backGroundColor_enabled]];
+}
+-(void)micButton_changeIconTo_off{
+    //[self.micButton setSelected: FALSE];
+    [self update_button:self.micButton imageName:@"no_mic_grey"];
+    [self.micButton setBackgroundColor:[self button_backGroundColor_disabled]];
+}
 -(void)placeVolumeIconOverButton{
     
     if(self.viewAudioWrapper){
@@ -1243,8 +1249,10 @@ NSString *const CLOSED = @"CLOSED";
             dispatch_async(dispatch_get_main_queue(), ^{
                 if(self.localVideoTrack.isEnabled){
                     [self videoButton_changeTo_videoEnabled];
+                    [self viewLocalCameraDisabled_hide];
                 }else{
                     [self videoButton_changeTo_videoDisabled];
+                    [self viewLocalCameraDisabled_show];
                 }
             });
 
@@ -1609,11 +1617,14 @@ NSString *const CLOSED = @"CLOSED";
 
 //internet gone - seachat tells plugin to show alert
 - (void)showOffline{
+    
     [self.viewAlert setHidden:FALSE];
     [self.view bringSubviewToFront:self.viewAlert];
     
-    [self.buttonDebug_showOnline setHidden:FALSE];
-    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
+    
+    //DO NOT RELEASE - cordova should send showOnline()
+//    [self.buttonDebug_showOnline setHidden:FALSE];
+//    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
 
 }
 
@@ -1623,7 +1634,7 @@ NSString *const CLOSED = @"CLOSED";
  
 }
 -(void)showhide_buttonDebugStartACall{
-    //DO NOT RELEASE - shows a button to trigger startCall() - NEVER RELEASE
+//    //DO NOT RELEASE - shows a button to trigger startCall() - NEVER RELEASE
 //    [self.buttonDebugStartACall setHidden:FALSE];
 //    [self.view bringSubviewToFront:self.buttonDebugStartACall];
     
@@ -2041,7 +2052,7 @@ NSString *const CLOSED = @"CLOSED";
     //main view is now frozen need to turn it off
     [self.remoteVideoView setHidden: TRUE];
 
-    //and hide the remote photo in cetner of the screen
+    //and hide the remote photo in center of the screen
     [self show_imageViewRemoteParticipantInCall];
 
 }
@@ -2144,18 +2155,20 @@ NSString *const CLOSED = @"CLOSED";
         //BUT twilio video will still be on and on other devices with see blurry ear
         
         if(self.localVideoTrack.enabled){
+            //--------------------------------------------------------------------------------------
             //Camera was ON when user moved phone to their ear.
             //later when user moves phone away from ear
             //and proximityStateDidChange triggered again
             //we should turn camera back on
             self.localVideoTrack_wasOnBeforeMovedPhoneToEar = TRUE;
-            
+            //--------------------------------------------------------------------------------------
             //Phone is at EAR > TURN VIDEO OFF - youll only se this on other phone
             //on this phone iOS turns users screen off
             [self log_info:@"[PROXIMITY: TRUE] TURN OFF VIDEO: self.localVideoTrack.enabled = FALSE"];
             self.localVideoTrack.enabled = FALSE;
-            
-            [self viewRemoteCameraDisabled_show];
+            //--------------------------------------------------------------------------------------
+            [self viewLocalCameraDisabled_show];
+            //--------------------------------------------------------------------------------------
             
         }else{
             //Camera was OFF when user moved phone to their ear.
@@ -2173,7 +2186,7 @@ NSString *const CLOSED = @"CLOSED";
             
             //turn it back on when you move phone away from ear
             self.localVideoTrack.enabled = TRUE;
-            [self viewRemoteCameraDisabled_hide];
+            [self viewLocalCameraDisabled_hide];
             [self log_info:@"[PROXIMITY: FALSE] TURN VIDEO BACK ON"];
             
         }else{
@@ -2185,14 +2198,14 @@ NSString *const CLOSED = @"CLOSED";
 }
 //if proximity triggered
 //if camera button set to off
--(void)viewRemoteCameraDisabled_show{
-    [self.viewRemoteCameraDisabled setHidden:FALSE];
+-(void)viewLocalCameraDisabled_show{
+    [self.viewLocalCameraDisabled setHidden:FALSE];
     
     //video feed gets inserted on top
-    [self.viewBorderFor_previewView bringSubviewToFront:self.viewRemoteCameraDisabled];
+    [self.viewBorderFor_previewView bringSubviewToFront:self.viewLocalCameraDisabled];
 }
--(void)viewRemoteCameraDisabled_hide{
-    [self.viewRemoteCameraDisabled setHidden:TRUE];
+-(void)viewLocalCameraDisabled_hide{
+    [self.viewLocalCameraDisabled setHidden:TRUE];
 }
 
 
