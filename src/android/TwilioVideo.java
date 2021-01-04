@@ -161,9 +161,9 @@ public class TwilioVideo extends CordovaPlugin {
             final String final_remote_user_photo_url = remote_user_photo_url;
 
 
-            //param:config moved to position 5
+            //param:config moved to position 6
             if (args.length() > 6) {
-                this.config.parse(args.getJSONObject(6));
+                this.config.parse(args.optJSONObject(6));
             }
 
             LOG.d(TAG, "TOKEN: " + token);
@@ -231,9 +231,9 @@ public class TwilioVideo extends CordovaPlugin {
             final String room = this.token;
             final String roomId = this.roomId;
 
-            //param:config moved to position 5
+            //param:config moved to position 6
             if (args.length() > 6) {
-                this.config.parse(args.getJSONObject(6));
+                this.config.parse(args.optJSONObject(6));
             }
 
             LOG.d(TAG, "TOKEN: " + token);
@@ -387,9 +387,9 @@ public class TwilioVideo extends CordovaPlugin {
 
 
 
-            //param:config moved to position 5
+            //param:config moved to position 6
             if (args.length() > 6) {
-                this.config.parse(args.getJSONObject(6));
+                this.config.parse(args.optJSONObject(6));
             }
 
             LOG.d(TAG, "TOKEN: " + token);
