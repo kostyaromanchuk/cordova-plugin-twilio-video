@@ -20,7 +20,7 @@ import org.json.JSONObject;
 
 public class TwilioVideo extends CordovaPlugin {
 
-    public static final String TAG = "TwilioPlugin";
+    public static final String TAG = "TwilioVideo";
     public static final String[] PERMISSIONS_REQUIRED = new String[] {
       Manifest.permission.CAMERA,
       Manifest.permission.RECORD_AUDIO
@@ -42,7 +42,7 @@ public class TwilioVideo extends CordovaPlugin {
 
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) {
         this.callbackContext = callbackContext;
-        Log.d(TAG, "execute: choose path for action:'" + action + "'" );
+        Log.d(TAG, "[VIDEOPLUGIN] execute(): action received:'" + action + "'" );
         switch (action) {
             case "openRoom":
                 this.registerCallListener(callbackContext);
@@ -78,6 +78,7 @@ public class TwilioVideo extends CordovaPlugin {
     }
 
     public void openRoom(final JSONArray args) {
+        Log.d(TAG, "[VIDEOPLUGIN] openRoom(args) CALLED" );
         try {
             this.token = args.getString(0);
             this.roomId = args.getString(1);
@@ -111,7 +112,7 @@ public class TwilioVideo extends CordovaPlugin {
                     //OK string is not null or "null"
                 }
             }else{
-            	Log.e(TAG, "local_user_name is null");
+            	Log.e(TAG, "[VIDEOPLUGIN][openRoom()] local_user_name is null");
             }
             //------------------------------------------------------------
             if(null != local_user_photo_url){
@@ -123,7 +124,7 @@ public class TwilioVideo extends CordovaPlugin {
                     //OK string is not null or "null"
                 }
             }else{
-                Log.e(TAG, "local_user_photo_url is null");
+                Log.e(TAG, "[VIDEOPLUGIN][openRoom()] local_user_photo_url is null");
             }
             //------------------------------------------------------------
             if(null != remote_user_name){
@@ -135,7 +136,7 @@ public class TwilioVideo extends CordovaPlugin {
                     //OK string is not null or "null"
                 }
             }else{
-                Log.e(TAG, "remote_user_name is null");
+                Log.e(TAG, "[VIDEOPLUGIN][openRoom()] remote_user_name is null");
             }
             //------------------------------------------------------------
             if(null != remote_user_photo_url){
@@ -147,7 +148,7 @@ public class TwilioVideo extends CordovaPlugin {
                     //OK string is not null or "null"
                 }
             }else{
-                Log.e(TAG, "remote_user_photo_url is null");
+                Log.e(TAG, "[VIDEOPLUGIN][openRoom()] remote_user_photo_url is null");
             }
             //--------------------------------------------------------------------------------------
 
@@ -203,7 +204,8 @@ public class TwilioVideo extends CordovaPlugin {
                     intent_TwilioVideoActivity.putExtra("remote_user_name", final_remote_user_name);
                     intent_TwilioVideoActivity.putExtra("remote_user_photo_url", final_remote_user_photo_url);
 
-                    intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                    //single instance - reuse existing one
+                    intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
                     // that.cordova.getActivity() is MainActivity
 
@@ -213,11 +215,12 @@ public class TwilioVideo extends CordovaPlugin {
 
             });
         } catch (JSONException e) {
-            Log.e(TAG, "Couldn't open room. No valid input params", e);
+            Log.e(TAG, "[VIDEOPLUGIN][openRoom()] Couldn't open room. No valid input params", e);
         }
     }
 
     public void startCall(final JSONArray args) {
+        Log.d(TAG, "[VIDEOPLUGIN] startCall(args) CALLED" );
         try {
             this.token = args.getString(0);
             this.roomId = args.getString(1);
@@ -277,7 +280,9 @@ public class TwilioVideo extends CordovaPlugin {
                     //                - same instance
                     //------------------------------------------------------------------------------
                     //but startCall should use existing instance
-                    intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                    //single instance - reuse existing one
+                    intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
 
                     //------------------------------------------------------------------------------
                     //DEBUG its MainActivity
@@ -289,11 +294,12 @@ public class TwilioVideo extends CordovaPlugin {
 
             });
         } catch (JSONException e) {
-            Log.e(TAG, "Couldn't open room. No valid input params", e);
+            Log.e(TAG, "[VIDEOPLUGIN][startCall() ] Couldn't open room. No valid input params", e);
         }
     }
 
     public void answerCall(final JSONArray args) {
+        Log.d(TAG, "[VIDEOPLUGIN] answerCall(args) CALLED" );
         try {
             this.token = args.getString(0);
             this.roomId = args.getString(1);
@@ -329,7 +335,7 @@ public class TwilioVideo extends CordovaPlugin {
                     //OK string is not null or "null"
                 }
             }else{
-                Log.e(TAG, "local_user_name is null");
+                Log.e(TAG, "[VIDEOPLUGIN][answerCall()] local_user_name is null");
             }
             //------------------------------------------------------------
             if(null != local_user_photo_url){
@@ -341,7 +347,7 @@ public class TwilioVideo extends CordovaPlugin {
                     //OK string is not null or "null"
                 }
             }else{
-                Log.e(TAG, "local_user_photo_url is null");
+                Log.e(TAG, "[VIDEOPLUGIN][answerCall()] local_user_photo_url is null");
             }
             //------------------------------------------------------------
             if(null != remote_user_name){
@@ -353,7 +359,7 @@ public class TwilioVideo extends CordovaPlugin {
                     //OK string is not null or "null"
                 }
             }else{
-                Log.e(TAG, "remote_user_name is null");
+                Log.e(TAG, "[VIDEOPLUGIN][answerCall()] remote_user_name is null");
             }
             //------------------------------------------------------------
             if(null != remote_user_photo_url){
@@ -365,7 +371,7 @@ public class TwilioVideo extends CordovaPlugin {
                     //OK string is not null or "null"
                 }
             }else{
-                Log.e(TAG, "remote_user_photo_url is null");
+                Log.e(TAG, "[VIDEOPLUGIN][answerCall()] remote_user_photo_url is null");
             }
 
             //--------------------------------------------------------------------------------------
@@ -450,17 +456,22 @@ public class TwilioVideo extends CordovaPlugin {
                     //but answerCall() should use existing instance
                     //intentTwilioVideo.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT); used in startCall only
 
+
+                    //single instance - reuse existing one if available
+                    intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
                     //that.cordova.getActivity() is MainActivity
                     that.cordova.getActivity().startActivity(intent_TwilioVideoActivity);
                 }
 
             });
         } catch (JSONException e) {
-            Log.e(TAG, "Couldn't open room. No valid input params", e);
+            Log.e(TAG, "[VIDEOPLUGIN][answerCall()] Couldn't open room. No valid input params", e);
         }
     }
 
     public void showOffline(final JSONArray args) {
+        Log.d(TAG, "[VIDEOPLUGIN] showOffline(args) CALLED");
         //no params try catch not needed
         //--------------------------------------------------------------------------------------
         //putExtra can throw error: local variables referenced from an inner class must be final or effectively final
@@ -505,7 +516,11 @@ public class TwilioVideo extends CordovaPlugin {
                 //                - same instance
                 //------------------------------------------------------------------------------
                 //but showOffline should use existing instance
-                intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+
+                //single instance - reuse existing one if available
+                intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+
 
                 //------------------------------------------------------------------------------
                 //DEBUG its MainActivity
@@ -521,6 +536,8 @@ public class TwilioVideo extends CordovaPlugin {
 
 
     public void showOnline(final JSONArray args) {
+        Log.d(TAG, "[VIDEOPLUGIN] showOnline(args) CALLED");
+
         //no params try catch not needed
         //--------------------------------------------------------------------------------------
         //putExtra can throw error: local variables referenced from an inner class must be final or effectively final
@@ -565,7 +582,9 @@ public class TwilioVideo extends CordovaPlugin {
                 //                - same instance
                 //------------------------------------------------------------------------------
                 //but showOnline should use existing instance
-                intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                //single instance - reuse existing one if available
+                intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
 
                 //------------------------------------------------------------------------------
                 //DEBUG its MainActivity
@@ -587,20 +606,37 @@ public class TwilioVideo extends CordovaPlugin {
         TwilioVideoManager.getInstance().setEventObserver(new CallEventObserver() {
             @Override
             public void onEvent(String event, JSONObject data) {
-                Log.i(TAG, String.format("Event received: %s with data: %s", event, data));
+                Log.e(TAG, String.format("[VIDEOPLUGIN] Event received: '%s' with data: %s", event, data));
 
+                if(null != event){
+                    if(event.equals("CLOSED")){
+                        Log.e(TAG, "[VIDEOPLUGIN] onEvent: CLOSED received - KILL TwilioActivity");
+
+                    }else if(event.equals("DISCONNECTED")){
+                        Log.e(TAG, "[VIDEOPLUGIN] onEvent: DISCONNECTED received");
+
+                    }else{
+                        Log.e(TAG, "[VIDEOPLUGIN] onEvent: UNHANDLED EVENT - ignore:" + event);
+                    }
+                }else{
+                	Log.e(TAG, "event is null");
+                }
+
+                //----------------------------------------------------------------------------------
+                //RETURN RESPONSE to twilio.js > index.js
                 JSONObject eventData = new JSONObject();
                 try {
                     eventData.putOpt("event", event);
                     eventData.putOpt("data", data);
                 } catch (JSONException e) {
-                    Log.e(TAG, "Failed to create event: " + event);
+                    Log.e(TAG, "[VIDEOPLUGIN][registerCallListener()] Failed to create event: " + event);
                     return;
                 }
-
+                //----------------------------------------------------------------------------------
                 PluginResult result = new PluginResult(PluginResult.Status.OK, eventData);
                 result.setKeepCallback(true);
                 callbackContext.sendPluginResult(result);
+                //----------------------------------------------------------------------------------
             }
         });
     }

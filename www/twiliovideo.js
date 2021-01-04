@@ -16,7 +16,7 @@
                 //[log] - [index.js] window.twiliovideo.openRoom(token,room)
 
                 //----------------------------------------------------------------------
-                console.log("[twilio.js][Twilio.openRoom][EVENT NAME:'" + e.event + "'] Twilio.openRoom() has returned]");
+                console.log("[VIDEOPLUGIN][twilio.js][Twilio.openRoom] openRoom(..) call returned with EVENT NAME:'" + e.event + "'");
                 //----------------------------------------------------------------------
                 //eventCallback(e.event, e.data)
                 //    data {
@@ -28,7 +28,7 @@
                 if (e.data) {
                     if (e.data.code) {
                         console.log(
-                            "[twilio.js][Twilio.openRoom][EVENT NAME:'" +
+                            "[VIDEOPLUGIN][twilio.js][Twilio.openRoom][EVENT NAME:'" +
                                 e.event +
                                 "'] [ERROR CODE - e.data.code:'" +
                                 e.data.code +
@@ -36,12 +36,12 @@
                         );
                     } else {
                         console.log(
-                            "[twilio.js][Twilio.openRoom][EVENT NAME:'" + e.event + "'] [ERROR CODE - e.data.code is nil"
+                            "[VIDEOPLUGIN][twilio.js][Twilio.openRoom][EVENT NAME:'" + e.event + "'] [ERROR CODE - e.data.code is nil"
                         );
                     }
                     if (e.data.description) {
                         console.log(
-                            "[twilio.js][Twilio.openRoom][EVENT NAME:'" +
+                            "[VIDEOPLUGIN][twilio.js][Twilio.openRoom][EVENT NAME:'" +
                                 e.event +
                                 "'] [ERROR DESC - e.data.description:'" +
                                 e.data.description +
@@ -49,35 +49,36 @@
                         );
                     } else {
                         console.log(
-                            "[twilio.js][Twilio.openRoom][EVENT NAME:'" +
+                            "[VIDEOPLUGIN][twilio.js][Twilio.openRoom][EVENT NAME:'" +
                                 e.event +
                                 "'] [ERROR DESC - e.data.description is nil"
                         );
                     }
                 } else {
                     //console.log("[twilio.js][Twilio.openRoom][EVENT NAME:'" + e.event + "']  e.data is nil - ok if not error");
-                    console.log("[twilio.js][Twilio.openRoom][EVENT NAME:'" + e.event + "']");
+                    console.log("[VIDEOPLUGIN][twilio.js][Twilio.openRoom][EVENT NAME:'" + e.event + "']");
                 }
                 //----------------------------------------------------------------------
                 if (config) {
-                    console.log("[twilio.js][Twilio.openRoom]config:'" + config + "'");
+                    console.log("[VIDEOPLUGIN][twilio.js][Twilio.openRoom][CONFIG] config:'" + config + "'");
                     if (config.startWithVideoOff) {
                         console.log(
-                            "[twilio.js][Twilio.openRoom][config.startWithVideoOff:" + config.startWithVideoOff + "]"
+                            "[VIDEOPLUGIN][twilio.js][Twilio.openRoom][CONFIG][config.startWithVideoOff:" + config.startWithVideoOff + "]"
                         );
                     } else {
-                        console.log("[twilio.js][Twilio.openRoom][config.startWithVideoOff is undefined or false?");
+                        console.log("[VIDEOPLUGIN][twilio.js][Twilio.openRoom][CONFIG][config.startWithVideoOff is undefined or false?");
                     }
                     if (config.startWithAudioOff) {
                         console.log(
-                            "[twilio.js][Twilio.openRoom][config.startWithAudioOff:" + config.startWithAudioOff + "]"
+                            "[VIDEOPLUGIN][twilio.js][Twilio.openRoom][CONFIG][config.startWithAudioOff:" + config.startWithAudioOff + "]"
                         );
                     } else {
-                        console.log("[twilio.js][Twilio.openRoom][config.startWithAudioOff is undefined or false?");
+                        console.log("[VIDEOPLUGIN][twilio.js][Twilio.openRoom][CONFIG][config.startWithAudioOff is undefined or false?");
                     }
                 } else {
-                    console.log("[twilio.js][Twilio.openRoom] config is nil");
+                    console.log("[VIDEOPLUGIN][twilio.js][Twilio.openRoom][CONFIG] config is nil");
                 }
+                console.log("[VIDEOPLUGIN][twilio.js][Twilio.openRoom] pass resp to index.js");
                 //----------------------------------------------------------------------
                 if (eventCallback) {
                     eventCallback(e.event, e.data);
@@ -99,7 +100,7 @@
                 //just logs [log] - Twilio startCall event fired: [object Object]
                 //then passes to index.js
                 //[log] - [index.js] window.twiliovideo.startRoom(token,room)
-                console.log("[twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "'] Twilio.startCall() has returned]");
+                console.log("[VIDEOPLUGIN][twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "'] Twilio.startCall() has returned]");
                 //----------------------------------------------------------------------
                 //eventCallback(e.event, e.data)
                 //    data {
@@ -111,7 +112,7 @@
                 if (e.data) {
                     if (e.data.code) {
                         console.log(
-                            "[twilio.js][Twilio.startCall][EVENT NAME:'" +
+                            "[VIDEOPLUGIN][twilio.js][Twilio.startCall][EVENT NAME:'" +
                                 e.event +
                                 "'] [ERROR CODE - e.data.code:'" +
                                 e.data.code +
@@ -119,12 +120,12 @@
                         );
                     } else {
                         console.log(
-                            "[twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "'] [ERROR CODE - e.data.code is nil"
+                            "[VIDEOPLUGIN][twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "'] [ERROR CODE - e.data.code is nil"
                         );
                     }
                     if (e.data.description) {
                         console.log(
-                            "[twilio.js][Twilio.startCall][EVENT NAME:'" +
+                            "[VIDEOPLUGIN][twilio.js][Twilio.startCall][EVENT NAME:'" +
                                 e.event +
                                 "'] [ERROR DESC - e.data.description:'" +
                                 e.data.description +
@@ -132,14 +133,14 @@
                         );
                     } else {
                         console.log(
-                            "[twilio.js][Twilio.startCall][EVENT NAME:'" +
+                            "[VIDEOPLUGIN][twilio.js][Twilio.startCall][EVENT NAME:'" +
                                 e.event +
                                 "'] [ERROR DESC - e.data.description is nil"
                         );
                     }
                 } else {
                     //console.log("[twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "']  e.data is nil - ok if not error");
-                    console.log("[twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "']");
+                    console.log("[VIDEOPLUGIN][twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "']");
                 }
                 //----------------------------------------------------------------------
                 if (eventCallback) {
@@ -160,7 +161,7 @@
         config = config != null ? config : null;
         exec(
             function (e) {
-                //console.log("Twilio answerCall event fired: " + e);
+                //console.log("[VIDEOPLUGIN]Twilio answerCall event fired: " + e);
                 //just logs [log] - Twilio answerCall event fired: [object Object]
                 //then passes to index.js
                 //[log] - [index.js] window.twiliovideo.startRoom(token,room)
@@ -169,7 +170,7 @@
                 //just logs [log] - Twilio startCall event fired: [object Object]
                 //then passes to index.js
                 //[log] - [index.js] window.twiliovideo.startRoom(token,room)
-                console.log("[twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "'] Twilio.answerCall() returned]");
+                console.log("[VIDEOPLUGIN][twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "'] Twilio.answerCall() returned]");
                 //----------------------------------------------------------------------
                 //eventCallback(e.event, e.data)
                 //    data {
@@ -181,7 +182,7 @@
                 if (e.data) {
                     if (e.data.code) {
                         console.log(
-                            "[twilio.js][Twilio.answerCall][EVENT NAME:'" +
+                            "[VIDEOPLUGIN][twilio.js][Twilio.answerCall][EVENT NAME:'" +
                                 e.event +
                                 "'] [ERROR CODE - e.data.code:'" +
                                 e.data.code +
@@ -189,12 +190,12 @@
                         );
                     } else {
                         console.log(
-                            "[twilio.js][Twilio.answerCall][EVENT NAME:'" + e.event + "'] [ERROR CODE - e.data.code is nil"
+                            "[VIDEOPLUGIN][twilio.js][Twilio.answerCall][EVENT NAME:'" + e.event + "'] [ERROR CODE - e.data.code is nil"
                         );
                     }
                     if (e.data.description) {
                         console.log(
-                            "[twilio.js][Twilio.answerCall][EVENT NAME:'" +
+                            "[VIDEOPLUGIN][twilio.js][Twilio.answerCall][EVENT NAME:'" +
                                 e.event +
                                 "'] [ERROR DESC - e.data.description:'" +
                                 e.data.description +
@@ -202,14 +203,14 @@
                         );
                     } else {
                         console.log(
-                            "[twilio.js][Twilio.answerCall][EVENT NAME:'" +
+                            "[VIDEOPLUGIN][twilio.js][Twilio.answerCall][EVENT NAME:'" +
                                 e.event +
                                 "'] [ERROR DESC - e.data.description is nil"
                         );
                     }
                 } else {
-                    //console.log("[twilio.js][Twilio.answerCall][EVENT NAME:'" + e.event + "']  e.data is nil - ok if not error");
-                    console.log("[twilio.js][Twilio.answerCall][EVENT NAME:'" + e.event + "']");
+                    //console.log("[VIDEOPLUGIN][twilio.js][Twilio.answerCall][EVENT NAME:'" + e.event + "']  e.data is nil - ok if not error");
+                    console.log("[VIDEOPLUGIN][twilio.js][Twilio.answerCall][EVENT NAME:'" + e.event + "']");
                 }
                 //----------------------------------------------------------------------
 
@@ -226,10 +227,10 @@
         
     //internet gone on device - tell plugin to show alert
     TwilioVideo.showOffline = function () {
-        console.log("[twilio.js][Twilio.showOffline] CALLED");
+        console.log("[VIDEOPLUGIN][twilio.js][Twilio.showOffline] CALLED");
         exec(
             function (e) {
-                console.log("[twilio.js][Twilio.showOffline][EVENT NAME:'" + e.event + "'] Twilio.showOffline() returned]");
+                console.log("[VIDEOPLUGIN][twilio.js][Twilio.showOffline][EVENT NAME:'" + e.event + "'] Twilio.showOffline() returned]");
 
             },
             null,
@@ -241,10 +242,10 @@
     
     //internet returned on device - tell plugin to hide alert
     TwilioVideo.showOnline = function () {
-        console.log("[twilio.js][Twilio.showOnline] CALLED");
+        console.log("[VIDEOPLUGIN][twilio.js][Twilio.showOnline] CALLED");
         exec(
              function (e) {
-            console.log("[twilio.js][Twilio.showOnline][EVENT NAME:'" + e.event + "'] Twilio.showOnline() returned]");
+            console.log("[VIDEOPLUGIN][twilio.js][Twilio.showOnline][EVENT NAME:'" + e.event + "'] Twilio.showOnline() returned]");
             
         },
              null,
