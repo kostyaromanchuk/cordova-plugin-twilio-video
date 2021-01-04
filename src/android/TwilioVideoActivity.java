@@ -1603,7 +1603,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         if (mediaPlayer != null) {
             //Plays ringing tone
 //RELEASE PUT BACK
-//            mediaPlayer.start();
+            mediaPlayer.start();
             //--------------------------------------------------------------------------------------
             //use .start() + pause() 
             //not .start() + .stop() seems to kill it, next .play() fails
@@ -2509,19 +2509,21 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "[VIDEOPLUGIN] switchAudioClickListener.onClick: ");
-//                if (audioManager.isSpeakerphoneOn()) {
-//                    audioManager.setSpeakerphoneOn(false);
-//                } else {
-//                    audioManager.setSpeakerphoneOn(true);
-//
-//                }
-//                int icon = audioManager.isSpeakerphoneOn() ?
-//                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
-//                button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable(
-//                        TwilioVideoActivity.this, icon));
                 //----------------------------------------------------------------------------------
-//DO NOT RELEASE - DEBUG triggers startCall
-                publishEvent(CallEvent.DEBUGSTARTACALL);
+//FOR RELEASE - comment this IN
+                if (audioManager.isSpeakerphoneOn()) {
+                    audioManager.setSpeakerphoneOn(false);
+                } else {
+                    audioManager.setSpeakerphoneOn(true);
+
+                }
+                int icon = audioManager.isSpeakerphoneOn() ?
+                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
+                button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable(
+                        TwilioVideoActivity.this, icon));
+                //----------------------------------------------------------------------------------
+//FOR RELEASE - COMMENT OUT - DEBUG triggers startCall
+//                publishEvent(CallEvent.DEBUGSTARTACALL);
                 //----------------------------------------------------------------------------------
                 //applyBlur();
                 //----------------------------------------------------------------------------------
