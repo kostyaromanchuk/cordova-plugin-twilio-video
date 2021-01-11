@@ -83,7 +83,7 @@ NSString *const CLOSED = @"CLOSED";
 @property (unsafe_unretained, nonatomic) IBOutlet UIButton *buttonDebug_showOnline;
 
 @property (unsafe_unretained, nonatomic) IBOutlet UIView *viewAudioWrapper;
-@property (unsafe_unretained, nonatomic) IBOutlet UIVisualEffectView *uiVisualEffectViewBlur;
+@property (unsafe_unretained, nonatomic) IBOutlet UIVisualEffectView *uiVisualEffectViewBlur1;
 
 @property (unsafe_unretained, nonatomic) IBOutlet UIImageView *imageViewSwitchVideo;
 
@@ -194,6 +194,17 @@ NSString *const CLOSED = @"CLOSED";
     
     //----------------------------------------------------------------------------------------------
     [self.imageViewSwitchVideo setHidden:TRUE];
+    
+    //----------------------------------------------------------------------------------------------
+    //odd issue we set ENABLED COLOR in code for VIDEO/MIC
+    //but Audio source is  view behind - its color is set in IB
+    //they look different not sure if something in the button is changing it slightly
+    
+    self.viewAudioWrapper.backgroundColor = [self button_backGroundColor_enabled];
+
+    //------------------------------------------------------------------------------------------
+    //lee said only show remote user is muted - dont show icon if unmoted
+    [self.imageViewInCallRemoteMicMuteState setHidden:TRUE];
 }
 
 
@@ -447,7 +458,7 @@ NSString *const CLOSED = @"CLOSED";
 
 -(void)show_inCall_remoteUserNameAndMic_isMuted: (BOOL) micIsMuted{
     
-    [self.imageViewInCallRemoteMicMuteState setHidden:FALSE];
+    
     [self.textViewInCallRemoteName setHidden:FALSE];
     
     [self update_imageViewInCallRemoteMicMuteState_isMuted:micIsMuted];
@@ -456,8 +467,12 @@ NSString *const CLOSED = @"CLOSED";
 -(void)update_imageViewInCallRemoteMicMuteState_isMuted: (BOOL) micIsMuted{
     if(micIsMuted){
         [self update_imageViewInCallRemoteMicMuteState:@"no_mic.png"];
+        [self.imageViewInCallRemoteMicMuteState setHidden:FALSE];
     }else{
+        //no effect icon will be hidden
         [self update_imageViewInCallRemoteMicMuteState:@"mic.png"];
+        //Lee said only show MUTED ICON
+        [self.imageViewInCallRemoteMicMuteState setHidden:TRUE];
     }
 }
 
@@ -657,16 +672,8 @@ NSString *const CLOSED = @"CLOSED";
 -(void)update_PreviewView_showInFullScreen:(BOOL)changeToFullScreen animated:(BOOL)isAnimated showBlurView:(BOOL) showBlurView{
 
     //animation in and out should be same number of secs
-    NSTimeInterval duration = 1.0;
-    
-    //When you show "Disconnected.." you dont show the blur - other use has hung up
-    if(showBlurView){
-        [self.uiVisualEffectViewBlur setHidden:FALSE];
-        //if alpha is 0.0 will still be hidden - a;pha is animated below
-    }else{
-        [self.uiVisualEffectViewBlur setHidden:TRUE];
-    }
-    
+    NSTimeInterval duration = 0.50;
+
     
     if(changeToFullScreen){
         
@@ -681,10 +688,6 @@ NSString *const CLOSED = @"CLOSED";
                                 //--------------------------------------------------
                                 [self update_PreviewView_toFullScreen: TRUE];
                 
-                                //--------------------------------------------------
-                                //may still be hidden if uiVisualEffectViewBlur setHidden: not changed above
-                                self.uiVisualEffectViewBlur.alpha = BLURRED_VIEW_ALPHA_ON;
-                                
                                 //--------------------------------------------------
                                 //will resize but animate without this
                                 [self.view layoutIfNeeded];
@@ -701,7 +704,7 @@ NSString *const CLOSED = @"CLOSED";
             //FULL SCREEN + UNANIMATED (when app starts)
             //------------------------------------------------------------------
             [self update_PreviewView_toFullScreen: TRUE];
-            self.uiVisualEffectViewBlur.alpha = BLURRED_VIEW_ALPHA_ON;
+
             [self removeBorderFromPreview];
         }
     }else{
@@ -721,8 +724,6 @@ NSString *const CLOSED = @"CLOSED";
                                         //--------------------------------------------------
                                         [self update_PreviewView_toFullScreen: FALSE];
                                         //--------------------------------------------------
-                                        self.uiVisualEffectViewBlur.alpha = 0.0;
-                                        //--------------------------------------------------
                                         //will resize but animate without this
                                         [self.view layoutIfNeeded];
                                         //--------------------------------------------------
@@ -738,11 +739,7 @@ NSString *const CLOSED = @"CLOSED";
             //NOT FULL SCREEN + UNANIMATED (preview size jumps to bottom right - unused)
             //------------------------------------------------------------------
             [self update_PreviewView_toFullScreen: FALSE];
-            //--------------------------------------------------
-            //FADE OUT
-            self.uiVisualEffectViewBlur.alpha = 0.0;
-            //--------------------------------------------------
-            
+            //------------------------------------------------------------------
             [self addBorderToPreview];
             
         }
@@ -1044,7 +1041,9 @@ NSString *const CLOSED = @"CLOSED";
 
 -(UIColor *)button_backGroundColor_enabled{
     //blue
-    return [UIColor colorWithRed:34.0/255.0
+    //https://design.sea.live/design-system
+    //maritech-action 
+    return [UIColor colorWithRed:33.0/255.0
                            green:150.0/255.0
                             blue:243.0/255.0
                            alpha:1.0];
@@ -1634,12 +1633,17 @@ NSString *const CLOSED = @"CLOSED";
  
 }
 -(void)showhide_buttonDebugStartACall{
+    //------------------------------------------------------------------------------------------
     //FOR RELEASE - COMMENT THIS OUT
+    //------------------------------------------------------------------------------------------
 //    [self.buttonDebugStartACall setHidden:FALSE];
 //    [self.view bringSubviewToFront:self.buttonDebugStartACall];
     
+    //------------------------------------------------------------------------------------------
     //FOR RELEASE - COMMENT THIS IN
+    //------------------------------------------------------------------------------------------
     [self.buttonDebugStartACall setHidden:TRUE];
+    //------------------------------------------------------------------------------------------
 }
 
 - (IBAction)buttonDebug_showOffline_Action:(id)sender {
