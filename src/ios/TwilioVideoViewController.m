@@ -1502,7 +1502,7 @@ NSString *const CLOSED = @"CLOSED";
         //NEXT TIMES too quiet
         //will start it before room connect in viewDidLoad
 //RELEASE COMMENT IN
-//        [self dialing_sound_start];
+        [self dialing_sound_start];
         //----------------------------------------------------------------------
         
     }else{
@@ -1821,8 +1821,8 @@ NSString *const CLOSED = @"CLOSED";
     
     
     //DO NOT RELEASE - cordova should send showOnline()
-    [self.buttonDebug_showOnline setHidden:FALSE];
-    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
+//    [self.buttonDebug_showOnline setHidden:FALSE];
+//    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
 
 }
 
@@ -1836,13 +1836,13 @@ NSString *const CLOSED = @"CLOSED";
     //------------------------------------------------------------------------------------------
     //FOR RELEASE - COMMENT THIS OUT
     //------------------------------------------------------------------------------------------
-    [self.buttonDebugStartACall setHidden:FALSE];
-    [self.view bringSubviewToFront:self.buttonDebugStartACall];
+//    [self.buttonDebugStartACall setHidden:FALSE];
+//    [self.view bringSubviewToFront:self.buttonDebugStartACall];
     
     //------------------------------------------------------------------------------------------
     //FOR RELEASE - COMMENT THIS IN
     //------------------------------------------------------------------------------------------
-//    [self.buttonDebugStartACall setHidden:TRUE];
+    [self.buttonDebugStartACall setHidden:TRUE];
     //------------------------------------------------------------------------------------------
 }
 

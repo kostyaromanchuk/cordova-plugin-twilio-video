@@ -270,6 +270,33 @@
             );
         });
     };
+    
+    TwilioVideo.show_twiliovideo = function () {
+        console.log("[VIDEOPLUGIN][twilio.js][Twilio.show_twiliovideo] CALLED");
+        exec(
+             function (e) {
+            console.log("[VIDEOPLUGIN][twilio.js][Twilio.show_twiliovideo][EVENT NAME:'" + e.event + "'] Twilio.show_twiliovideo() returned]");
+            
+        },
+             null,
+             "TwilioVideoPlugin",
+             "show_twiliovideo",
+             []  /* no params */
+             );
+    };
+    TwilioVideo.hide_twiliovideo = function () {
+        console.log("[VIDEOPLUGIN][twilio.js][Twilio.hide_twiliovideo] CALLED");
+        exec(
+             function (e) {
+            console.log("[VIDEOPLUGIN][twilio.js][Twilio.hide_twiliovideo][EVENT NAME:'" + e.event + "'] Twilio.hide_twiliovideo() returned]");
+            
+        },
+             null,
+             "TwilioVideoPlugin",
+             "hide_twiliovideo",
+             []  /* no params */
+             );
+    };
 
     TwilioVideo.hasRequiredPermissions = function () {
         return new Promise(function (resolve, reject) {
