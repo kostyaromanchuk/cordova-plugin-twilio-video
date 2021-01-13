@@ -117,6 +117,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private VideoView thumbnailVideoView;
     private android.widget.FrameLayout thumbnailVideoViewFrameLayout;
 
+    private boolean thumbnailVideoViewWasInitialised;
+
     //----------------------------------------------------------------------------------------------
     //APPLYING BLUR
     private android.widget.FrameLayout video_container;
@@ -793,6 +795,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 TwilioVideoActivity.this.handleConnectionError(config.getI18nConnectionError());
                 //----------------------------------------------------------------------------------
             }
+        }else{
+            Log.e(TAG, "onRequestPermissionsResult: UNHANDLED requestCode:" + requestCode );
         }
     }
 
@@ -854,7 +858,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             createAudioAndVideoTracks();
             setupLocalCamera_ifnull();
 
-            showHideBlurView(true);
+            //showHideBlurView(true);
 
             connectToRoom();
 
@@ -1689,18 +1693,18 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //If the local video track was released when the app was put in the background, recreate.
         if (localVideoTrack == null) {
 
-            Log.d(TAG, "[VIDEOPLUGIN] onResume: localVideoTrack == null - we need to recreate it / check permissions" );
+            Log.d(TAG, "[VIDEOPLUGIN] setupLocalCamera_ifnull: localVideoTrack == null - we need to recreate it / check permissions" );
 
             if (hasPermissionForCameraAndMicrophone()) {
 
-                Log.d(TAG, "[VIDEOPLUGIN] onResume: hasPermissionForCameraAndMicrophone(): TRUE" );
+                Log.d(TAG, "[VIDEOPLUGIN] setupLocalCamera_ifnull: hasPermissionForCameraAndMicrophone(): TRUE" );
 
                 if(null != cameraCapturer){
                     //------------------------------------------------------------------------------
                     boolean enableVideoAtStart = true;
 
                     if(config.isStartWithVideoOff()){
-                        Log.i(TAG, "[VIDEOPLUGIN] isStartWithAudioOff: TRUE - AUDIO disabled at start");
+                        Log.i(TAG, "[VIDEOPLUGIN] setupLocalCamera_ifnull: isStartWithAudioOff is TRUE - AUDIO disabled at start");
                         enableVideoAtStart = false;
                     }else{
                         enableVideoAtStart = true;
@@ -1712,7 +1716,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     // you need to make sure it doesnt start the camera if config.startWithVideoOff:true
                     // done in preventProximityTurningCameraOn()
                     //------------------------------------------------------------------------------
-                    Log.d(TAG, "[VIDEOPLUGIN] onResume: CALLING - LocalVideoTrack.create(..)" );
+                    Log.d(TAG, "[VIDEOPLUGIN] setupLocalCamera_ifnull: CALLING - LocalVideoTrack.create(..)" );
                     localVideoTrack = LocalVideoTrack.create(this,
                             enableVideoAtStart,
                             cameraCapturer.getVideoCapturer(),
@@ -1735,16 +1739,16 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     //------------------------------------------------------------------------------
                 }else{
                     //happened when openRoom and StartCall both did startActivity
-                    Log.e(TAG, "[VIDEOPLUGIN] cameraCapturer is null");
+                    Log.e(TAG, "[VIDEOPLUGIN] setupLocalCamera_ifnull: cameraCapturer is null");
                 }
 
             }else{
                 //can happen when openRoom and StartCall both did startActivity
-                Log.e(TAG, "[VIDEOPLUGIN] hasPermissionForCameraAndMicrophone() FAILED");
+                Log.e(TAG, "[VIDEOPLUGIN] setupLocalCamera_ifnull: hasPermissionForCameraAndMicrophone() setupLocalCamera_ifnull FAILED");
             }
         }else{
             //can happen when openRoom and StartCall both did startActivity
-            Log.e(TAG, "[VIDEOPLUGIN] setupLocalCamera_ifnull - localVideoTrack is OK ");
+            Log.e(TAG, "[VIDEOPLUGIN] setupLocalCamera_ifnull: setupLocalCamera_ifnull - localVideoTrack is NOT NULL - OK created earlier");
 
         }
     }
@@ -1761,12 +1765,12 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             if (hasPermissionForCameraAndMicrophone()) {
 
-                Log.d(TAG, "[VIDEOPLUGIN] onResume: hasPermissionForCameraAndMicrophone(): TRUE - recreate" );
+                Log.d(TAG, "[VIDEOPLUGIN] publishTrack_video: hasPermissionForCameraAndMicrophone(): TRUE - recreate" );
 
                 if (localParticipant != null) {
                     localParticipant.publishTrack(localVideoTrack);
                 }else{
-                    Log.e(TAG, "[VIDEOPLUGIN] localParticipant is null >> publishTrack(localVideoTrack) FAILED");
+                    Log.e(TAG, "[VIDEOPLUGIN] publishTrack_video: localParticipant is null >> publishTrack(localVideoTrack) FAILED");
 
                     if(null != room){
                         localParticipant = room.getLocalParticipant();
@@ -1774,17 +1778,17 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                         if (localParticipant != null) {
                             localParticipant.publishTrack(localVideoTrack);
                         }else{
-                            Log.e(TAG, "[VIDEOPLUGIN] localParticipant is null >> publishTrack(localVideoTrack) FAILED");
+                            Log.e(TAG, "[VIDEOPLUGIN] publishTrack_video: localParticipant is null >> publishTrack(localVideoTrack) FAILED");
 
                         }
                     }else{
-                        Log.e(TAG, "[VIDEOPLUGIN] room is null");
+                        Log.e(TAG, "[VIDEOPLUGIN] publishTrack_video:  room is null");
                     }
                 }
 
             }else{
                 //can happen when openRoom and StartCall both did startActivity
-                Log.e(TAG, "hasPermissionForCameraAndMicrophone() FAILED");
+                Log.e(TAG, "[VIDEOPLUGIN] publishTrack_video: hasPermissionForCameraAndMicrophone() FAILED");
             }
         }else{
             //localVideoTrack NOT null - can happen when openRoom and StartCall both did startActivity
@@ -1795,11 +1799,11 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 if (localParticipant != null) {
                     localParticipant.publishTrack(localVideoTrack);
                 }else{
-                    Log.e(TAG, "[VIDEOPLUGIN] localVideoTrack is OK BUT localParticipant is null >> wait for room.connect");
+                    Log.e(TAG, "[VIDEOPLUGIN] publishTrack_video: localVideoTrack is OK BUT localParticipant is null >> wait for room.connect");
 
                 }
             }else{
-                Log.e(TAG, "[VIDEOPLUGIN] room is null >> wait for room.connect");
+                Log.e(TAG, "[VIDEOPLUGIN] publishTrack_video: room is null >> wait for room.connect to trigger Room.Listener onConnected:");
             }
 
         }
@@ -1888,78 +1892,116 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //cordova can start call with audio off config.startWithAudioOff:true
         boolean enableAudioAtStart = true;
 
-        if(config.isStartWithAudioOff()){
-            Log.i(TAG, "[VIDEOPLUGIN] isStartWithAudioOff: TRUE - AUDIO disabled at start");
-            enableAudioAtStart = false;
-        }else{
-            enableAudioAtStart = true;
-        }
-        //--------------------------------------------------------------
-        localAudioTrack = LocalAudioTrack.create(this,
-                                                 enableAudioAtStart,
-                                                 LOCAL_AUDIO_TRACK_NAME);
-        //--------------------------------------------------------------
-        if(null != localAudioTrack){
-            Log.d(TAG, "[VIDEOPLUGIN] localAudioTrack is created ok from  callers audio source");
-            //--------------------------------------------------------------------------------------
-            //UPDATE BUTTON STATE TO MATCH VIDEO ON/OFF
-            //WHEN you TAP on a button to turn OFF video or AUDIO the button is SELECTED -
-            //so if video/audio is enabled then button is unselected
-            //--------------------------------------------------------------------------------------
-            update_button_fab_localaudio_onoff(localAudioTrack.isEnabled());
-            //--------------------------------------------------------------------------------------
 
+        //onResume can be called twice for a clean install
+        // first when call started from web to android > void: answer >
+        // show permission alerts
+        // after permission request alerts press ok app comes to fireground and onResume called
+        //localAudioTrack may be not nil - dont create it again else thrumnail can be blank (but camera looks ok on the web)
+        if(null != localAudioTrack){
+            Log.i(TAG, "localAudioTrack is not null - resume can be called twice after permission request alerts");
         }else{
-            Log.e(TAG, "[VIDEOPLUGIN] localAudioTrack is null - failed to create from  callers audio source");
+        	Log.e(TAG, "localAudioTrack is null - on to create it");
+
+            if(config.isStartWithAudioOff()){
+                Log.i(TAG, "[VIDEOPLUGIN] isStartWithAudioOff: TRUE - AUDIO disabled at start");
+                enableAudioAtStart = false;
+            }else{
+                enableAudioAtStart = true;
+            }
+            //--------------------------------------------------------------
+            localAudioTrack = LocalAudioTrack.create(this,
+                                                        enableAudioAtStart,
+                                                        LOCAL_AUDIO_TRACK_NAME);
+            //--------------------------------------------------------------
+            if(null != localAudioTrack){
+                Log.d(TAG, "[VIDEOPLUGIN] localAudioTrack is created ok from  callers audio source");
+                //--------------------------------------------------------------------------------------
+                //UPDATE BUTTON STATE TO MATCH VIDEO ON/OFF
+                //WHEN you TAP on a button to turn OFF video or AUDIO the button is SELECTED -
+                //so if video/audio is enabled then button is unselected
+                //--------------------------------------------------------------------------------------
+                update_button_fab_localaudio_onoff(localAudioTrack.isEnabled());
+                //--------------------------------------------------------------------------------------
+
+            }else{
+                Log.e(TAG, "[VIDEOPLUGIN] localAudioTrack is null - failed to create from  callers audio source");
+            }
         }
+
+
 
         //------------------------------------------------------------------------------------------
         //VIDEO - CALLERS LOCAL CAMERA
         //------------------------------------------------------------------------------------------
-        cameraCapturer = new CameraCapturerCompat(this, getAvailableCameraSource());
-        //------------------------------------------------------------------------------------------
 
-        boolean enableVideoAtStart = true;
-
-        if(config.isStartWithVideoOff()){
-            Log.i(TAG, "[VIDEOPLUGIN] isStartWithAudioOff: TRUE - AUDIO disabled at start");
-            enableVideoAtStart = false;
-        }else{
-            enableVideoAtStart = true;
-        }
-        //------------------------------------------------------------------------------------------
-        //NOTE - proximity sensor in android triggers a single proximity:AWAY when its starts
-        //proximity:AWAY sets localVideoTrack.enabled to true so overwrites what you set here
-        // you need to make sure it doesnt start the camera if config.startWithVideoOff:true
-        // done in preventProximityTurningCameraOn()
-
-        //------------------------------------------------------------------------------------------
-        localVideoTrack = LocalVideoTrack.create(this,
-                                                  enableVideoAtStart,
-                                                  cameraCapturer.getVideoCapturer(),
-                                                  LOCAL_VIDEO_TRACK_NAME);
-
-        if(null != localVideoTrack){
-            //--------------------------------------------------------------------------------------
-            Log.d(TAG, "[VIDEOPLUGIN] localVideoTrack is created ok from camera capture");
-
-            //--------------------------------------------------------------------------------------
-            //UPDATE BUTTON STATE TO MATCH VIDEO ON/OFF
-            //WHEN you TAP on a button to turn OFF video or AUDIO the button is SELECTED -
-            //so if video/audio is enabled then button is unselected
-            //--------------------------------------------------------------------------------------
-
-            update_button_fab_localvideo_onoff(localVideoTrack.isEnabled());
-            //--------------------------------------------------------------------------------------
+        if(null != cameraCapturer){
+            Log.e(TAG, "cameraCapturer is not null - DONT RECREATE IT - resume can be called twice after permission request alerts");
 
         }else{
-        	Log.e(TAG, "[VIDEOPLUGIN] localVideoTrack is null - failed to create from camera capture");
+        	Log.e(TAG, "cameraCapturer is null - CREATE IT ONCE");
+            cameraCapturer = new CameraCapturerCompat(this, getAvailableCameraSource());
         }
 
-        //------------------------------------------------------------------------------------------
-        this.moveLocalVideoToThumbnailView();
-        //------------------------------------------------------------------------------------------
+        if(null != cameraCapturer){
+            Log.i(TAG, "DOUBLE CHECK cameraCapturer CREATED OK - cant create VIDEOTRACK");
 
+            //------------------------------------------------------------------------------------------
+            boolean enableVideoAtStart = true;
+
+            if(config.isStartWithVideoOff()){
+                Log.i(TAG, "[VIDEOPLUGIN] isStartWithAudioOff: TRUE - AUDIO disabled at start");
+                enableVideoAtStart = false;
+            }else{
+                enableVideoAtStart = true;
+            }
+            //------------------------------------------------------------------------------------------
+            //NOTE - proximity sensor in android triggers a single proximity:AWAY when its starts
+            //proximity:AWAY sets localVideoTrack.enabled to true so overwrites what you set here
+            // you need to make sure it doesnt start the camera if config.startWithVideoOff:true
+            // done in preventProximityTurningCameraOn()
+
+            //------------------------------------------------------------------------------------------
+
+            if(null != localVideoTrack){
+                Log.e(TAG, "localVideoTrack is not null - DONT RECREATE IT - resume can be called twice after permission request alerts");
+
+            }else{
+            	Log.e(TAG, "localVideoTrack is null - CREATE IT");
+                localVideoTrack = LocalVideoTrack.create(this,
+                        enableVideoAtStart,
+                        cameraCapturer.getVideoCapturer(),
+                        LOCAL_VIDEO_TRACK_NAME);
+            }
+
+            //DOUBLE CHECK - localVideo track was set at least once and once only - onResume can be called two after permissions alerts tapped
+            if(null != localVideoTrack){
+                //--------------------------------------------------------------------------------------
+                Log.d(TAG, "[VIDEOPLUGIN] localVideoTrack is created ok from camera capture");
+
+                //--------------------------------------------------------------------------------------
+                //UPDATE BUTTON STATE TO MATCH VIDEO ON/OFF
+                //WHEN you TAP on a button to turn OFF video or AUDIO the button is SELECTED -
+                //so if video/audio is enabled then button is unselected
+                //--------------------------------------------------------------------------------------
+
+                update_button_fab_localvideo_onoff(localVideoTrack.isEnabled());
+                //--------------------------------------------------------------------------------------
+
+                //------------------------------------------------------------------------------------------
+                this.moveLocalVideoToThumbnailView();
+                //------------------------------------------------------------------------------------------
+
+
+            }else{
+                Log.e(TAG, "[VIDEOPLUGIN] localVideoTrack is null - failed to create from camera capture");
+            }
+
+
+
+        }else{
+            Log.i(TAG, "cameraCapturer FAILED - cant create VIDEOTRACK");
+        }
     }
 
 
@@ -2104,31 +2146,41 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     private void connectToRoom() {
 
-        configureAudio(true);
-
-        ConnectOptions.Builder connectOptionsBuilder = new ConnectOptions.Builder(accessToken)
-                                                                .roomName(this.roomId)
-                                                                .enableIceGatheringOnAnyAddressPorts(true);
-
-        /*
-         * Add local audio track to connect options to share with participants.
-         */
-        if (localAudioTrack != null) {
-            connectOptionsBuilder.audioTracks(Collections.singletonList(localAudioTrack));
+        //onResume can be called twice (if permissions alert appear) - dont connect to the room again
+        if(null != room){
+            Log.e(TAG, "[VIDEOPLUGIN] connectToRoom: room is NOT null - DONT RECREATE - onResume can be called twice (if permissions alert appear) - dont connect to the room again");
         }else{
-            Log.e(TAG, "[VIDEOPLUGIN] connectToRoom: localAudioTrack is null");
+        	Log.e(TAG, "[VIDEOPLUGIN] connectToRoom: room is null - CONNECT AND CREATE IT");
+
+            configureAudio(true);
+
+            ConnectOptions.Builder connectOptionsBuilder = new ConnectOptions.Builder(accessToken)
+                    .roomName(this.roomId)
+                    .enableIceGatheringOnAnyAddressPorts(true);
+
+            /*
+             * Add local audio track to connect options to share with participants.
+             */
+            if (localAudioTrack != null) {
+                connectOptionsBuilder.audioTracks(Collections.singletonList(localAudioTrack));
+            }else{
+                Log.e(TAG, "[VIDEOPLUGIN] connectToRoom: localAudioTrack is null");
+            }
+
+            //------------------------------------------------------------------------------------------
+            //Add local video track to connect options to share with participants.
+            if (localVideoTrack != null) {
+                connectOptionsBuilder.videoTracks(Collections.singletonList(localVideoTrack));
+            }else{
+                Log.e(TAG, "[VIDEOPLUGIN] connectToRoom: localVideoTrack is null");
+            }
+            //------------------------------------------------------------------------------------------
+            Log.e(TAG, "[VIDEOPLUGIN] connectToRoom: CREATE ROOM: room = Video.connect(...)");
+            room = Video.connect(this, connectOptionsBuilder.build(), roomListener());
+            //------------------------------------------------------------------------------------------
         }
 
-        //------------------------------------------------------------------------------------------
-        //Add local video track to connect options to share with participants.
-        if (localVideoTrack != null) {
-            connectOptionsBuilder.videoTracks(Collections.singletonList(localVideoTrack));
-        }else{
-            Log.e(TAG, "[VIDEOPLUGIN] connectToRoom: localVideoTrack is null");
-        }
-        //------------------------------------------------------------------------------------------
-        room = Video.connect(this, connectOptionsBuilder.build(), roomListener());
-        //------------------------------------------------------------------------------------------
+
     }
 
     /*
@@ -2689,8 +2741,39 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
         Log.d(TAG, "[VIDEOPLUGIN] moveLocalVideoToThumbnailView: STARTED" );
 
-        if (thumbnailVideoView.getVisibility() == View.GONE) {
-            Log.d(TAG, "[VIDEOPLUGIN] moveLocalVideoToThumbnailView: thumbnailVideoView.setVisibility(View.VISIBLE)" );
+        //we need to setup the thumbnailVideoView at least once
+        //we had issue with inResume being called twice after the Permission alerts were accepted
+        //so we added code to int the UI only once
+        //but we need this flag because this method also responds to user turning thumbnailVideoView on and off
+        boolean refreshthumbnailVideoView = false;
+
+        if (thumbnailVideoViewWasInitialised){
+            //--------------------------------------------------------------------------------------
+            //then use GONE to toggle it
+            if (thumbnailVideoView.getVisibility() == View.GONE) {
+                //----------------------------------------------------------------------------------
+                Log.d(TAG, "[VIDEOPLUGIN] moveLocalVideoToThumbnailView: thumbnailVideoViewWasInitialised is TRUE but View.GONE set refreshthumbnailVideoView to TRUE" );
+
+                refreshthumbnailVideoView = true;
+                //----------------------------------------------------------------------------------
+
+            }else{
+                //----------------------------------------------------------------------------------
+                Log.d(TAG, "[VIDEOPLUGIN] moveLocalVideoToThumbnailView: thumbnailVideoViewWasInitialised is TRUE but View.GONE set refreshthumbnailVideoView to FALSE" );
+                refreshthumbnailVideoView = false;
+                //----------------------------------------------------------------------------------
+            }
+            //--------------------------------------------------------------------------------------
+        }else{
+            Log.d(TAG, "[VIDEOPLUGIN] moveLocalVideoToThumbnailView: thumbnailVideoViewWasInitialised is FALSE set refreshthumbnailVideoView to TRUE" );
+
+            //thumbnailVideoViewWasInitialised is false then always refresh it
+            //had issue with onResume being called twice and this not being called
+            refreshthumbnailVideoView = true;
+        }
+
+        if (refreshthumbnailVideoView) {
+            Log.d(TAG, "[VIDEOPLUGIN] moveLocalVideoToThumbnailView: refreshthumbnailVideoView is TRUE - thumbnailVideoView.setVisibility(View.VISIBLE)" );
 
             thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
 
@@ -2718,7 +2801,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //--------------------------------------------------------------------------------------
 
         }else{
-            Log.e(TAG, "[VIDEOPLUGIN] moveLocalVideoToThumbnailView: thumbnailVideoView.getVisibility() not View.GONE - skip");
+            Log.d(TAG, "[VIDEOPLUGIN] moveLocalVideoToThumbnailView: refreshthumbnailVideoView is FALSE -- do nothing");
         }
     }
 
@@ -2762,7 +2845,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 //----------------------------------------------------------------------------------
                 //ROOM - onConnected
                 //----------------------------------------------------------------------------------
-                Log.d(TAG, "[VIDEOPLUGIN] Room.Listener onConnected: ");
+                Log.e(TAG, "[VIDEOPLUGIN] Room.Listener onConnected: ");
 
                 localParticipant = room.getLocalParticipant();
 
@@ -2835,7 +2918,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 // Only reinitialize the UI if disconnect was not called from onDestroy()
                 if (!disconnectedFromOnDestroy && e != null) {
 
-                    Log.d(TAG, "[VIDEOPLUGIN] Room.Listener >> onDisconnected: >> publishEvent(DISCONNECTED_WITH_ERROR) error:" + e);
+                    Log.e(TAG, "[VIDEOPLUGIN] Room.Listener >> onDisconnected: >> publishEvent(DISCONNECTED_WITH_ERROR) error:" + e);
 
                     publishEvent(CallEvent.DISCONNECTED_WITH_ERROR, TwilioVideoUtils.convertToJSON(e));
                     TwilioVideoActivity.this.handleConnectionError(config.getI18nDisconnectedWithError());

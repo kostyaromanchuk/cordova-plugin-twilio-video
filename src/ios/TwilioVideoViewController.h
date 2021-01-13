@@ -67,4 +67,8 @@ remoteUserPhotoURL:(NSString *)localUserPhotoURL;
 - (void)showOnline;
 
 //------------------------------------------------------------------------------
+//BACK TO CALL button just hides the TVC.view / cordova show_twiliovideocontroller() shows it again
+-(void) show_twiliovideo;
+-(void) hide_twiliovideo;
+
 @end

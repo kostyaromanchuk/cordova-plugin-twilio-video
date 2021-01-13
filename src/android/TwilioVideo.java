@@ -616,7 +616,7 @@ public class TwilioVideo extends CordovaPlugin {
                         Log.e(TAG, "[VIDEOPLUGIN] onEvent: DISCONNECTED received");
 
                     }else{
-                        Log.e(TAG, "[VIDEOPLUGIN] onEvent: UNHANDLED EVENT - ignore:" + event);
+                        Log.d(TAG, "[VIDEOPLUGIN] onEvent: UNHANDLED EVENT - ignore passed back to twilio.js:" + event);
                     }
                 }else{
                 	Log.e(TAG, "event is null");

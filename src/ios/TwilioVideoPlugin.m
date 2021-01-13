@@ -1,6 +1,6 @@
 #import "TwilioVideoPlugin.h"
 #import <AVFoundation/AVFoundation.h>
-
+#import "AppDelegate.h"
 
 #pragma mark -
 #pragma mark private ivars
@@ -23,24 +23,65 @@
 }
 
 -(void) instantiate_TwilioVideoViewController_withConfig:(TwilioVideoConfig *) config{
-    UIStoryboard *sb = [UIStoryboard storyboardWithName:@"TwilioVideo" bundle:nil];
-    self.tvc = [sb instantiateViewControllerWithIdentifier:@"TwilioVideoViewController"];
     
-    self.tvc.config = config;
+    if (self.tvc) {
+        NSLog(@"[VIDEOPLUGIN][TwilioVideoPlugin.m] self.tvc TwilioVideoViewController is not null - bring to front");
+        
+        [self.tvc show_twiliovideo];
+        
+    } else {
+        NSLog(@"[VIDEOPLUGIN][TwilioVideoPlugin.m] self.tvc TwilioVideoViewController is null - INSTANTIATE and PRESENT IT");
+        
+        UIStoryboard *sb = [UIStoryboard storyboardWithName:@"TwilioVideo" bundle:nil];
+        self.tvc = [sb instantiateViewControllerWithIdentifier:@"TwilioVideoViewController"];
+        
+        self.tvc.config = config;
+        
+        //----------------------------------------------------------------------
+        //not required - needed when the Leave Room was in the cordova WebView
+        //behind this TwilioVideoViewController.view
+        //vc.view.backgroundColor = [UIColor clearColor];
+        //vc.view.backgroundColor = [UIColor redColor];
+        //----------------------------------------------------------------------
+        //Sea/ grey - if you comment this out it will use the color set in TwilioVideo.storyboard
+        
+        //accessing self.tvc.view here triggers TwilioVideoViewController.viewDidLoad
+        
+        //    self.tvc.view.backgroundColor = [UIColor colorWithRed: 17.0/255.0
+        //                                                    green: 37.0/255.0
+        //                                                     blue: 57.0/255.0
+        //                                                    alpha:1.0];
+        //----------------------------------------------------------------------
+        self.tvc.modalPresentationStyle = UIModalPresentationOverFullScreen;
+        
+        
+        //cant user appd.window its in siwft here bu in main sea/chat app we dont know
+        //    AppDelegate *appDelegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
+        
+        if(self.tvc.view){
+            if(self.tvc.view.window){
+                
+                if(self.tvc.view.window.rootViewController){
+                    
+                    NSString *className = NSStringFromClass([self.tvc.view.window.rootViewController class]);
+                    
+                    
+                    NSLog(@"[VIDEOPPLUGIN][TwilioVideoPlugin.m][instantiate_TwilioVideoViewController_withConfig] self.view.window.rootViewController:%@", className);
+                    //note viewDidLoad also triggered above
+                    [self.tvc.view.window.rootViewController presentViewController:self.tvc animated:YES completion:nil];
+                    
+                    
+                }else{
+                    NSLog(@"[VIDEOPPLUGIN][TwilioVideoPlugin.m][instantiate_TwilioVideoViewController_withConfig] self.view.window.rootViewController is NULL");
+                }
+            }else{
+                NSLog(@"[VIDEOPPLUGIN][TwilioVideoPlugin.m][instantiate_TwilioVideoViewController_withConfig] self.view.window is NULL");
+            }
+        }else{
+            NSLog(@"[VIDEOPPLUGIN][TwilioVideoPlugin.m][instantiate_TwilioVideoViewController_withConfig] self.view is NULL");
+        }
+    }
     
-    //----------------------------------------------------------------------
-    //not required - needed when the Leave Room was in the cordova WebView
-    //behind this TwilioVideoViewController.view
-    //vc.view.backgroundColor = [UIColor clearColor];
-    //vc.view.backgroundColor = [UIColor redColor];
-    //----------------------------------------------------------------------
-    //Sea/ grey - if you comment this out it will use the color set in TwilioVideo.storyboard
-    self.tvc.view.backgroundColor = [UIColor colorWithRed: 17.0/255.0
-                                                    green: 37.0/255.0
-                                                     blue: 57.0/255.0
-                                                    alpha:1.0];
-    //----------------------------------------------------------------------
-    self.tvc.modalPresentationStyle = UIModalPresentationOverFullScreen;
     
 }
 
@@ -79,15 +120,9 @@
         //ISSUE - the 2nd time openRoom called UI(TVC) doesnt appear
         //so always PRESENTVC then openRoom:
         //----------------------------------------------------------------------
-        if (NULL == self.tvc) {
-            //------------------------------------------------------------------
-            //Create VC
-            //------------------------------------------------------------------
-            [self instantiate_TwilioVideoViewController_withConfig:config];
-            //------------------------------------------------------------------
-        }else{
-            //is not null ok to show
-        }
+    
+        //creates it of brings it to the front if hidden
+        [self instantiate_TwilioVideoViewController_withConfig:config];
         
         if (NULL != self.tvc) {
             //------------------------------------------------------------------
@@ -97,7 +132,7 @@
             //------------------------------------------------------------------
             //Sergey asked for this can happen on double tap
             if(self.viewController.presentedViewController == self.tvc){
-                NSLog(@"ERROR TwilioVideoViewController already visible - just call [tvc openRoom:...] directly");
+                NSLog(@"[VIDEOPLUGIN] [TwilioVideoPlugin.m] ERROR TwilioVideoViewController already visible - just call [tvc openRoom:...] directly");
                 //----------------------------------------------------------
                 [self.tvc openRoom:room
                              token:token
@@ -119,7 +154,7 @@
                 }];
             }
         }else{
-            NSLog(@"ERROR instantiate_TwilioVideoViewController FAILED");
+            NSLog(@"[VIDEOPLUGIN] [TwilioVideoPlugin.m] ERROR instantiate_TwilioVideoViewController FAILED - self.tvc is null");
         }
     });
 }
@@ -190,7 +225,7 @@
             
             //------------------------------------------------------------------
         }else{
-            NSLog(@"ERROR instantiate_TwilioVideoViewController FAILED");
+            NSLog(@"ERROR instantiate_TwilioVideoViewController FAILED - self.tvc is null");
         }
         //----------------------------------------------------------------------
     });
@@ -261,7 +296,7 @@
                 }];
             }
         }else{
-            NSLog(@"ERROR instantiate_TwilioVideoViewController FAILED");
+            NSLog(@"ERROR instantiate_TwilioVideoViewController FAILED - self.tvc is null");
         }
         //----------------------------------------------------------------------
         
@@ -278,7 +313,7 @@
         if (NULL != self.tvc) {
             [self.tvc showOffline];
         }else{
-            NSLog(@"ERROR [self.tvc showOffline] FAILED");
+            NSLog(@"ERROR [self.tvc showOffline] FAILED - self.tvc is null");
         }
     });
 }
@@ -291,7 +326,31 @@
         if (NULL != self.tvc) {
             [self.tvc showOnline];
         }else{
-            NSLog(@"ERROR [self.tvc showOffline] FAILED");
+            NSLog(@"ERROR [self.tvc showOffline] FAILED - self.tvc is null");
+        }
+    });
+}
+- (void)show_twiliovideo:(CDVInvokedUrlCommand*)command {
+    self.listenerCallbackID = command.callbackId;
+    //No args NSArray *args = command.arguments;
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (NULL != self.tvc) {
+            [self.tvc show_twiliovideo];
+        }else{
+            NSLog(@"ERROR [self.tvc show_twiliovideo] FAILED - self.tvc is null");
+        }
+    });
+}
+- (void)hide_twiliovideo:(CDVInvokedUrlCommand*)command {
+    self.listenerCallbackID = command.callbackId;
+    //No args NSArray *args = command.arguments;
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (NULL != self.tvc) {
+            [self.tvc hide_twiliovideo];
+        }else{
+            NSLog(@"ERROR [self.tvc hide_twiliovideo] FAILED - self.tvc is null");
         }
     });
 }

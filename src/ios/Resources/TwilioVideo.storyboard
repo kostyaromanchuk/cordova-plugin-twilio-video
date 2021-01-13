@@ -27,7 +27,7 @@
                                 </connections>
                             </button>
                             <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="qSc-QC-8BN">
-                                <rect key="frame" x="16" y="198" width="80" height="30"/>
+                                <rect key="frame" x="16" y="228" width="80" height="30"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="30" id="Dmk-iA-SFr"/>
                                     <constraint firstAttribute="width" constant="80" id="yDG-Cr-NFf"/>
@@ -126,8 +126,8 @@
                                     <constraint firstAttribute="trailing" secondItem="SiE-c3-dH5" secondAttribute="trailing" constant="8" id="szH-Im-YY1"/>
                                 </constraints>
                             </view>
-                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="r4p-h9-xiA">
-                                <rect key="frame" x="16" y="20" width="351" height="100"/>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="r4p-h9-xiA" userLabel="viewRemoteParticipantInfo">
+                                <rect key="frame" x="16" y="50" width="351" height="100"/>
                                 <subviews>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="H93-cD-fFn" userLabel="View[RemoteUserImageAndBorders]">
                                         <rect key="frame" x="0.0" y="0.0" width="100" height="100"/>
@@ -319,7 +319,7 @@
                                 </constraints>
                             </view>
                             <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MOz-y7-RXA">
-                                <rect key="frame" x="16" y="152" width="82" height="30"/>
+                                <rect key="frame" x="16" y="182" width="82" height="30"/>
                                 <constraints>
                                     <constraint firstAttribute="width" constant="82" id="kEy-pl-fWd"/>
                                     <constraint firstAttribute="height" constant="30" id="sxt-xv-BHT"/>
@@ -336,12 +336,25 @@
                                     <constraint firstAttribute="height" constant="76" id="Prw-wf-xLy"/>
                                 </constraints>
                             </imageView>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="hiG-4D-JfK" userLabel="buttonBack">
+                                <rect key="frame" x="16" y="16" width="24" height="24"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="24" id="CRY-SD-3Ff"/>
+                                    <constraint firstAttribute="width" constant="24" id="CqE-oR-ocb"/>
+                                </constraints>
+                                <state key="normal" image="baseline_arrow_back_white_48dp.png"/>
+                                <connections>
+                                    <action selector="buttonBackTocCall_HideVCView:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="7HK-rf-M2S"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" red="0.066666666666666666" green="0.14509803921568626" blue="0.22352941176470587" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
+                            <constraint firstItem="hiG-4D-JfK" firstAttribute="top" secondItem="8oD-ke-cGW" secondAttribute="bottom" constant="16" id="0gC-LE-9AE"/>
                             <constraint firstItem="qSc-QC-8BN" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leadingMargin" id="1Br-U2-oKE"/>
-                            <constraint firstItem="r4p-h9-xiA" firstAttribute="top" secondItem="8oD-ke-cGW" secondAttribute="bottom" constant="20" id="3qJ-px-0kG"/>
+                            <constraint firstItem="r4p-h9-xiA" firstAttribute="top" secondItem="8oD-ke-cGW" secondAttribute="bottom" constant="50" id="3qJ-px-0kG"/>
                             <constraint firstItem="MOz-y7-RXA" firstAttribute="top" secondItem="r4p-h9-xiA" secondAttribute="bottom" constant="32" id="6k4-mj-JAq"/>
+                            <constraint firstItem="hiG-4D-JfK" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leadingMargin" id="9mI-Mb-bE9"/>
                             <constraint firstItem="r4p-h9-xiA" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leadingMargin" id="Dxm-al-38m"/>
                             <constraint firstItem="qSc-QC-8BN" firstAttribute="top" secondItem="MOz-y7-RXA" secondAttribute="bottom" constant="16" id="EUE-ZH-A2q"/>
                             <constraint firstItem="Mof-LL-MfS" firstAttribute="top" secondItem="3Bh-pO-6uY" secondAttribute="top" id="Gr8-Jb-Fjl"/>
@@ -364,6 +377,7 @@
                         </constraints>
                     </view>
                     <connections>
+                        <outlet property="buttonBackToCall" destination="hiG-4D-JfK" id="r4u-fE-99E"/>
                         <outlet property="buttonDebugStartACall" destination="aXX-R8-WN1" id="l9Z-vv-qjC"/>
                         <outlet property="buttonDebug_showOffline" destination="MOz-y7-RXA" id="b9f-6C-mu3"/>
                         <outlet property="buttonDebug_showOnline" destination="qSc-QC-8BN" id="qm5-3e-D1f"/>
@@ -401,6 +415,7 @@
     </scenes>
     <resources>
         <image name="alert_in_circle.png" width="223" height="208"/>
+        <image name="baseline_arrow_back_white_48dp.png" width="24" height="24"/>
         <image name="baseline_switch_video_white_18dp.png" width="36" height="36"/>
         <image name="end_call.png" width="24" height="24"/>
         <image name="mic.png" width="24" height="24"/>

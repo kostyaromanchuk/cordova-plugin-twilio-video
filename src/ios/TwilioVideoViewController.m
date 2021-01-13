@@ -21,6 +21,7 @@ NSString *const HANG_UP = @"HANG_UP";
 NSString *const CLOSED = @"CLOSED";
 
 #define BLURRED_VIEW_ALPHA_ON 0.5
+#define VC_VIEW_TAG 6655
 
 
 #pragma mark - private  
@@ -86,6 +87,7 @@ NSString *const CLOSED = @"CLOSED";
 @property (unsafe_unretained, nonatomic) IBOutlet UIVisualEffectView *uiVisualEffectViewBlur1;
 
 @property (unsafe_unretained, nonatomic) IBOutlet UIImageView *imageViewSwitchVideo;
+@property (unsafe_unretained, nonatomic) IBOutlet UIButton *buttonBackToCall;
 
 
 @end
@@ -96,6 +98,8 @@ NSString *const CLOSED = @"CLOSED";
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    self.view.tag = VC_VIEW_TAG;
     
     [self.viewAlert setHidden:TRUE];
     
@@ -430,6 +434,8 @@ NSString *const CLOSED = @"CLOSED";
     //UPDATE CONNECTION STATE
     [self textViewRemoteParticipantConnectionState_setText:state];
     //----------------------------------------------------------------------------------------------
+    
+    [self.buttonBackToCall setHidden:TRUE];
 }
 
 -(void)textViewRemoteParticipantConnectionState_setText:(NSString *) state{
@@ -580,6 +586,7 @@ NSString *const CLOSED = @"CLOSED";
 
     //HIDE till my camera connected
     [self hide_viewRemoteParticipantInfo];
+    [self.buttonBackToCall setHidden:TRUE];
     
     //when video is full screen is may have wrong AspectFit or AspectFil
     //I set it always to Fill so it looks ok in fullscreen
@@ -1171,7 +1178,198 @@ NSString *const CLOSED = @"CLOSED";
     }
 }
 
+#pragma mark -
+#pragma mark BUTTON: Back to Call (Hide VC.view)
+#pragma mark -
+//proper way is to have a childVC and show/hide it but the view stack in managed by cordova and native
+//so I just hide this VC.view and disable touches
+//then added JS methos show_twiliovideo() to show it again
+- (IBAction)buttonBackTocCall_HideVCView:(id)sender {
+    
+    if(self.view.window.rootViewController){
+        
+        NSString *className = NSStringFromClass([self.view.window.rootViewController class]);
+        
+        NSLog(@"self.view.window.rootViewController:%@", className);
+        
+        NSString *logMessage = [NSString stringWithFormat:@"self.view.window.rootViewController:%@", className];
+        [self log_info:logMessage];
+    }else{
+        [self log_error:@"self.view.window.rootViewController is NULL"];
+    }
+    
+    [self hide_twiliovideo];
+   
+}
 
+//call by BACK TO CALL button
+
+-(void) hide_twiliovideo{
+    [self log_info:@"hide_twiliovideo CALLED"];
+    
+    //    [self.view setHidden:TRUE];
+    //    [self.view setUserInteractionEnabled:FALSE];
+    //    [self resignFirstResponder];
+    
+    if(self.view.window){
+        
+        if(self.view.window.rootViewController){
+            
+            NSString *logMessage = [NSString stringWithFormat:@"self.view.window.rootViewController:%@", NSStringFromClass([self.view.window.rootViewController class])];
+            [self log_info:logMessage];
+  
+        }else{
+            [self log_error:@"self.view.window.rootViewController is NULL"];
+        }
+        
+        //------------------------------------------------------------------------------------------
+        //window
+        //------------------------------------------------------------------------------------------
+        NSLog(@"[self.view.window.subviews count]:%lu", (unsigned long)[self.view.window.subviews count]);
+
+        //------------------------------------------------------------------------------------------
+        //WORKS moves front most view to the back but unsafe to do the other way
+        //[self.view.window sendSubviewToBack:self.view.window.subviews[count - 1]];
+        //------------------------------------------------------------------------------------------
+        //v2 - moves the window.subview that has this tvc.view(tag:VC_VIEW_TAG) as a child
+        UIView * window_subView_to_move = [self findWindowSubViewThatThisVCIsChildOf];
+        if (window_subView_to_move) {
+            [self.view.window sendSubviewToBack:window_subView_to_move];
+        } else {
+            [self log_error:@"window_subView_to_move is NULL - view.tag == VC_VIEW_TAG FAILED - cant move to back"];
+        }
+        //------------------------------------------------------------------------------------------
+        
+    }else{
+        [self log_error:@"self.view.window.rootViewController is NULL"];
+    }
+}
+
+//show_twiliovideo() called from index.js > twilio.js > TwilioPlugin.m > show_twiliovideo
+-(void) show_twiliovideo{
+    [self log_info:@"show_twiliovideo CALLED"];
+    
+    //    [self.view setHidden:FALSE];
+    //    [self.view setUserInteractionEnabled:TRUE];
+    //    [self canBecomeFirstResponder];
+    
+    //UIWindow is a UIView so can use bringSubviewToFront
+    
+    
+    if(self.view.window){
+        
+        //------------------------------------------------------------------------------------------
+        //window.rootViewController
+        //------------------------------------------------------------------------------------------
+        if(self.view.window.rootViewController){
+            NSString *className = NSStringFromClass([self.view.window.rootViewController class]);
+            
+            NSLog(@"self.view.window.rootViewController:%@", className);
+            
+        }else{
+            [self log_error:@"self.view.window.rootViewController is NULL"];
+        }
+        
+        //------------------------------------------------------------------------------------------
+        //window
+        //------------------------------------------------------------------------------------------
+        NSLog(@"[self.view.window.subviews count]:%lu", (unsigned long)[self.view.window.subviews count]);
+        
+        //------------------------------------------------------------------------------------------
+        //[self.view.window sendSubviewToBack:self.view];
+        
+        //------------------------------------------------------------------------------------------
+        //window may have view between window.subviews and TVC.view
+        //subview[0]- NSTransitionView.....CAPBridgeViewController.view
+        //subview[1]- NSTransitionView.....TwilioVideoViewController.m.view
+        //[self.view.window bringSubviewToFront:self.view];
+        
+        //v1 - WORKED IN POC as theres only 2 VCs but in full Sea/chat app we dont know how many
+        //[self.view.window bringSubviewToFront:self.view.window.subviews[0]];
+        
+        //------------------------------------------------------------------------------------------
+        //v2 - moves the window.subview that has this tvc.view(tag:VC_VIEW_TAG) as a child
+        UIView * window_subView_to_move = [self findWindowSubViewThatThisVCIsChildOf];
+        
+        if (window_subView_to_move) {
+            [self.view.window bringSubviewToFront:window_subView_to_move];
+        } else {
+            [self log_error:@"window_subView_to_move is NULL - view.tag == VC_VIEW_TAG FAILED - cant bringSubviewToFront"];
+        }
+        //------------------------------------------------------------------------------------------
+        
+    }else{
+        [self log_error:@"self.view.window.rootViewController is NULL"];
+    }
+    
+}
+
+//We want to move this VC.view behind the Cordova webview
+//issue 1 we can get the window.subviews and
+//for HIDE - move the top to the back
+//for SHOW - move bottom to the top
+//but a bit insafe there could be alerts etc and I dont know how many views are in the full sea/chat app
+//so I added a tag to this VC.view.tag = VC_VIEW_TAG  //6655
+//and this method iterates over all window.subview and search all views for tag 6655
+//if found it returns the window.subview that is its parent
+//e.g.
+//------------------------------------------------------------------------------------------
+//window.subviews
+
+//  NSTransitionView[0]>otherVC.view
+//  NSTransitionView[1]>TwilioVideoViewController.view(tag 6655)  << FOUND so return the root NSTransitionView[1]
+//  NSTransitionView[2]>someotherVC.view
+//------------------------------------------------------------------------------------------
+//    window
+//    subView0 class:UITransitionView [tag  :0]     <<< window.subview may not be our VC.view
+//      subView1 class:UIDropShadowView [tag  :0]
+//        subView2 class:WKWebView [tag  :0]
+//    subView0 class:UITransitionView [tag  :0]     <<< THIS IS THE SUBVIEW WE WANT TO MOVE TO BACK....
+//        subView1 class:UIView [tag  :6655]        <<< because TVC.view(this vc) is a child of the window.subview
+//            subView2 class:UIButton [tag  :0]
+//            subView2 class:UIView [tag  :0]
+//            ...controls on the view
+//------------------------------------------------------------------------------------------
+//return NSTransitionView[1]
+//UIWindow is a UIView so can use bringSubviewToFront/sednSubViewToBack
+//then we can call window.sendToBack[NSTransitionView[1]] and it will move the whole TwiliViewController to the back
+-(UIView *) findWindowSubViewThatThisVCIsChildOf{
+    //------------------------------------------------------------------------------------------
+    UIView * window_subView_to_move = NULL;
+    //------------------------------------------------------------------------------------------
+    for (UIView *subView0 in self.view.window.subviews) {
+        NSInteger subView0_tag = subView0.tag;
+        NSLog(@"subView0 class:%@ [tag  :%ld]", NSStringFromClass([subView0 class]), (long)subView0_tag);
+        //------------------------------------------------------------------------------------------
+        for (UIView *subView1 in subView0.subviews) {
+            NSInteger subView1_tag = subView1.tag;
+            NSLog(@"    subView1 class:%@ [tag  :%ld]", NSStringFromClass([subView1 class]), (long)subView1_tag);
+            //------------------------------------------------------------------------------------------
+            //our TVC.view is usually at this level
+            if (VC_VIEW_TAG == subView1_tag) {
+                window_subView_to_move = subView0;
+                break;
+            } else {
+                //no match skip
+            }
+            //------------------------------------------------------------------------------------------
+            
+            for (UIView *subView2 in subView1.subviews) {
+                NSInteger subView2_tag = subView2.tag;
+                NSLog(@"        subView2 class:%@ [tag  :%ld]", NSStringFromClass([subView2 class]), (long)subView2_tag);
+                
+                //our TVC.view is usually at parent level but added in case - may never be called the break; in the parent may cancel first
+                if (VC_VIEW_TAG == subView2_tag) {
+                    window_subView_to_move = subView0;
+                    break;
+                } else {
+                    //no match skip
+                }
+            }
+        }
+    }
+    return window_subView_to_move;
+}
 
 #pragma mark - Private
 
@@ -1304,7 +1502,7 @@ NSString *const CLOSED = @"CLOSED";
         //NEXT TIMES too quiet
         //will start it before room connect in viewDidLoad
 //RELEASE COMMENT IN
-        [self dialing_sound_start];
+//        [self dialing_sound_start];
         //----------------------------------------------------------------------
         
     }else{
@@ -1345,7 +1543,7 @@ NSString *const CLOSED = @"CLOSED";
     if(self.previewIsFullScreen){
         //hide Waiting...
         [self hide_viewRemoteParticipantInfo];
-        
+        [self.buttonBackToCall setHidden:FALSE];
         //------------------------------------------------------------------------------------------
         //INCALL remote users name and muted icon
         //------------------------------------------------------------------------------------------
@@ -1370,6 +1568,7 @@ NSString *const CLOSED = @"CLOSED";
     if(self.previewIsFullScreen){
         
         [self hide_viewRemoteParticipantInfo];
+        [self.buttonBackToCall setHidden:FALSE];
         
         //------------------------------------------------------------------------------------------
         //INCALL remote users name and muted icon
@@ -1611,7 +1810,7 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 #pragma mark -
-#pragma mark - OFFLINE ALERT
+#pragma mark - CAORDOVA > OFFLINE ALERT
 #pragma mark -
 
 //internet gone - seachat tells plugin to show alert
@@ -1622,8 +1821,8 @@ NSString *const CLOSED = @"CLOSED";
     
     
     //DO NOT RELEASE - cordova should send showOnline()
-//    [self.buttonDebug_showOnline setHidden:FALSE];
-//    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
+    [self.buttonDebug_showOnline setHidden:FALSE];
+    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
 
 }
 
@@ -1632,17 +1831,18 @@ NSString *const CLOSED = @"CLOSED";
     [self.viewAlert setHidden:TRUE];
  
 }
+
 -(void)showhide_buttonDebugStartACall{
     //------------------------------------------------------------------------------------------
     //FOR RELEASE - COMMENT THIS OUT
     //------------------------------------------------------------------------------------------
-//    [self.buttonDebugStartACall setHidden:FALSE];
-//    [self.view bringSubviewToFront:self.buttonDebugStartACall];
+    [self.buttonDebugStartACall setHidden:FALSE];
+    [self.view bringSubviewToFront:self.buttonDebugStartACall];
     
     //------------------------------------------------------------------------------------------
     //FOR RELEASE - COMMENT THIS IN
     //------------------------------------------------------------------------------------------
-    [self.buttonDebugStartACall setHidden:TRUE];
+//    [self.buttonDebugStartACall setHidden:TRUE];
     //------------------------------------------------------------------------------------------
 }
 
@@ -2368,17 +2568,17 @@ NSString *const CLOSED = @"CLOSED";
 }
 - (void)log_info:(NSString *)msg {
     if (_log_info_on) {
-        NSLog(@"[INFO ] %@", msg);
+        NSLog(@"[VIDEOPLUGIN] [INFO ] %@", msg);
     }
 }
 - (void)log_debug:(NSString *)msg {
     if (_log_debug_on) {
-        NSLog(@"[DEBUG] %@", msg);
+        NSLog(@"[VIDEOPLUGIN] [DEBUG] %@", msg);
     }
 }
 - (void)log_error:(NSString *)msg {
     if (_log_error_on) {
-        NSLog(@"[ERROR] %@", msg);
+        NSLog(@"[VIDEOPLUGIN] [ERROR] %@", msg);
     }
 }
 
