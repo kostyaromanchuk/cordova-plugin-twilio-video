@@ -238,7 +238,7 @@ NSString *const CLOSED = @"CLOSED";
     
     if(imageViewToFill){
         
-        NSString *imageName = @"baseline_account_circle_black_18dp.png";
+        NSString *imageName = @"baseline_account_circle_black_48dp.png";
         UIImage * defaultImage = [UIImage imageNamed:imageName];
         
         if(defaultImage){
