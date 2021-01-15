@@ -1820,7 +1820,7 @@ NSString *const CLOSED = @"CLOSED";
     [self.view bringSubviewToFront:self.viewAlert];
     
     
-    //DO NOT RELEASE - cordova should send showOnline()
+    //DO NOT RELEASE - COMMENT OUT - cordova should send showOnline()
 //    [self.buttonDebug_showOnline setHidden:FALSE];
 //    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
 
