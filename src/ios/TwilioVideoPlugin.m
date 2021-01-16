@@ -305,52 +305,52 @@
 }
 
 
-- (void)showOffline:(CDVInvokedUrlCommand*)command {
-    self.listenerCallbackID = command.callbackId;
-    //No args NSArray *args = command.arguments;
-    
+- (void)showOffline:(CDVInvokedUrlCommand*)command {    
     dispatch_async(dispatch_get_main_queue(), ^{
         if (NULL != self.tvc) {
             [self.tvc showOffline];
+            [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
         }else{
             NSLog(@"ERROR [self.tvc showOffline] FAILED - self.tvc is null");
+            CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Can't complete this operation"];
+            [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
         }
     });
 }
 
 - (void)showOnline:(CDVInvokedUrlCommand*)command {
-    self.listenerCallbackID = command.callbackId;
-    //No args NSArray *args = command.arguments;
-    
     dispatch_async(dispatch_get_main_queue(), ^{
         if (NULL != self.tvc) {
             [self.tvc showOnline];
+            [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
         }else{
-            NSLog(@"ERROR [self.tvc showOffline] FAILED - self.tvc is null");
+            NSLog(@"ERROR [self.tvc showOnline] FAILED - self.tvc is null");
+            CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Can't complete this operation"];
+            [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
         }
     });
 }
 - (void)show_twiliovideo:(CDVInvokedUrlCommand*)command {
-    self.listenerCallbackID = command.callbackId;
-    //No args NSArray *args = command.arguments;
-    
     dispatch_async(dispatch_get_main_queue(), ^{
         if (NULL != self.tvc) {
             [self.tvc show_twiliovideo];
+            [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
         }else{
             NSLog(@"ERROR [self.tvc show_twiliovideo] FAILED - self.tvc is null");
+            CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Can't complete this operation"];
+            [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
         }
     });
 }
 - (void)hide_twiliovideo:(CDVInvokedUrlCommand*)command {
-    self.listenerCallbackID = command.callbackId;
-    //No args NSArray *args = command.arguments;
-    
     dispatch_async(dispatch_get_main_queue(), ^{
         if (NULL != self.tvc) {
             [self.tvc hide_twiliovideo];
+            [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
         }else{
             NSLog(@"ERROR [self.tvc hide_twiliovideo] FAILED - self.tvc is null");
+            CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Can't complete this operation"];
+            [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
         }
     });
 }

@@ -82,37 +82,33 @@ declare module TwilioVideo {
     
     /**
      * shows full screen alert that internet is offline.
-     * onEvent  - BEWARE DISCONNECTED and CLOSED will come out in event handler of LAST METHOD called not always in event handler of startCall or answerCall
+     * @param success a callback that gets executed when showing offline screen is successful.
+     * @param error a callback that gets executed when showing offline screen fails.
      */
-    showOffline(
-      onEvent?: Function
-    ): void;
+    showOffline(success?: () => void, error?: () => void): void;
     
     /**
      * hides full screen alert that internet is offline.
-     * onEvent  - BEWARE DISCONNECTED and CLOSED will come out in event handler of LAST METHOD called not always in event handler of startCall or answerCall
+     * @param success a callback that gets executed when showing online screen is successful.
+     * @param error a callback that gets executed when showing online screen fails.
      */
-    showOnline(
-      onEvent?: Function
-    ): void;
+    showOnline(success?: () => void, error?: () => void): void;
     
     
     /**
      * show_twiliovideo - moves the TwilioVideoController in FRONT of all other VCs e.g. Cordova (webview).
-     * onEvent  - BEWARE DISCONNECTED and CLOSED will come out in event handler of LAST METHOD called not always in event handler of startCall or answerCall
+     * @param success a callback that gets executed when showing twilio video ui is successful.
+     * @param error a callback that gets executed when showing twilio video ui fails.
      */
-    show_twiliovideo(
-      onEvent?: Function
-    ): void;
+    show_twiliovideo(success?: () => void, error?: () => void): void;
     
    /**
      * hide_twiliovideo - moves the TwilioVideoController BEHIND of all other VCs e.g. Cordova (webview).
      * used for Back to Chat button
-     * onEvent  - BEWARE DISCONNECTED and CLOSED will come out in event handler of LAST METHOD called not always in event handler of startCall or answerCall
+     * @param success a callback that gets executed when hiding twilio video ui is successful.
+     * @param error a callback that gets executed when hiding twilio video ui fails.
      */
-    hide_twiliovideo(
-      onEvent?: Function
-    ): void;
+    hide_twiliovideo(success?: () => void, error?: () => void): void;
     
     
     /**
