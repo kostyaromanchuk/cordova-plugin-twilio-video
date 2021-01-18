@@ -57,12 +57,10 @@ public class TwilioVideo extends CordovaPlugin {
                 this.answerCall(args);
                 break;
             case "showOffline":
-                this.registerCallListener(callbackContext);
-                this.showOffline(args);
+                this.showOffline(args, callbackContext);
                 break;
             case "showOnline":
-                this.registerCallListener(callbackContext);
-                this.showOnline(args);
+                this.showOnline(args, callbackContext);
                 break;
             case "closeRoom":
                 this.closeRoom(callbackContext);
@@ -470,8 +468,8 @@ public class TwilioVideo extends CordovaPlugin {
         }
     }
 
-    public void showOffline(final JSONArray args) {
-        Log.d(TAG, "[VIDEOPLUGIN] showOffline(args) CALLED");
+    public void showOffline(final JSONArray args, CallbackContext callbackContext) {
+        Log.d(TAG, "[VIDEOPLUGIN] showOffline CALLED");
         //no params try catch not needed
         //--------------------------------------------------------------------------------------
         //putExtra can throw error: local variables referenced from an inner class must be final or effectively final
@@ -479,64 +477,68 @@ public class TwilioVideo extends CordovaPlugin {
         //--------------------------------------------------------------------------------------
 
         final CordovaPlugin that = this;
+        try {
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                    Intent intent_TwilioVideoActivity = new Intent(Intent.ACTION_VIEW);
+
+                    intent_TwilioVideoActivity.setClass(that.cordova.getActivity().getBaseContext(), TwilioVideoActivity.class);
+                    intent_TwilioVideoActivity.setPackage(that.cordova.getActivity().getApplicationContext().getPackageName());
 
 
-        cordova.getThreadPool().execute(new Runnable() {
-            public void run() {
-                Intent intent_TwilioVideoActivity = new Intent(Intent.ACTION_VIEW);
+                    //------------------------------------------------------------------------------
+                    //Android same activity
+                    String nextAction = TwilioVideoActivityNextAction.action_showOffline;
+                    intent_TwilioVideoActivity.putExtra("action", nextAction);
 
-                intent_TwilioVideoActivity.setClass(that.cordova.getActivity().getBaseContext(), TwilioVideoActivity.class);
-                intent_TwilioVideoActivity.setPackage(that.cordova.getActivity().getApplicationContext().getPackageName());
+                    //getIntent() only gets the intent set startActivity > onCreate
+                    //for showOffline only onResume is called so getIntent still shows "openRoom"
 
-
-                //------------------------------------------------------------------------------
-                //Android same activity
-                String nextAction = TwilioVideoActivityNextAction.action_showOffline;
-                intent_TwilioVideoActivity.putExtra("action", nextAction);
-
-                //getIntent() only gets the intent set startActivity > onCreate
-                //for showOffline only onResume is called so getIntent still shows "openRoom"
-
-                TwilioVideoActivityNextAction.setNextAction(nextAction);
-                //------------------------------------------------------------------------------
-
-
-
-                //------------------------------------------------------------------------------
-                //prevent showOffline > startActivity from creating new instance
-                //------------------------------------------------------------------------------
-                //openRoom() and showOffline() both call startActivity on  TwilioVideoActivity
-                //    - openRoom on P1 and answerCall on P2 SHOULD CREATE NEW INSTANCE
-                //        - startActivity
-                //            - onCreate
-                //                - instance 699
-                //    - showOffline/showOnline / startCall - SHOULD REUSE EXISTING Activity
-                //        - startActivity
-                //            - onResume  NOT onCreate so add FLAG_ACTIVITY_REORDER_TO_FRONT
-                //                - same instance
-                //------------------------------------------------------------------------------
-                //but showOffline should use existing instance
-
-                //single instance - reuse existing one if available
-                intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    TwilioVideoActivityNextAction.setNextAction(nextAction);
+                    //------------------------------------------------------------------------------
 
 
 
-                //------------------------------------------------------------------------------
-                //DEBUG its MainActivity
-                //Activity cordova_activity = that.cordova.getActivity();
+                    //------------------------------------------------------------------------------
+                    //prevent showOffline > startActivity from creating new instance
+                    //------------------------------------------------------------------------------
+                    //openRoom() and showOffline() both call startActivity on  TwilioVideoActivity
+                    //    - openRoom on P1 and answerCall on P2 SHOULD CREATE NEW INSTANCE
+                    //        - startActivity
+                    //            - onCreate
+                    //                - instance 699
+                    //    - showOffline/showOnline / startCall - SHOULD REUSE EXISTING Activity
+                    //        - startActivity
+                    //            - onResume  NOT onCreate so add FLAG_ACTIVITY_REORDER_TO_FRONT
+                    //                - same instance
+                    //------------------------------------------------------------------------------
+                    //but showOffline should use existing instance
 
-                that.cordova.getActivity().startActivity(intent_TwilioVideoActivity);
+                    //single instance - reuse existing one if available
+                    intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
-            }
 
-        });
 
+                    //------------------------------------------------------------------------------
+                    //DEBUG its MainActivity
+                    //Activity cordova_activity = that.cordova.getActivity();
+
+                    that.cordova.getActivity().startActivity(intent_TwilioVideoActivity);
+
+                }
+
+            });
+        } catch (Exception exception) {
+            Log.e(TAG, "[VIDEOPLUGIN] showOffline failed", exception);
+            this.sendPluginErrorResult(callbackContext);
+            return;
+        }
+        this.sendPluginOkResult(callbackContext);
     }
 
 
-    public void showOnline(final JSONArray args) {
-        Log.d(TAG, "[VIDEOPLUGIN] showOnline(args) CALLED");
+    public void showOnline(final JSONArray args, CallbackContext callbackContext) {
+        Log.d(TAG, "[VIDEOPLUGIN] showOnline CALLED");
 
         //no params try catch not needed
         //--------------------------------------------------------------------------------------
@@ -545,57 +547,61 @@ public class TwilioVideo extends CordovaPlugin {
         //--------------------------------------------------------------------------------------
 
         final CordovaPlugin that = this;
+        try {
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                    Intent intent_TwilioVideoActivity = new Intent(Intent.ACTION_VIEW);
+
+                    intent_TwilioVideoActivity.setClass(that.cordova.getActivity().getBaseContext(), TwilioVideoActivity.class);
+                    intent_TwilioVideoActivity.setPackage(that.cordova.getActivity().getApplicationContext().getPackageName());
 
 
-        cordova.getThreadPool().execute(new Runnable() {
-            public void run() {
-                Intent intent_TwilioVideoActivity = new Intent(Intent.ACTION_VIEW);
+                    //------------------------------------------------------------------------------
+                    //Android same activity
+                    String nextAction = TwilioVideoActivityNextAction.action_showOnline;
+                    intent_TwilioVideoActivity.putExtra("action", nextAction);
 
-                intent_TwilioVideoActivity.setClass(that.cordova.getActivity().getBaseContext(), TwilioVideoActivity.class);
-                intent_TwilioVideoActivity.setPackage(that.cordova.getActivity().getApplicationContext().getPackageName());
+                    //getIntent() only gets the intent set startActivity > onCreate
+                    //for showOnline only onResume is called so getIntent still shows "openRoom"
 
-
-                //------------------------------------------------------------------------------
-                //Android same activity
-                String nextAction = TwilioVideoActivityNextAction.action_showOnline;
-                intent_TwilioVideoActivity.putExtra("action", nextAction);
-
-                //getIntent() only gets the intent set startActivity > onCreate
-                //for showOnline only onResume is called so getIntent still shows "openRoom"
-
-                TwilioVideoActivityNextAction.setNextAction(nextAction);
-                //------------------------------------------------------------------------------
+                    TwilioVideoActivityNextAction.setNextAction(nextAction);
+                    //------------------------------------------------------------------------------
 
 
 
-                //------------------------------------------------------------------------------
-                //prevent showOnline > startActivity from creating new instance
-                //------------------------------------------------------------------------------
-                //openRoom() and showOnline() both call startActivity on  TwilioVideoActivity
-                //    - openRoom on P1 and answerCall on P2 SHOULD CREATE NEW INSTANCE
-                //        - startActivity
-                //            - onCreate
-                //                - instance 699
-                //    - showOnline/showOnline / startCall - SHOULD REUSE EXISTING Activity
-                //        - startActivity
-                //            - onResume  NOT onCreate so add FLAG_ACTIVITY_REORDER_TO_FRONT
-                //                - same instance
-                //------------------------------------------------------------------------------
-                //but showOnline should use existing instance
-                //single instance - reuse existing one if available
-                intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    //------------------------------------------------------------------------------
+                    //prevent showOnline > startActivity from creating new instance
+                    //------------------------------------------------------------------------------
+                    //openRoom() and showOnline() both call startActivity on  TwilioVideoActivity
+                    //    - openRoom on P1 and answerCall on P2 SHOULD CREATE NEW INSTANCE
+                    //        - startActivity
+                    //            - onCreate
+                    //                - instance 699
+                    //    - showOnline/showOnline / startCall - SHOULD REUSE EXISTING Activity
+                    //        - startActivity
+                    //            - onResume  NOT onCreate so add FLAG_ACTIVITY_REORDER_TO_FRONT
+                    //                - same instance
+                    //------------------------------------------------------------------------------
+                    //but showOnline should use existing instance
+                    //single instance - reuse existing one if available
+                    intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
 
-                //------------------------------------------------------------------------------
-                //DEBUG its MainActivity
-                //Activity cordova_activity = that.cordova.getActivity();
+                    //------------------------------------------------------------------------------
+                    //DEBUG its MainActivity
+                    //Activity cordova_activity = that.cordova.getActivity();
 
-                that.cordova.getActivity().startActivity(intent_TwilioVideoActivity);
+                    that.cordova.getActivity().startActivity(intent_TwilioVideoActivity);
 
-            }
+                }
 
-        });
-
+            });
+        } catch (Exception exception) {
+            Log.e(TAG, "[VIDEOPLUGIN] showOnline failed", exception);
+            this.sendPluginErrorResult(callbackContext);
+            return;
+        }
+        this.sendPluginOkResult(callbackContext);
     }
 
 
@@ -699,4 +705,15 @@ public class TwilioVideo extends CordovaPlugin {
         this.callbackContext = callbackContext;
     }
 
+    private void sendPluginOkResult(CallbackContext callbackContext) {
+        PluginResult result = new PluginResult(PluginResult.Status.OK);
+        result.setKeepCallback(true);
+        callbackContext.sendPluginResult(result);
+    }
+
+    private void sendPluginErrorResult(CallbackContext callbackContext) {
+        PluginResult result = new PluginResult(PluginResult.Status.ERROR);
+        result.setKeepCallback(true);
+        callbackContext.sendPluginResult(result);
+    }
 }

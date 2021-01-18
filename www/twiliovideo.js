@@ -79,15 +79,9 @@ var exec = require("cordova/exec");
                     console.log("[VIDEOPLUGIN][twilio.js][Twilio.openRoom][CONFIG] config is nil");
                 }
                 console.log("[VIDEOPLUGIN][twilio.js][Twilio.openRoom] pass resp to index.js");
-                //----------------------------------------------------------------------------------
-                //MUST ADD TO ALL CALLS TwilioVideo.* = function (){....)
-                //----------------------------------------------------------------------------------
-                //the last Twilio...method called will take over the event queue eventally when user disconnects it might not come out in answerCall or startCall event handlers
                 if (eventCallback) {
                     eventCallback(e.event, e.data);
                 }
-                //----------------------------------------------------------------------------------
-
             },
             null,
             "TwilioVideoPlugin",
@@ -146,15 +140,9 @@ var exec = require("cordova/exec");
                     //console.log("[twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "']  e.data is nil - ok if not error");
                     console.log("[VIDEOPLUGIN][twilio.js][Twilio.startCall][EVENT NAME:'" + e.event + "']");
                 }
-                //----------------------------------------------------------------------------------
-                //MUST ADD TO ALL CALLS TwilioVideo.* = function (){....)
-                //----------------------------------------------------------------------------------
-                //the last Twilio...method called will take over the event queue eventally when user disconnects it might not come out in answerCall or startCall event handlers
                 if (eventCallback) {
                     eventCallback(e.event, e.data);
                 }
-                //----------------------------------------------------------------------------------
-
             },
             null,
             "TwilioVideoPlugin",
@@ -222,16 +210,9 @@ var exec = require("cordova/exec");
                     //console.log("[VIDEOPLUGIN][twilio.js][Twilio.answerCall][EVENT NAME:'" + e.event + "']  e.data is nil - ok if not error");
                     console.log("[VIDEOPLUGIN][twilio.js][Twilio.answerCall][EVENT NAME:'" + e.event + "']");
                 }
-            
-                //----------------------------------------------------------------------------------
-                //MUST ADD TO ALL CALLS TwilioVideo.* = function (){....)
-                //----------------------------------------------------------------------------------
-                //the last Twilio...method called will take over the event queue eventally when user disconnects it might not come out in answerCall or startCall event handlers
                 if (eventCallback) {
                     eventCallback(e.event, e.data);
                 }
-                //----------------------------------------------------------------------------------
-
             },
             null,
             "TwilioVideoPlugin",
@@ -241,23 +222,11 @@ var exec = require("cordova/exec");
     };
         
     //internet gone on device - tell plugin to show alert
-    TwilioVideo.showOffline = function (eventCallback) {
+    TwilioVideo.showOffline = function (success, error) {
         console.log("[VIDEOPLUGIN][twilio.js][Twilio.showOffline] CALLED");
         exec(
-            function (e) {
-                console.log("[VIDEOPLUGIN][twilio.js][Twilio.showOffline][EVENT NAME:'" + e.event + "'] Twilio.showOffline() returned]");
- 
-                //----------------------------------------------------------------------------------
-                //MUST ADD TO ALL NEW TwilioVideo.* = function (){....)
-                //----------------------------------------------------------------------------------
-                //the last Twilio...method called will take over the event queue eventally when user disconnects it might not come out in answerCall or startCall event handlers
-                if (eventCallback) {
-                    eventCallback(e.event, e.data);
-                }
-                //----------------------------------------------------------------------------------
-
-            },
-            null,
+            success,
+            error,
             "TwilioVideoPlugin",
             "showOffline",
             []  /* no params */
@@ -265,28 +234,18 @@ var exec = require("cordova/exec");
     };
     
     //internet returned on device - tell plugin to hide alert
-    TwilioVideo.showOnline = function (eventCallback) {
+    TwilioVideo.showOnline = function (success, error) {
         console.log("[VIDEOPLUGIN][twilio.js][Twilio.showOnline] CALLED");
         exec(
-             function (e) {
-                console.log("[VIDEOPLUGIN][twilio.js][Twilio.showOnline][EVENT NAME:'" + e.event + "'] Twilio.showOnline() returned]");
-                //----------------------------------------------------------------------------------
-                //MUST ADD TO ALL NEW TwilioVideo.* = function (){....)
-                //----------------------------------------------------------------------------------
-                //the last Twilio...method called will take over the event queue eventally when user disconnects it might not come out in answerCall or startCall event handlers
-                if (eventCallback) {
-                    eventCallback(e.event, e.data);
-                }
-                //----------------------------------------------------------------------------------
-            },
-             null,
+             success,
+             error,
              "TwilioVideoPlugin",
              "showOnline",
              []  /* no params */
              );
     };
 
-    TwilioVideo.closeRoom = function (eventCallback) {
+    TwilioVideo.closeRoom = function () {
         return new Promise(function (resolve, reject) {
             exec(
                 function () {
@@ -302,45 +261,21 @@ var exec = require("cordova/exec");
         });
     };
     
-    TwilioVideo.show_twiliovideo = function (eventCallback) {
+    TwilioVideo.show_twiliovideo = function (success, error) {
         console.log("[VIDEOPLUGIN][twilio.js][Twilio.show_twiliovideo] CALLED");
         exec(
-             function (e) {
-                console.log("[VIDEOPLUGIN][twilio.js][Twilio.show_twiliovideo][EVENT NAME:'" + e.event + "'] Twilio.show_twiliovideo() returned]");
-                
-                //----------------------------------------------------------------------------------
-                //MUST ADD TO ALL NEW TwilioVideo.* = function (){....)
-                //----------------------------------------------------------------------------------
-                //the last Twilio...method called will take over the event queue eventally when user disconnects it might not come out in answerCall or startCall event handlers
-                if (eventCallback) {
-                    eventCallback(e.event, e.data);
-                }
-                //----------------------------------------------------------------------------------
-
-             },
-             null,
+             success,
+             error,
              "TwilioVideoPlugin",
              "show_twiliovideo",
              []  /* no params */
              );
     };
-    TwilioVideo.hide_twiliovideo = function (eventCallback) {
+    TwilioVideo.hide_twiliovideo = function (success, error) {
         console.log("[VIDEOPLUGIN][twilio.js][Twilio.hide_twiliovideo] CALLED");
         exec(
-             function (e) {
-                console.log("[VIDEOPLUGIN][twilio.js][Twilio.hide_twiliovideo][EVENT NAME:'" + e.event + "'] Twilio.hide_twiliovideo() returned]");
-
-                //----------------------------------------------------------------------------------
-                //MUST ADD TO ALL NEW TwilioVideo.* = function (){....)
-                //----------------------------------------------------------------------------------
-                //the last Twilio...method called will take over the event queue eventally when user disconnects it might not come out in answerCall or startCall event handlers
-                if (eventCallback) {
-                    eventCallback(e.event, e.data);
-                }
-                //----------------------------------------------------------------------------------
-
-             },
-             null,
+             success,
+             error,
              "TwilioVideoPlugin",
              "hide_twiliovideo",
              []  /* no params */
