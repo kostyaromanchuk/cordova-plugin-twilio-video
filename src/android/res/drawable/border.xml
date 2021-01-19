@@ -2,9 +2,9 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle" >
 
 	<!-- fill require because when proximity sensor is near local camer is GONE and you see background-->
-    <solid android:color="#0E1B2A" />
+    <solid android:color="#112539" />
 
-    <stroke android:width="1dip" android:color="@android:color/black" />
+    <stroke android:width="1dip" android:color="#0E1B2A" />
 
     <padding android:bottom="1dp"
         android:left="1dp"

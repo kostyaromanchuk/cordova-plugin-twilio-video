@@ -781,7 +781,7 @@ NSString *const CLOSED = @"CLOSED";
         UIColor * borderColor = [UIColor colorWithRed:14.0/255.0
                                                 green:27.0/255.0
                                                  blue:42.0/255.0
-                                                alpha:1.0];  //1 + 1,1,1,1 set in SB means at least border of 1
+                                                alpha:1.0];  //1 + 1,1,1,1 set in SB means at least border of 1 //0E1B2A
         //------------------------------------------------------------------------------------------
         //DEBUG  borderColor = [UIColor redColor];
         //------------------------------------------------------------------------------------------

@@ -5,9 +5,9 @@
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#b0bec5</color>
 
-    <color name="colorButtonUnselected">#2296F3</color>
+    <color name="colorButtonUnselected">#2196F3</color>
     <color name="colorButtonSelected">#FFFFFF</color>
 
-    <color name="colorButtonDisconnect">#F81742</color>
+    <color name="colorButtonDisconnect">#FF1744</color>
 
 </resources>

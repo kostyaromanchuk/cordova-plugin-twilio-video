@@ -3,6 +3,8 @@ package org.apache.cordova.twiliovideo;
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.app.ActivityManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -35,6 +37,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -188,10 +191,15 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     private LinearLayout viewAlert;
 
-    
+    private ImageButton buttonBackToCall;
+
+    private boolean is_Activity_hiding_because_buttonBackToCall_tapped;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.e(TAG, "[VIDEOPLUGIN][LIFECYCLE] onCreate: STARTED:" + this);
 
         TwilioVideoManager.getInstance().setActionListenerObserver(this);
 
@@ -302,6 +310,113 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             }
         });
+
+        //------------------------------------------------------------------------------------------
+        //BUTTON - Back to Call (back arrow)
+        //------------------------------------------------------------------------------------------
+        buttonBackToCall = findViewById(FAKE_R.getId("buttonBackToCall"));
+        buttonBackToCall.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.e(TAG, "[VIDEOPLUGIN] onClick: buttonBackToCall tapped - TODO");
+//
+//
+//                ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+//
+//                // get the info from the currently running task
+//
+//                List< ActivityManager.RunningTaskInfo > taskInfo = am.getRunningTasks(1);
+//
+//                Log.d("topActivity", "CURRENT Activity ::"
+//
+//                        + taskInfo.get(0).topActivity.getClassName());
+//
+////                for (task : taskInfo )
+////                ComponentName componentInfo = taskInfo.get(0).topActivity;
+////
+////                componentInfo.getPackageName();
+//
+//                //----------------------------------------------------------------------------------
+//                //WRONG triggers DISCONNECT
+//                //finish();
+//                //----------------------------------------------------------------------------------
+//                //DIDNT WORK - opened phots?
+//                //Intent setIntent = new Intent(Intent.ACTION_MAIN);
+//                //setIntent.addCategory(Intent.CATEGORY_HOME);
+//                //setIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                //startActivity(setIntent);
+//                //----------------------------------------------------------------------------------
+//
+////                Intent mIntent=new Intent(TwilioVideoActivity.this, MainActivity.class);
+////                mIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+////                mIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+////                startActivity(mIntent);
+
+                //----------------------------------------------------------------------------------
+                //AndroidManifest.xml - the main activity bundle id for this POC should match the main sea/chat app exactly
+                //android:name="com.clarksons.cchat.MainActivity"
+
+
+                //we dont want to disconnect in onDestroy
+                //default set below and in onResume
+                is_Activity_hiding_because_buttonBackToCall_tapped = false;
+
+                //----------------------------------------------------------------------------------
+                //v2 - call MainActivity the flags we launched
+                //DIDNT WORK moveTaskToBack(..) worked so kept it
+                // TODO: 19/01/21 CLEANUP after testing
+                //----------------------------------------------------------------------------------
+                //                String activityToStart = "com.clarksons.cchat.MainActivity";
+                //                try {
+                //                    Log.e(TAG, "onClick: CALL INTENT:" + activityToStart );
+                //
+                //                    Class<?> classForName = Class.forName(activityToStart);
+                //                    Intent intent = new Intent(TwilioVideoActivity.this, classForName);
+                //                    //------------------------------------------------------------------------------
+                //                    //onDestroy() getting called [onPause > onStop > onDestroy]
+                //                    //we only want               [onPause > onStop            ] - TwilioVideoActivity stays in background
+                //                    //https://stackoverflow.com/questions/10435678/hide-activity-in-android?answertab=votes#tab-top
+                //                    //intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                //                    //intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                //                    intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                //
+                //                    //------------------------------------------------------------------------------
+                //                    startActivity(intent);
+                //
+                //                }
+                //                catch (ClassNotFoundException classNotFoundException) {
+                //                    Log.e(TAG, "onClick: activityToStart:'" + activityToStart + "' - classNotFoundException:", classNotFoundException );
+                //                }
+                ///DONT WORK kept calling onPause() ... onStop() and onDestroy()
+                //onDestroy was disconnecting Twilio
+                //moveTaskToBack works - much simpler
+
+                //----------------------------------------------------------------------------------
+                //MOVE Activity to the back
+                //----------------------------------------------------------------------------------
+                Log.e(TAG, "onClick: CALLING moveTaskToBack...");
+
+                //BEWARE - in AppManifest the TwilioVideActivity MUST be marked as singleInstance
+                //android:launchMode="singleTask"     - create one task but allow it to spawn sub taks - ISSUE when you hit back it closes the whole app
+                //android:launchMode="singleInstance" - create one task but dont allow it to spawn sub task -
+                //USE singleInstance when you hit BACK it only closes this Activity
+                //Note using singleInstance affects task I spawn from singleInstance - may
+                //https://stackoverflow.com/questions/25773928/setting-launchmode-singletask-vs-setting-activity-launchmode-singletop#:~:text=It's%20at%20the%20root%20of,only%20activity%20in%20the%20task.
+
+                //<activity android:configChanges="orientation|screenSize" android:name="org.apache.cordova.twiliovideo.TwilioVideoActivity" android:theme="@style/Theme.AppCompat.Light.Translucent" android:launchMode="singleInstance"/>
+
+                moveTaskToBack(true);
+                //----------------------------------------------------------------------------------
+            }
+        });
+
+        hide_buttonBackToCall();
+
+        //default is to disconnect when user his RED button > finish() > onPause() onDestroy()
+        //note if we use moveTaskToBack() then onDestroy shouldnt be called
+        //so I only use this in onPause
+        is_Activity_hiding_because_buttonBackToCall_tapped = true;
+
         //------------------------------------------------------------------------------------------
         //AUDIO
         //------------------------------------------------------------------------------------------
@@ -319,8 +434,12 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //must call before handling Intents
         setupPreviewView();
 
+        //------------------------------------------------------------------------------------------
+        //REMOTE USER - name and muted status - hide at the start
         hide_inCall_remoteUserNameAndMic();
 
+        this.imageViewInCallRemoteMicMuteState.setVisibility(View.INVISIBLE);
+        //------------------------------------------------------------------------------------------
 
         //initializeUI requires config - the other Intent values are handle in onResume as thats always called
         Intent intent = getIntent();
@@ -1013,7 +1132,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //when LOCAL user is offline we show their image over the disable camera view
     //when LOCAL user is offline we show their image over the disable camera view
     private void fill_imageView_LocalParticipant(){
-        //DEBUG DO NOT RELEASE - self.localUserPhotoURL = NULL;
+        //DEBUG DO NOT RELEASE - this.local_user_photo_url = null;
 
         this.loadUserImageInBackground_async(this.local_user_photo_url, this.imageViewLocalParticipant);
 
@@ -1198,14 +1317,14 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
 
     //----------------------------------------------------------------------------------------------
-    //MINI VIEW BORDER
+    //REMOTE USER - NAME and MUTED STATUS
     //----------------------------------------------------------------------------------------------
 
     //In Call - NAME and MIC state
     private void hide_inCall_remoteUserNameAndMic(){
 
         //DONT use GONE - it moves the buttons down then jumps when it reappears
-        this.imageViewInCallRemoteMicMuteState.setVisibility(View.INVISIBLE);
+
         this.textViewInCallRemoteName.setVisibility(View.INVISIBLE);
 
 
@@ -1213,7 +1332,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     private void show_inCall_remoteUserNameAndMic_isMuted(boolean micIsMuted){
 
-        this.imageViewInCallRemoteMicMuteState.setVisibility(View.VISIBLE);
+
         this.textViewInCallRemoteName.setVisibility(View.VISIBLE);
 
     
@@ -1223,14 +1342,21 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private void update_imageViewInCallRemoteMicMuteState_isMuted(boolean micIsMuted){
         if(micIsMuted){
             //--------------------------------------------------------------------------------------
+            //REMOTE USER IS - MUTED - show icon
+            //--------------------------------------------------------------------------------------
+
             //DONT USE R its //import capacitor.android.plugins.R;
             //will break in sea/chat as theres no capacitor
             //imageViewInCallRemoteMicMuteState.setImageResource(R.drawable.ic_mic_off_red_24px);
             //--------------------------------------------------------------------------------------
             //NOTE - main buttons use ic_mic_off_red_24px - this uses white
             imageViewInCallRemoteMicMuteState.setImageResource(FAKE_R.getDrawable("ic_mic_off_white_24px"));
-
+            //ONLY icon SHOW WHEN MUTED
+            this.imageViewInCallRemoteMicMuteState.setVisibility(View.VISIBLE);
         }else{
+
+            //--------------------------------------------------------------------------------------
+            //REMOTE USER IS - UNMUTED - hide icon
             //--------------------------------------------------------------------------------------
             //DONT USE R its //import capacitor.android.plugins.R;
             //will break in sea/chat as theres no capacitor
@@ -1238,11 +1364,37 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //--------------------------------------------------------------------------------------
             imageViewInCallRemoteMicMuteState.setImageResource(FAKE_R.getDrawable("ic_mic_green_24px"));
             //--------------------------------------------------------------------------------------
+            this.imageViewInCallRemoteMicMuteState.setVisibility(View.INVISIBLE);
 
         }
     }
 
+    /**
+     * SHOW / HIDE - BACK TO CALL arrow button
+     */
 
+    private void show_buttonBackToCall(){
+
+        if(null != this.buttonBackToCall){
+            buttonBackToCall.setVisibility(View.VISIBLE);
+
+        }else{
+            Log.e(TAG, "this.buttonBackToCall is null - show failed");
+        }
+    }
+
+    //when app start the Callin.. panel will be at the top
+    // but BACK arrow wont
+    // so remove the blank space too - use GONE not INVISIBLE
+    private void hide_buttonBackToCall(){
+        if(null != this.buttonBackToCall){
+            buttonBackToCall.setVisibility(View.GONE);
+
+        }else{
+        	Log.e(TAG, "this.buttonBackToCall is null - hide failed");
+        }
+
+    }
 
 
 
@@ -1264,6 +1416,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         
         if(this.previewIsFullScreen){
             this.show_viewRemoteParticipantInfoWithState("Connecting...");
+            this.hide_buttonBackToCall();
 
             this.animateAlphaBorderForViews();
 
@@ -1638,15 +1791,21 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             Log.e(TAG, "[VIDEOPLUGIN] methodName: mediaPlayer is null");
         }
     }
-    
 
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
 
+        Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onNewIntent: CALLED - because launchMode is singleTop:" + this);
+    }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d(TAG, "[VIDEOPLUGIN] onResume: STARTED" );
+        Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE]  onResume: STARTED:" + this);
 
+        //reset to default - changed in buttonBackToCall handler in onCreate
+        is_Activity_hiding_because_buttonBackToCall_tapped = true;
 
         this.hide_imageViewRemoteParticipantInCall();
 //        imageViewLocalParticipant.setVisibility(View.INVISIBLE);
@@ -1748,7 +1907,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             }
         }else{
             //can happen when openRoom and StartCall both did startActivity
-            Log.e(TAG, "[VIDEOPLUGIN] setupLocalCamera_ifnull: setupLocalCamera_ifnull - localVideoTrack is NOT NULL - OK created earlier");
+            Log.d(TAG, "[VIDEOPLUGIN] setupLocalCamera_ifnull: setupLocalCamera_ifnull - localVideoTrack is NOT NULL - OK created earlier");
 
         }
     }
@@ -1799,7 +1958,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 if (localParticipant != null) {
                     localParticipant.publishTrack(localVideoTrack);
                 }else{
-                    Log.e(TAG, "[VIDEOPLUGIN] publishTrack_video: localVideoTrack is OK BUT localParticipant is null >> wait for room.connect");
+                    Log.i(TAG, "[VIDEOPLUGIN] publishTrack_video: localVideoTrack is OK BUT localParticipant is null >> wait for room.connect");
 
                 }
             }else{
@@ -1811,34 +1970,57 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     @Override
     protected void onPause() {
-        /*
-         * Release the local video track before going in the background. This ensures that the
-         * camera can be used by other applications while this app is in the background.
-         */
-        if (localVideoTrack != null) {
-            /*
-             * If this local video track is being shared in a Room, unpublish from room before
-             * releasing the video track. Participants will be notified that the track has been
-             * unpublished.
-             */
-            if (localParticipant != null) {
-                localParticipant.unpublishTrack(localVideoTrack);
-            }
 
-            localVideoTrack.release();
-            localVideoTrack = null;
+        if(this.is_Activity_hiding_because_buttonBackToCall_tapped){
+            Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE]  - onPause CALLED because_buttonBackToCall_tapped - dont unpublish videoTrack  [" + this + "]");
+        }else{
+            Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE]  - onPause CALLED finish() called in DISCONNECT button - must unpublish videoTrack  [" + this + "]");Log.e(TAG, " is null");
+            /*
+             * Release the local video track before going in the background. This ensures that the
+             * camera can be used by other applications while this app is in the background.
+             */
+            if (localVideoTrack != null) {
+                /*
+                 * If this local video track is being shared in a Room, unpublish from room before
+                 * releasing the video track. Participants will be notified that the track has been
+                 * unpublished.
+                 */
+                if (localParticipant != null) {
+                    localParticipant.unpublishTrack(localVideoTrack);
+                }
+
+                localVideoTrack.release();
+                localVideoTrack = null;
+            }
         }
+
+        Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE]  - onPause CALLED [" + this + "]");
         super.onPause();
     }
 
     @Override
     public void onBackPressed() {
         super.onBackPressed();
+        Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] - onBackPressed CALLED [" + this + "]");
+
         overridePendingTransition(0, 0);
     }
 
     @Override
+    protected void onStop() {
+        Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] - onStop CALLED - does nothing [" + this + "]");
+        super.onStop();
+    }
+
+    @Override
     protected void onDestroy() {
+        //BACK TO CALL button - calls moveToBack(..) this should not be called
+
+        if(this.isFinishing()){
+            Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onDestroy CALLED - isFinishing:TRUE - finish() called somewhere [" + this + "]");
+        }else{
+            Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onDestroy CALLED - isFinishing:FALSE - system is temporarily destroying this instance [" + this + "]");
+        }
 
         /*
          * Always disconnect from the room before leaving the Activity to
@@ -1901,7 +2083,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         if(null != localAudioTrack){
             Log.i(TAG, "localAudioTrack is not null - resume can be called twice after permission request alerts");
         }else{
-        	Log.e(TAG, "localAudioTrack is null - on to create it");
+        	Log.d(TAG, "localAudioTrack is null - on to create it");
 
             if(config.isStartWithAudioOff()){
                 Log.i(TAG, "[VIDEOPLUGIN] isStartWithAudioOff: TRUE - AUDIO disabled at start");
@@ -1967,7 +2149,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 Log.e(TAG, "localVideoTrack is not null - DONT RECREATE IT - resume can be called twice after permission request alerts");
 
             }else{
-            	Log.e(TAG, "localVideoTrack is null - CREATE IT");
+            	Log.d(TAG, "localVideoTrack is null - CREATE IT");
                 localVideoTrack = LocalVideoTrack.create(this,
                         enableVideoAtStart,
                         cameraCapturer.getVideoCapturer(),
@@ -2025,6 +2207,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //Show the dialing panel
 
             this.show_viewRemoteParticipantInfoWithState("Calling...");
+            this.hide_buttonBackToCall();
 
             this.animateAlphaBorderForViews();
 
@@ -2059,10 +2242,12 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     
         this.dialing_sound_stop();
 
+
         if(this.previewIsFullScreen){
             
-            //hide Waiting...
+            //hide Waiting... / show back arrow
             this.hide_viewRemoteParticipantInfo();
+            this.show_buttonBackToCall();
 
             //------------------------------------------------------------------------------------------
             //INCALL remote users name and muted icon
@@ -2088,7 +2273,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
         if(this.previewIsFullScreen){
         
-        this.hide_viewRemoteParticipantInfo();
+            this.hide_viewRemoteParticipantInfo();
+            this.show_buttonBackToCall();
 
             //------------------------------------------------------------------------------------------
             //INCALL remote users name and muted icon
@@ -2130,6 +2316,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //this is so Disconnected isnt off center
         
             this.show_viewRemoteParticipantInfoWithState("Disconnected");
+            this.hide_buttonBackToCall();
 
             //pulse animation is on repeat forever - just hide the fake border view - I think when in full sea/chat disconnect will close this whole VC
             this.animateAlphaBorderForViews_HideBorder();
@@ -2150,7 +2337,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         if(null != room){
             Log.e(TAG, "[VIDEOPLUGIN] connectToRoom: room is NOT null - DONT RECREATE - onResume can be called twice (if permissions alert appear) - dont connect to the room again");
         }else{
-        	Log.e(TAG, "[VIDEOPLUGIN] connectToRoom: room is null - CONNECT AND CREATE IT");
+        	Log.d(TAG, "[VIDEOPLUGIN] connectToRoom: room is null - CONNECT AND CREATE IT");
 
             configureAudio(true);
 
@@ -2175,7 +2362,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 Log.e(TAG, "[VIDEOPLUGIN] connectToRoom: localVideoTrack is null");
             }
             //------------------------------------------------------------------------------------------
-            Log.e(TAG, "[VIDEOPLUGIN] connectToRoom: CREATE ROOM: room = Video.connect(...)");
+            Log.d(TAG, "[VIDEOPLUGIN] connectToRoom: CREATE ROOM: room = Video.connect(...)");
             room = Video.connect(this, connectOptionsBuilder.build(), roomListener());
             //------------------------------------------------------------------------------------------
         }
@@ -2280,12 +2467,13 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
 
         //------------------------------------------------------------------------------------------
-        if(null != button_fab_switchcamera){
-            button_fab_switchcamera.show();
-            button_fab_switchcamera.setOnClickListener(button_switchCamera_OnClickListener());
-        }else{
-            Log.e(TAG, "[VIDEOPLUGIN] switchCameraActionFab is null");
-        }
+        //        if(null != button_fab_switchcamera){
+        //            button_fab_switchcamera.show();
+        //            button_fab_switchcamera.setOnClickListener(button_switchCamera_OnClickListener());
+        //        }else{
+        //            Log.e(TAG, "[VIDEOPLUGIN] switchCameraActionFab is null");
+        //        }
+        //------------------------------------------------------------------------------------------
     }
 
     private ColorStateList createColorStateList(int selectedColor, int unselectedIconColor) {
@@ -2401,32 +2589,6 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     //------------------------------------------------------------------------------
                     //CHANGE ICON and COLOR
                     //------------------------------------------------------------------------------
-
-//                    if (enabled) {
-//                        //--------------------------------------------------------------------------
-//                        //LOCAL CAMERA IS ON
-//                        //--------------------------------------------------------------------------
-//                        //WRAPPER - ALWAYS VISIBLE
-//                        thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
-//
-//                        thumbnailVideoView.setVisibility(View.VISIBLE);
-//                        imageViewLocalParticipant.setVisibility(View.INVISIBLE);
-//                        //imageViewLocalParticipant.bringToFront();
-//                        //--------------------------------------------------------------------------
-//
-//                    } else {
-//                        //--------------------------------------------------------------------------
-//                        //LOCAL CAMERA IS OFF
-//                        //--------------------------------------------------------------------------
-//                        //WRAPPER - ALWAYS VISIBLE
-//                        thumbnailVideoViewFrameLayout.setVisibility(View.VISIBLE);
-//                        thumbnailVideoViewFrameLayout.bringToFront();
-//
-//                        thumbnailVideoView.setVisibility(View.INVISIBLE);
-//                        imageViewLocalParticipant.setVisibility(View.VISIBLE);
-//                        imageViewLocalParticipant.bringToFront();
-//                        //--------------------------------------------------------------------------
-//                    }
                     enable_disable_localcamera(enabled);
                     //------------------------------------------------------------------------------
                     update_button_fab_localvideo_onoff(enabled);
@@ -2510,16 +2672,22 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (config.isHangUpInApp()) {
-                    Log.e(TAG, "[VIDEOPLUGIN][button_disconnect_OnClickListener] onClick: >> isHangUpInApp:TRUE >> publishEvent(HANG_UP)");
+                if(null != config){
+                    if (config.isHangUpInApp()) {
+                        Log.e(TAG, "[VIDEOPLUGIN][button_disconnect_OnClickListener] onClick: >> isHangUpInApp:TRUE >> publishEvent(HANG_UP)");
 
-                    // Propagating the event to the web side in order to allow developers to do something else before disconnecting the room
-                    publishEvent(CallEvent.HANG_UP);
-                } else {
-                    Log.e(TAG, "[VIDEOPLUGIN][button_disconnect_OnClickListener] onClick: >> isHangUpInApp:FALSE >> onDisconnect");
+                        // Propagating the event to the web side in order to allow developers to do something else before disconnecting the room
+                        publishEvent(CallEvent.HANG_UP);
+                    } else {
+                        Log.e(TAG, "[VIDEOPLUGIN][button_disconnect_OnClickListener] onClick: >> isHangUpInApp:FALSE >> onDisconnect");
 
-                    onDisconnect();
+                        onDisconnect();
+                    }
+                }else{
+                    //happnes when you call show_twiliovideo before openRoom - disconnect button will crash cos config is null
+                	Log.e(TAG, "config is null - activity created but not configured ");
                 }
+
             }
         };
     }
@@ -2845,7 +3013,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 //----------------------------------------------------------------------------------
                 //ROOM - onConnected
                 //----------------------------------------------------------------------------------
-                Log.e(TAG, "[VIDEOPLUGIN] Room.Listener onConnected: ");
+                Log.i(TAG, "[VIDEOPLUGIN] Room.Listener onConnected: ");
 
                 localParticipant = room.getLocalParticipant();
 

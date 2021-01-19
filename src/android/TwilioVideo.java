@@ -62,6 +62,12 @@ public class TwilioVideo extends CordovaPlugin {
             case "showOnline":
                 this.showOnline(args, callbackContext);
                 break;
+            case "show_twiliovideo":
+                this.show_twiliovideo(args, callbackContext);
+                break;
+            case "hide_twiliovideo":
+                this.hide_twiliovideo(args, callbackContext);
+                break;
             case "closeRoom":
                 this.closeRoom(callbackContext);
                 break;
@@ -165,6 +171,7 @@ public class TwilioVideo extends CordovaPlugin {
                 this.config.parse(args.optJSONObject(6));
             }
 
+            //LOG.e(TAG, "TOKEN: " + this.getClass());
             LOG.d(TAG, "TOKEN: " + token);
             LOG.d(TAG, "ROOMID: " + roomId);
             LOG.d(TAG, "local_user_name: " + local_user_name);
@@ -605,6 +612,122 @@ public class TwilioVideo extends CordovaPlugin {
     }
 
 
+    public void show_twiliovideo(final JSONArray args, CallbackContext callbackContext) {
+        Log.e(TAG, "[VIDEOPLUGIN][TwilioVideo.java] show_twiliovideo CALLED");
+
+        //no params try catch not needed
+        //--------------------------------------------------------------------------------------
+        //putExtra can throw error: local variables referenced from an inner class must be final or effectively final
+        //so copy values into final versions of same
+        //--------------------------------------------------------------------------------------
+
+        final CordovaPlugin that = this;
+        try {
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                    Intent intent_TwilioVideoActivity = new Intent(Intent.ACTION_VIEW);
+
+                    intent_TwilioVideoActivity.setClass(that.cordova.getActivity().getBaseContext(), TwilioVideoActivity.class);
+                    intent_TwilioVideoActivity.setPackage(that.cordova.getActivity().getApplicationContext().getPackageName());
+
+
+                    //------------------------------------------------------------------------------
+                    //Android same activity
+                    String nextAction = TwilioVideoActivityNextAction.action_show_twiliovideo;
+                    intent_TwilioVideoActivity.putExtra("action", nextAction);
+
+                    //getIntent() only gets the intent set startActivity > onCreate
+                    //for showOnline only onResume is called so getIntent still shows "openRoom"
+
+                    TwilioVideoActivityNextAction.setNextAction(nextAction);
+
+                    //------------------------------------------------------------------------------
+                    //prevent action_show_twiliovideo > startActivity from creating new instance
+                    //------------------------------------------------------------------------------
+
+                    //but showOnline should use existing instance
+                    //single instance - reuse existing one if available
+                    intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+
+                    //------------------------------------------------------------------------------
+                    //DEBUG its MainActivity
+                    //Activity cordova_activity = that.cordova.getActivity();
+
+                    that.cordova.getActivity().startActivity(intent_TwilioVideoActivity);
+
+                }
+
+            });
+        } catch (Exception exception) {
+            Log.e(TAG, "[VIDEOPLUGIN] show_twiliovideo failed", exception);
+            this.sendPluginErrorResult(callbackContext);
+            return;
+        }
+        this.sendPluginOkResult(callbackContext);
+    }
+
+    public void hide_twiliovideo(final JSONArray args, CallbackContext callbackContext) {
+        Log.e(TAG, "[VIDEOPLUGIN][TwilioVideo.java] hide_twiliovideo CALLED");
+
+        //no params try catch not needed
+        //--------------------------------------------------------------------------------------
+        //putExtra can throw error: local variables referenced from an inner class must be final or effectively final
+        //so copy values into final versions of same
+        //--------------------------------------------------------------------------------------
+
+        final CordovaPlugin that = this;
+        try {
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                    Intent intent_TwilioVideoActivity = new Intent(Intent.ACTION_VIEW);
+
+                    intent_TwilioVideoActivity.setClass(that.cordova.getActivity().getBaseContext(), TwilioVideoActivity.class);
+                    intent_TwilioVideoActivity.setPackage(that.cordova.getActivity().getApplicationContext().getPackageName());
+
+
+                    //------------------------------------------------------------------------------
+                    //Android same activity
+                    String nextAction = TwilioVideoActivityNextAction.action_hide_twiliovideo;
+                    intent_TwilioVideoActivity.putExtra("action", nextAction);
+
+                    //getIntent() only gets the intent set startActivity > onCreate
+                    //for hide_twiliovideo only onResume is called so getIntent still shows "openRoom"
+
+                    TwilioVideoActivityNextAction.setNextAction(nextAction);
+
+                    //------------------------------------------------------------------------------
+                    //prevent hide_twiliovideo > startActivity from creating new instance
+                    //------------------------------------------------------------------------------
+
+                    //but showOnline should use existing instance
+                    //single instance - reuse existing one if available
+                    intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+
+                    //------------------------------------------------------------------------------
+                    //DEBUG its MainActivity
+                    //Activity cordova_activity = that.cordova.getActivity();
+
+                    that.cordova.getActivity().startActivity(intent_TwilioVideoActivity);
+
+                }
+
+            });
+        } catch (Exception exception) {
+            Log.e(TAG, "[VIDEOPLUGIN] hide_twiliovideo failed", exception);
+            this.sendPluginErrorResult(callbackContext);
+            return;
+        }
+        this.sendPluginOkResult(callbackContext);
+    }
+
+
+
+
+
+    //**********************************************************************************************
+
     private void registerCallListener(final CallbackContext callbackContext) {
         if (callbackContext == null) {
             return;
@@ -612,14 +735,14 @@ public class TwilioVideo extends CordovaPlugin {
         TwilioVideoManager.getInstance().setEventObserver(new CallEventObserver() {
             @Override
             public void onEvent(String event, JSONObject data) {
-                Log.e(TAG, String.format("[VIDEOPLUGIN] Event received: '%s' with data: %s", event, data));
+                Log.d(TAG, String.format("[VIDEOPLUGIN] Event received: '%s' with data: %s", event, data));
 
                 if(null != event){
                     if(event.equals("CLOSED")){
-                        Log.e(TAG, "[VIDEOPLUGIN] onEvent: CLOSED received - KILL TwilioActivity");
+                        Log.d(TAG, "[VIDEOPLUGIN] onEvent: CLOSED received - KILL TwilioActivity");
 
                     }else if(event.equals("DISCONNECTED")){
-                        Log.e(TAG, "[VIDEOPLUGIN] onEvent: DISCONNECTED received");
+                        Log.d(TAG, "[VIDEOPLUGIN] onEvent: DISCONNECTED received");
 
                     }else{
                         Log.d(TAG, "[VIDEOPLUGIN] onEvent: UNHANDLED EVENT - ignore passed back to twilio.js:" + event);

@@ -35,20 +35,20 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="@dimen/fab_margin"
+                android:contentDescription="@string/toggle_camera"
                 android:src="@drawable/ic_videocam_green_24px"
-                app:backgroundTint="#2296F3"
-                app:fabSize="auto"
-                android:contentDescription="@string/toggle_camera" />
+                app:backgroundTint="@color/colorButtonUnselected"
+                app:fabSize="auto" />
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/local_audio_action_fab"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="@dimen/fab_margin"
+                android:contentDescription="@string/toggle_audio"
                 android:src="@drawable/ic_mic_green_24px"
-                app:backgroundTint="#2296F3"
-                app:fabSize="auto"
-                android:contentDescription="@string/toggle_audio" />
+                app:backgroundTint="@color/colorButtonUnselected"
+                app:fabSize="auto" />
 
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -56,10 +56,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="@dimen/fab_margin"
+                android:contentDescription="@string/switch_audio"
                 android:src="@drawable/ic_phonelink_ring_white_24dp"
-                app:backgroundTint="#2296F3"
-                app:fabSize="auto"
-                android:contentDescription="@string/switch_audio" />
+                app:backgroundTint="@color/colorButtonUnselected"
+                app:fabSize="auto" />
 
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -67,10 +67,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="@dimen/fab_margin"
+                android:contentDescription="@string/disconnect"
                 android:src="@drawable/ic_call_white_24px"
-                app:backgroundTint="#FF1844"
-                app:fabSize="auto"
-                android:contentDescription="@string/disconnect" />
+                app:backgroundTint="@color/colorButtonDisconnect"
+                app:fabSize="auto" />
 
         </LinearLayout>
 
@@ -79,25 +79,27 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:gravity="center"
             android:layout_gravity="bottom"
-            android:orientation="horizontal" >
+            android:layout_marginBottom="8dp"
+            android:gravity="left"
+            android:orientation="horizontal">
+
+
+            <TextView
+                android:id="@+id/textViewInCallRemoteName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text=""
+                android:textSize="14sp" />
 
             <ImageView
                 android:id="@+id/imageViewInCallRemoteMicMuteState"
                 android:layout_width="20dp"
                 android:layout_height="20dp"
-                android:layout_marginStart="20dp"
+                android:layout_marginStart="8dp"
                 app:srcCompat="@drawable/ic_mic_green_24px" />
 
-            <TextView
-                android:id="@+id/textViewInCallRemoteName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:textSize="14sp"
-                android:text="" />
 
         </LinearLayout>
 
