@@ -1190,14 +1190,75 @@ NSString *const CLOSED = @"CLOSED";
         
         if(self.localAudioTrack.isEnabled){
             [self micButton_changeIconTo_on];
+            
+            //--------------------------------------------------------------------------------------
+            //BUG in Twilio JS / Web SDK
+            //localAudioTrack.enabled change turns off camera on REMOTE/WEB side but no delegate called
+            //you need to unpublish as well
+            //--------------------------------------------------------------------------------------
+            [self publishAudioTrack_localAudioTrack];
+            //--------------------------------------------------------------------------------------
         }else{
             [self micButton_changeIconTo_off];
+            [self unpublishAudioTrack_localAudioTrack];
+            
         }
         
         
+
     }
     //[self updateConstraints_PreviewView_toFullScreen: FALSE animated:TRUE];
     //DEBUG [self dialing_sound_stop];
+}
+
+-(void)unpublishAudioTrack_localAudioTrack{
+    
+    if(self.room){
+        if(self.room.localParticipant){
+            
+            if (self.localAudioTrack) {
+                [self log_info:@"[unpublishTrack_localAudioTrack] CALLING unpublishAudioTrack:self.localAudioTrack"];
+                [self.room.localParticipant unpublishAudioTrack:self.localAudioTrack];
+                
+                //DO NOT SET self.localAudioTrack to nil
+                //on android it caused issue
+                //we create the localTrack then pass it to room.connect
+                //if we nil it here then we need to create a new instance in publishAudioTrack_localAudioTrack
+                //but theres no method to add it to a room
+                
+            }else{
+                [self log_error:@"[unpublishTrack_localAudioTrack] self.room.localParticipant is NULL - cant unpublishAudioTrack:"];
+            }
+        }else{
+            [self log_error:@"[unpublishTrack_localAudioTrack] self.room.localParticipant is NULL - cant unpublishAudioTrack:"];
+        }
+    }else{
+        [self log_error:@"[unpublishTrack_localAudioTrack] self.room is NULL - cant unpublishAudioTrack:"];
+    }
+}
+
+-(void)publishAudioTrack_localAudioTrack{
+    
+    if(self.room){
+        if(self.room.localParticipant){
+            
+            if (self.localAudioTrack) {
+                [self log_info:@"[unpublishTrack_localAudioTrack] CALLING publishAudioTrack:self.localAudioTrack"];
+                
+                //you MUST reuse the localAudioTrack that was there when room.connect called
+                //on android in unpublish we set localAudioTrack to nil after unpublish
+                //then creates new localAudioTrack but it didnt work
+                [self.room.localParticipant publishAudioTrack:self.localAudioTrack];
+                
+            }else{
+                [self log_error:@"[unpublishTrack_localAudioTrack] self.room.localParticipant is NULL - cant publishAudioTrack:"];
+            }
+        }else{
+            [self log_error:@"[unpublishTrack_localAudioTrack] self.room.localParticipant is NULL - cant publishAudioTrack:"];
+        }
+    }else{
+        [self log_error:@"[unpublishTrack_localAudioTrack] self.room is NULL - cant publishAudioTrack:"];
+    }
 }
 
 //MUTE VIDEO BUTTON

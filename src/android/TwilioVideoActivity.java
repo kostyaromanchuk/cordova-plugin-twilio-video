@@ -400,12 +400,15 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 //https://stackoverflow.com/questions/25773928/setting-launchmode-singletask-vs-setting-activity-launchmode-singletop#:~:text=It's%20at%20the%20root%20of,only%20activity%20in%20the%20task.
 
                 //<activity android:configChanges="orientation|screenSize" android:name="org.apache.cordova.twiliovideo.TwilioVideoActivity" android:theme="@style/Theme.AppCompat.Light.Translucent" android:launchMode="singleInstance"/>
-
+                //----------------------------------------------------------------------------------
+//FOR RELEASE - COMMENT IN
                 moveTaskToBack(true);
                 //----------------------------------------------------------------------------------
+//FOR RELEASE - COMMENT OUT - DEBUG triggers startCall
+//                publishEvent(CallEvent.DEBUGSTARTACALL);
             }
         });
-
+//FOR RELEASE - COMMENT IN
         hide_buttonBackToCall();
 
         //default is to disconnect when user his RED button > finish() > onPause() onDestroy()
@@ -1384,6 +1387,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     // so remove the blank space too - use GONE not INVISIBLE
     private void hide_buttonBackToCall(){
         if(null != this.buttonBackToCall){
+            //FOR RELEASE - COMMENT IN
             buttonBackToCall.setVisibility(View.GONE);
 
         }else{
@@ -1678,7 +1682,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
 
-        Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onNewIntent: CALLED - because launchMode is singleTop:" + this);
+        Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onNewIntent: CALLED - because launchMode is singleInstance:" + this);
     }
 
     @Override
@@ -1894,9 +1898,14 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             }else{
                 Log.e(TAG, "onPause: localParticipant is null - cant unpublishTrack");
             }
-
-            localAudioTrack.release();
-            localAudioTrack = null;
+            //--------------------------------------------------------------------------------------
+            //dont release when you unpublish
+            // when audio enabled again it will crate a new localTrack instance
+            // but it doesnt trigger delegate on remote side - I think because we pass audio track in to room.connect
+            //
+            //            localAudioTrack.release();
+            //            localAudioTrack = null;
+            //--------------------------------------------------------------------------------------
         }else{
             Log.e(TAG, "onPause: localAudioTrack is null - cant unpublishTrack");
         }
@@ -2121,13 +2130,16 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //cordova can start call with audio off config.startWithAudioOff:true
         boolean enableAudioAtStart = true;
 
+        //------------------------------------------------------------------------------------------
         //onResume can be called twice for a clean install
         // first when call started from web to android > void: answer >
         // show permission alerts
         // after permission request alerts press ok app comes to fireground and onResume called
         //localAudioTrack may be not nil - dont create it again else thrumnail can be blank (but camera looks ok on the web)
+        //------------------------------------------------------------------------------------------
         if(null != localAudioTrack){
             Log.i(TAG, "localAudioTrack is not null - resume can be called twice after permission request alerts");
+
         }else{
             Log.d(TAG, "localAudioTrack is null - on to create it");
 
@@ -2139,8 +2151,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             }
             //--------------------------------------------------------------
             localAudioTrack = LocalAudioTrack.create(this,
-                    enableAudioAtStart,
-                    LOCAL_AUDIO_TRACK_NAME);
+                                                    enableAudioAtStart,
+                                                    LOCAL_AUDIO_TRACK_NAME);
             //--------------------------------------------------------------
         }
     }
@@ -2780,34 +2792,21 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     }
 
                 }else{
-                    Log.e(TAG, "[VIDEOPLUGIN] onClick: localAudioTrack is null - RECREATE IT");
-
-
-
-//                    Log.e(TAG, "[VIDEOPLUGIN] onClick: localVideoTrack is null - CREATE IT" );
-//
-//                    setup_local_camera();
-//
-//                    //------------------------------------------------------------------------------
-//                    //CHANGE ICON and COLOR
-//                    //------------------------------------------------------------------------------
-//                    show_hide_localcamera(true);
-//                    //------------------------------------------------------------------------------
-//                    update_button_fab_localvideo_onoff(true);
-//                    //------------------------------------------------------------------------------
-//                    setup_localvideo_moveLocalVideoToThumbnailView();
-//
-//                    //------------------------------------------------------------------------------
-//                    //BUG on JS sdk - just enabling localTrack isnt enough you have to PUBLISH too
-//                    //else web sdk wont get delegate
+                    Log.e(TAG, "[VIDEOPLUGIN] onClick: localAudioTrack is null - SHOULD NOT HAPPEN - DONT RECREATE IT its not connected to the room so delegate on other side will never be called");
 
 
 
 
-                    setup_local_audio();
-                    setup_localaudio_button();
+//DIDNT WORK - it does recrate the localAudio track but doesnt connect it to the room
+//instead in unpublish I call unpublish but I dont set localTrack to nil so in publsih Im using same instance 
+//this else clause should never happen
+ //                   setup_local_audio();
+ //                   setup_localaudio_button();
+ //
+ //                    publishTrack_localVideoTrack();
 
-                    publishTrack_localVideoTrack();
+                    //DELEGATE on WEB and iOS wasnt being called
+ //                    localAudioTrack.enable(true);
                 }
 
             }
@@ -3569,14 +3568,14 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onAudioTrackEnabled(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication) {
-                Log.d(TAG, "[VIDEOPLUGIN] onAudioTrackEnabled: CALLED" );
+                Log.e(TAG, "[VIDEOPLUGIN] onAudioTrackEnabled: CALLED" );
 
                 show_inCall_remoteUserNameAndMic_isMuted(false);
             }
 
             @Override
             public void onAudioTrackDisabled(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication) {
-                Log.d(TAG, "[VIDEOPLUGIN] onAudioTrackDisabled: CALLED" );
+                Log.e(TAG, "[VIDEOPLUGIN] onAudioTrackDisabled: CALLED" );
 
                 show_inCall_remoteUserNameAndMic_isMuted(true);
             }
