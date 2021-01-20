@@ -3,17 +3,11 @@ package org.apache.cordova.twiliovideo;
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.app.ActivityManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -29,8 +23,6 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.drawable.RoundedBitmapDrawable;
-import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
 
 import android.util.Log;
 import android.view.View;
@@ -224,14 +216,14 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         // hiddden   by cordova.showOnline() >> action_showOnline   > INVISIBLE
         //------------------------------------------------------------------------------------------
         viewAlert = findViewById(FAKE_R.getId("viewAlert"));
-        //------------------------------------------------------------
+        //------------------------------------------------------------------------------------------
         //DEFAULT TO HIDDEN AS BLOCK THE WHOLE WINDOW
         //    <LinearLayout
         //        android:id="@+id/viewAlert"
         //        ...
         //        android:visibility="gone"
 
-        //------------------------------------------------------------
+        //------------------------------------------------------------------------------------------
         this.viewAlert.setVisibility(View.INVISIBLE);
         //------------------------------------------------------------------------------------------
 
@@ -294,6 +286,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 if(previewIsFullScreen){
                     Log.d(TAG, "[VIDEOPLUGIN] previewIsFullScreen is true - dont flip camera - too near the big buttons");
                 }else{
+                    //------------------------------------------------------------------------------
+                    //FLIP  FRONT / BACK CAMERA
+                    //------------------------------------------------------------------------------
                     if (cameraCapturer != null) {
                         CameraSource cameraSource = cameraCapturer.getCameraSource();
                         cameraCapturer.switchCamera();
@@ -306,6 +301,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     }else{
                         Log.e(TAG, "[VIDEOPLUGIN] cameraCapturer is null");
                     }
+                    //------------------------------------------------------------------------------
                 }
 
             }
@@ -319,38 +315,38 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             @Override
             public void onClick(View view) {
                 Log.e(TAG, "[VIDEOPLUGIN] onClick: buttonBackToCall tapped - TODO");
-//
-//
-//                ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
-//
-//                // get the info from the currently running task
-//
-//                List< ActivityManager.RunningTaskInfo > taskInfo = am.getRunningTasks(1);
-//
-//                Log.d("topActivity", "CURRENT Activity ::"
-//
-//                        + taskInfo.get(0).topActivity.getClassName());
-//
-////                for (task : taskInfo )
-////                ComponentName componentInfo = taskInfo.get(0).topActivity;
-////
-////                componentInfo.getPackageName();
-//
-//                //----------------------------------------------------------------------------------
-//                //WRONG triggers DISCONNECT
-//                //finish();
-//                //----------------------------------------------------------------------------------
-//                //DIDNT WORK - opened phots?
-//                //Intent setIntent = new Intent(Intent.ACTION_MAIN);
-//                //setIntent.addCategory(Intent.CATEGORY_HOME);
-//                //setIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//                //startActivity(setIntent);
-//                //----------------------------------------------------------------------------------
-//
-////                Intent mIntent=new Intent(TwilioVideoActivity.this, MainActivity.class);
-////                mIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-////                mIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-////                startActivity(mIntent);
+                //------------------------------------------------------------------------------------------
+                //
+                //                ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+                //
+                //                // get the info from the currently running task
+                //
+                //                List< ActivityManager.RunningTaskInfo > taskInfo = am.getRunningTasks(1);
+                //
+                //                Log.d("topActivity", "CURRENT Activity ::"
+                //
+                //                        + taskInfo.get(0).topActivity.getClassName());
+                //
+                ////                for (task : taskInfo )
+                ////                ComponentName componentInfo = taskInfo.get(0).topActivity;
+                ////
+                ////                componentInfo.getPackageName();
+                //
+                //                //----------------------------------------------------------------------------------
+                //                //WRONG triggers DISCONNECT
+                //                //finish();
+                //                //----------------------------------------------------------------------------------
+                //                //DIDNT WORK - opened phots?
+                //                //Intent setIntent = new Intent(Intent.ACTION_MAIN);
+                //                //setIntent.addCategory(Intent.CATEGORY_HOME);
+                //                //setIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                //                //startActivity(setIntent);
+                //                //----------------------------------------------------------------------------------
+                //
+                ////                Intent mIntent=new Intent(TwilioVideoActivity.this, MainActivity.class);
+                ////                mIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                ////                mIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                ////                startActivity(mIntent);
 
                 //----------------------------------------------------------------------------------
                 //AndroidManifest.xml - the main activity bundle id for this POC should match the main sea/chat app exactly
@@ -954,7 +950,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //--------------------------------------------------------------------------------------
             //SETUP LOCAL CAMERA AND AUDIO
             //--------------------------------------------------------------------------------------
-            createAudioAndVideoTracks();
+            setup_createAudioAndVideoTracks();
 
             //--------------------------------------------------------------------------------------
             //p1 - wait for P2 to call room.connect() then backend will send startCall() to P1
@@ -974,7 +970,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         }
         else if(this.action_current.equals(TwilioVideoActivityNextAction.action_answerCall))
         {
-            createAudioAndVideoTracks();
+            setup_createAudioAndVideoTracks();
             setupLocalCamera_ifnull();
 
             //showHideBlurView(true);
@@ -1393,15 +1389,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         }else{
         	Log.e(TAG, "this.buttonBackToCall is null - hide failed");
         }
-
     }
-
-
-
-
-
-
-
 
 
 
@@ -1465,7 +1453,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private void update_PreviewView_showInFullScreen(boolean changeToFullScreen, boolean isAnimated, boolean showBlurView) {
 
         //animation in and out should be same number of secs
-//        NSTimeInterval duration = 1.0;
+        //        NSTimeInterval duration = 1.0;
 
         //------------------------------------------------------------------------------------------
         //When you show "Disconnected.." you dont show the blur - other use has hung up
@@ -1539,79 +1527,6 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         }
     }
 
-
-//    private void update_PreviewView_toFullScreen(boolean fullScreen){
-//        if(fullScreen){
-////TODO - ZOOM
-////            //THESE are linked to SuperView not Layoutguide - may go behind nav bar
-////            this.nsLayoutConstraint_previewView_top.constant = 0.0;
-////            this.nsLayoutConstraint_previewView_bottom.constant = 0.0;
-////
-////            this.nsLayoutConstraint_previewView_leading.constant = 0.0;
-////            this.nsLayoutConstraint_previewView_trailing.constant = 0.0;
-//
-//
-//
-//            this.previewIsFullScreen = true;
-//
-//
-//        }else{
-//            //------------------------------------------------------------------------------------------
-////TODO ZOOM TO MINI VIEW
-//            //------------------------------------------------------------------------------------------
-////            CGFloat screen_width = this.view.frame.size.width;
-////            CGFloat screen_height = this.view.frame.size.height;
-////
-////            CGFloat border = 8.0;
-////            CGFloat previewView_height_small = 160.0;
-////            CGFloat previewView_width_small = 120.0;
-////
-////            //----------------------------------------------------------------------
-////            //BOTTOM
-////            //----------------------------------------------------------------------
-////            //ISSUE - previewView in full screen ignores Safe Area
-////            //BUT viewButtonOuter bottom is calculated from view.safeAreaInsets.bottom
-////            //
-////            //UIEdgeInsets screen_safeAreaInsets = this.view.safeAreaInsets;
-////
-////            CGFloat bottom = (this.viewButtonOuter.frame.size.height + this.view.safeAreaInsets.bottom + 8.0);
-////
-////            this.nsLayoutConstraint_previewView_bottom.constant = bottom;
-////
-////            //----------------------------------------------------------------------
-////            //TOP = BOTTOM + HEIGHT of preview
-////            //----------------------------------------------------------------------
-////            CGFloat top = screen_height - (bottom + previewView_height_small);
-////            this.nsLayoutConstraint_previewView_top.constant = top;
-////
-////            //----------------------------------------------------------------------
-////            //TRAILING
-////            //----------------------------------------------------------------------
-////            CGFloat trailing = this.view.safeAreaInsets.right + border;
-////            this.nsLayoutConstraint_previewView_trailing.constant = trailing;
-////
-////            //----------------------------------------------------------------------
-////            //LEADING
-////            //----------------------------------------------------------------------
-////            CGFloat leading = screen_width - (trailing + previewView_width_small);
-////            this.nsLayoutConstraint_previewView_leading.constant = leading;
-//
-//            //this.previewView.contentMode = UIViewContentModeScaleAspectFit;
-//
-//            this.previewIsFullScreen = false;
-//
-//            //Dont do here the layer is being updated by the animation so this may not work at first - moved up to update_PreviewView_showInFullScreen
-//            //
-//            //        //didnt work on p1 startCall() but did on p2 answerCall() - animation still happening on layer?
-//            //        dispatch_async(dispatch_get_main_queue(), ^{
-//            //            this.addBorderToView:this.previewView withColor:[UIColor redColor] borderWidth: 2.0f];
-//            //        });
-//
-//        }
-//    }
-
-
-
     private void update_PreviewView_toFullScreen(boolean fullScreen) {
         Log.d(TAG, "[VIDEOPLUGIN] update_PreviewView_toFullScreen: START");
         if(fullScreen){
@@ -1660,24 +1575,20 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 int[] location = new int[2];
                 this.bottom_buttons_linearlayout.getLocationOnScreen(location);
 
-
+                //----------------------------------------------------------------------------------
                 //    int bottom_buttons_linearlayout_x = location[0];
                 //    int bottom_buttons_linearlayout_y = location[1];
                 //
                 //    int bottom_buttons_linearlayout_top = bottom_buttons_linearlayout_y;
-
+                //----------------------------------------------------------------------------------
                 int leftMargin = screen_width_pixels - preview_mini_width - margin;
                 int topMargin  = screen_height_pixels - preview_mini_height - margin_bottom;
-
+                //----------------------------------------------------------------------------------
                 //thumbnail_video_view_setmargins(leftMargin, topMargin, margin, margin * 4);
 
                 //thumbnail_video_view_setmargins(leftMargin, topMargin, margin, margin_bottom);
                 thumbnail_video_view_framelayout_setmargins(leftMargin, topMargin, margin, margin_bottom);
-
-
-
-
-
+                //----------------------------------------------------------------------------------
             }else{
             	Log.e(TAG, "[VIDEOPLUGIN] bottom_buttons_linearlayout is null");
             }
@@ -1689,31 +1600,6 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     }
 
     //----------------------------------------------------------------------------------------------
-//CLEANUP
-//    private void thumbnail_video_view_setmargins(int leftmargin, int topMargin, int rightMargin, int bottomMargin){
-//        VideoView thumbnail_video_view = findViewById(FAKE_R.getId("thumbnail_video_view"));
-//        ViewGroup.LayoutParams layoutParams = thumbnail_video_view.getLayoutParams();
-//
-//
-//        if (layoutParams instanceof ViewGroup.MarginLayoutParams) {
-//            ViewGroup.MarginLayoutParams marginLayoutParams = (ViewGroup.MarginLayoutParams) layoutParams;
-//
-//            //OK but sets all
-//            marginLayoutParams.setMargins(leftmargin, topMargin, rightMargin, bottomMargin); // left, top, right, bottom
-//
-//            //https://developer.android.com/reference/android/view/ViewGroup.MarginLayoutParams
-//            //((ViewGroup.MarginLayoutParams) layoutParams).topMargin = 0;
-//            //((ViewGroup.MarginLayoutParams) layoutParams).leftMargin = 0;
-//            //((ViewGroup.MarginLayoutParams) layoutParams).bottomMargin = 0;
-//            //((ViewGroup.MarginLayoutParams) layoutParams).rightMargin = 0;
-//
-//            //video_container.requestLayout();
-//            thumbnail_video_view.requestLayout();
-//        } else{
-//            Log.e("MyApp", "Attempted to set the margins on a class that doesn't support margins: video_container");
-//        }
-//    }
-
 
     private void thumbnail_video_view_framelayout_setmargins(int leftmargin, int topMargin, int rightMargin, int bottomMargin){
 
@@ -1740,11 +1626,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             Log.e(TAG, "[VIDEOPLUGIN] Attempted to set the margins on a class that doesn't support margins: video_container");
         }
     }
-
     //----------------------------------------------------------------------------------------------
-
-
-
 
     //------------------------------------------------------------------------------------------
     //MEDIA PLAYER - ringing.mp3
@@ -1839,10 +1721,20 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         parse_Intents();
 
         //------------------------------------------------------------------------------------------
+        // TODO: 20/01/21 CLEANUP
+        //        setupLocalCamera_ifnull();
+        //        publishTrack_video(); //needed room.connect not set yet so cant publish??
+
+        setupAndPublish_localVideo();
+        //------------------------------------------------------------------------------------------
+
+    }
+
+    private void setupAndPublish_localVideo(){
+        //------------------------------------------------------------------------------------------
         setupLocalCamera_ifnull();
         publishTrack_video(); //needed room.connect not set yet so cant publish??
         //------------------------------------------------------------------------------------------
-
     }
 
 
@@ -1975,27 +1867,124 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE]  - onPause CALLED because_buttonBackToCall_tapped - dont unpublish videoTrack  [" + this + "]");
         }else{
             Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE]  - onPause CALLED finish() called in DISCONNECT button - must unpublish videoTrack  [" + this + "]");Log.e(TAG, " is null");
-            /*
-             * Release the local video track before going in the background. This ensures that the
-             * camera can be used by other applications while this app is in the background.
-             */
-            if (localVideoTrack != null) {
-                /*
-                 * If this local video track is being shared in a Room, unpublish from room before
-                 * releasing the video track. Participants will be notified that the track has been
-                 * unpublished.
-                 */
-                if (localParticipant != null) {
-                    localParticipant.unpublishTrack(localVideoTrack);
-                }
 
-                localVideoTrack.release();
-                localVideoTrack = null;
-            }
+            //--------------------------------------------------------------------------------------
+            unpublishTrack_localVideoTrack();
+            //--------------------------------------------------------------------------------------
         }
 
         Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE]  - onPause CALLED [" + this + "]");
         super.onPause();
+    }
+    private void unpublishTrack_localAudioTrack(){
+        Log.e(TAG, "[VIDEOPLUGIN] unpublishTrack_localAudioTrack: CALLED >> localParticipant.unpublishTrack(localAudioTrack)");
+
+        /*
+         * Release the local video track before going in the background. This ensures that the
+         * camera can be used by other applications while this app is in the background.
+         */
+        if (localAudioTrack != null) {
+            /*
+             * If this local video track is being shared in a Room, unpublish from room before
+             * releasing the video track. Participants will be notified that the track has been
+             * unpublished.
+             */
+            if (localParticipant != null) {
+                localParticipant.unpublishTrack(localAudioTrack);
+            }else{
+                Log.e(TAG, "onPause: localParticipant is null - cant unpublishTrack");
+            }
+
+            localAudioTrack.release();
+            localAudioTrack = null;
+        }else{
+            Log.e(TAG, "onPause: localAudioTrack is null - cant unpublishTrack");
+        }
+    }
+    private void publishTrack_localAudioTrack(){
+        Log.e(TAG, "[VIDEOPLUGIN] publishTrack_localAudioTrack: CALLED >> localParticipant.publishTrack(localAudioTrack)");
+        /*
+         * Release the local video track before going in the background. This ensures that the
+         * camera can be used by other applications while this app is in the background.
+         */
+        if (localAudioTrack != null) {
+            /*
+             * If this local video track is being shared in a Room, publish from room before
+             * releasing the video track. Participants will be notified that the track has been
+             * published.
+             */
+            if (localParticipant != null) {
+                localParticipant.publishTrack(localAudioTrack);
+            }else{
+                Log.e(TAG, "onPause: localParticipant is null - cant publishTrack");
+            }
+
+        }else{
+            Log.e(TAG, "onPause: localAudioTrack is null - cant publishTrack");
+        }
+    }
+
+    private void unpublishTrack_localVideoTrack(){
+        Log.e(TAG, "[VIDEOPLUGIN] unpublishTrack_localVideoTrack: CALLED >> localParticipant.unpublishTrack(localVideoTrack)");
+
+        /*
+         * Release the local video track before going in the background. This ensures that the
+         * camera can be used by other applications while this app is in the background.
+         */
+        if (localVideoTrack != null) {
+            /*
+             * If this local video track is being shared in a Room, unpublish from room before
+             * releasing the video track. Participants will be notified that the track has been
+             * unpublished.
+             */
+            if (localParticipant != null) {
+                localParticipant.unpublishTrack(localVideoTrack);
+            }else{
+                Log.e(TAG, "onPause: localParticipant is null - cant unpublishTrack");
+            }
+
+            localVideoTrack.release();
+            localVideoTrack = null;
+        }else{
+            Log.e(TAG, "onPause: localVideoTrack is null - cant unpublishTrack");
+        }
+    }
+    private void publishTrack_localVideoTrack(){
+        Log.e(TAG, "[VIDEOPLUGIN] publishTrack_localVideoTrack: CALLED >> localParticipant.publishTrack(localVideoTrack)");
+        /*
+         * Release the local video track before going in the background. This ensures that the
+         * camera can be used by other applications while this app is in the background.
+         */
+        if (localVideoTrack != null) {
+            /*
+             * If this local video track is being shared in a Room, publish from room before
+             * releasing the video track. Participants will be notified that the track has been
+             * published.
+             */
+            if (localParticipant != null) {
+                localParticipant.publishTrack(localVideoTrack);
+            }else{
+                Log.e(TAG, "onPause: localParticipant is null - cant publishTrack");
+            }
+
+        }else{
+            Log.e(TAG, "onPause: localVideoTrack is null - cant publishTrack");
+        }
+    }
+
+    private void stopCapture(){
+        if(null != cameraCapturer){
+            if(null != cameraCapturer.getVideoCapturer()){
+                cameraCapturer.getVideoCapturer().stopCapture();
+
+                cameraCapturer = null;
+
+            }else{
+                Log.e(TAG, "cameraCapturer.getVideoCapturer() is null - cant stopCapture");
+            }
+        }else{
+            Log.e(TAG, "cameraCapturer is null - cant stopCapture");
+        }
     }
 
     @Override
@@ -2067,13 +2056,70 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     }
 
-    private void createAudioAndVideoTracks() {
+    private void setup_createAudioAndVideoTracks() {
+//        //------------------------------------------------------------------------------------------
+//        //AUDIO
+//        //------------------------------------------------------------------------------------------
+//        //cordova can start call with audio off config.startWithAudioOff:true
+//        boolean enableAudioAtStart = true;
+//
+//        //onResume can be called twice for a clean install
+//        // first when call started from web to android > void: answer >
+//        // show permission alerts
+//        // after permission request alerts press ok app comes to fireground and onResume called
+//        //localAudioTrack may be not nil - dont create it again else thrumnail can be blank (but camera looks ok on the web)
+//        if(null != localAudioTrack){
+//            Log.i(TAG, "localAudioTrack is not null - resume can be called twice after permission request alerts");
+//        }else{
+//        	Log.d(TAG, "localAudioTrack is null - on to create it");
+//
+//            if(config.isStartWithAudioOff()){
+//                Log.i(TAG, "[VIDEOPLUGIN] isStartWithAudioOff: TRUE - AUDIO disabled at start");
+//                enableAudioAtStart = false;
+//            }else{
+//                enableAudioAtStart = true;
+//            }
+//            //--------------------------------------------------------------
+//            localAudioTrack = LocalAudioTrack.create(this,
+//                                                        enableAudioAtStart,
+//                                                        LOCAL_AUDIO_TRACK_NAME);
+//            //--------------------------------------------------------------
+//            if(null != localAudioTrack){
+//                Log.d(TAG, "[VIDEOPLUGIN] localAudioTrack is created ok from  callers audio source");
+//                //--------------------------------------------------------------------------------------
+//                //UPDATE BUTTON STATE TO MATCH VIDEO ON/OFF
+//                //WHEN you TAP on a button to turn OFF video or AUDIO the button is SELECTED -
+//                //so if video/audio is enabled then button is unselected
+//                //--------------------------------------------------------------------------------------
+//                update_button_fab_localaudio_onoff(localAudioTrack.isEnabled());
+//                //--------------------------------------------------------------------------------------
+//
+//            }else{
+//                Log.e(TAG, "[VIDEOPLUGIN] localAudioTrack is null - failed to create from  callers audio source");
+//            }
+//        }
+
+        //------------------------------------------------------------------------------------------
+        //VIDEO - CALLER'S LOCAL AUDIO
+        //------------------------------------------------------------------------------------------
+        setup_local_audio();
+        setup_localaudio_button();
+
+        //------------------------------------------------------------------------------------------
+        //VIDEO - CALLER'S LOCAL CAMERA
+        //------------------------------------------------------------------------------------------
+        setup_local_camera();
+        setup_localvideo_button();
+        setup_localvideo_moveLocalVideoToThumbnailView();
+
+    }
+
+    private void setup_local_audio(){
         //------------------------------------------------------------------------------------------
         //AUDIO
         //------------------------------------------------------------------------------------------
         //cordova can start call with audio off config.startWithAudioOff:true
         boolean enableAudioAtStart = true;
-
 
         //onResume can be called twice for a clean install
         // first when call started from web to android > void: answer >
@@ -2083,7 +2129,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         if(null != localAudioTrack){
             Log.i(TAG, "localAudioTrack is not null - resume can be called twice after permission request alerts");
         }else{
-        	Log.d(TAG, "localAudioTrack is null - on to create it");
+            Log.d(TAG, "localAudioTrack is null - on to create it");
 
             if(config.isStartWithAudioOff()){
                 Log.i(TAG, "[VIDEOPLUGIN] isStartWithAudioOff: TRUE - AUDIO disabled at start");
@@ -2093,69 +2139,35 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             }
             //--------------------------------------------------------------
             localAudioTrack = LocalAudioTrack.create(this,
-                                                        enableAudioAtStart,
-                                                        LOCAL_AUDIO_TRACK_NAME);
+                    enableAudioAtStart,
+                    LOCAL_AUDIO_TRACK_NAME);
             //--------------------------------------------------------------
-            if(null != localAudioTrack){
-                Log.d(TAG, "[VIDEOPLUGIN] localAudioTrack is created ok from  callers audio source");
-                //--------------------------------------------------------------------------------------
-                //UPDATE BUTTON STATE TO MATCH VIDEO ON/OFF
-                //WHEN you TAP on a button to turn OFF video or AUDIO the button is SELECTED -
-                //so if video/audio is enabled then button is unselected
-                //--------------------------------------------------------------------------------------
-                update_button_fab_localaudio_onoff(localAudioTrack.isEnabled());
-                //--------------------------------------------------------------------------------------
-
-            }else{
-                Log.e(TAG, "[VIDEOPLUGIN] localAudioTrack is null - failed to create from  callers audio source");
-            }
         }
+    }
+    private void setup_localaudio_button(){
 
+        Log.d(TAG, "[VIDEOPLUGIN] setup_localaudio_button CALLED");
 
+        if(null != localAudioTrack){
 
-        //------------------------------------------------------------------------------------------
-        //VIDEO - CALLERS LOCAL CAMERA
-        //------------------------------------------------------------------------------------------
-
-        if(null != cameraCapturer){
-            Log.e(TAG, "cameraCapturer is not null - DONT RECREATE IT - resume can be called twice after permission request alerts");
+            //--------------------------------------------------------------------------------------
+            //UPDATE BUTTON STATE TO MATCH VIDEO ON/OFF
+            //WHEN you TAP on a button to turn OFF video or AUDIO the button is SELECTED -
+            //so if video/audio is enabled then button is unselected
+            //--------------------------------------------------------------------------------------
+            update_button_fab_localaudio_onoff(localAudioTrack.isEnabled());
+            //--------------------------------------------------------------------------------------
 
         }else{
-        	Log.e(TAG, "cameraCapturer is null - CREATE IT ONCE");
-            cameraCapturer = new CameraCapturerCompat(this, getAvailableCameraSource());
+            Log.e(TAG, "[VIDEOPLUGIN] localAudioTrack is null - failed to create from  callers audio source");
+            update_button_fab_localaudio_onoff(false);
         }
+    }
 
+    private void setup_localvideo_button(){
         if(null != cameraCapturer){
-            Log.i(TAG, "DOUBLE CHECK cameraCapturer CREATED OK - cant create VIDEOTRACK");
 
-            //------------------------------------------------------------------------------------------
-            boolean enableVideoAtStart = true;
-
-            if(config.isStartWithVideoOff()){
-                Log.i(TAG, "[VIDEOPLUGIN] isStartWithAudioOff: TRUE - AUDIO disabled at start");
-                enableVideoAtStart = false;
-            }else{
-                enableVideoAtStart = true;
-            }
-            //------------------------------------------------------------------------------------------
-            //NOTE - proximity sensor in android triggers a single proximity:AWAY when its starts
-            //proximity:AWAY sets localVideoTrack.enabled to true so overwrites what you set here
-            // you need to make sure it doesnt start the camera if config.startWithVideoOff:true
-            // done in preventProximityTurningCameraOn()
-
-            //------------------------------------------------------------------------------------------
-
-            if(null != localVideoTrack){
-                Log.e(TAG, "localVideoTrack is not null - DONT RECREATE IT - resume can be called twice after permission request alerts");
-
-            }else{
-            	Log.d(TAG, "localVideoTrack is null - CREATE IT");
-                localVideoTrack = LocalVideoTrack.create(this,
-                        enableVideoAtStart,
-                        cameraCapturer.getVideoCapturer(),
-                        LOCAL_VIDEO_TRACK_NAME);
-            }
-
+            //--------------------------------------------------------------------------------------
             //DOUBLE CHECK - localVideo track was set at least once and once only - onResume can be called two after permissions alerts tapped
             if(null != localVideoTrack){
                 //--------------------------------------------------------------------------------------
@@ -2166,26 +2178,87 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 //WHEN you TAP on a button to turn OFF video or AUDIO the button is SELECTED -
                 //so if video/audio is enabled then button is unselected
                 //--------------------------------------------------------------------------------------
-
                 update_button_fab_localvideo_onoff(localVideoTrack.isEnabled());
                 //--------------------------------------------------------------------------------------
-
-                //------------------------------------------------------------------------------------------
-                this.moveLocalVideoToThumbnailView();
-                //------------------------------------------------------------------------------------------
-
 
             }else{
                 Log.e(TAG, "[VIDEOPLUGIN] localVideoTrack is null - failed to create from camera capture");
             }
+        }else{
+            Log.i(TAG, "cameraCapturer FAILED - cant create VIDEOTRACK");
+        }
+    }
+    private void setup_localvideo_moveLocalVideoToThumbnailView(){
+        if(null != cameraCapturer){
 
+            //--------------------------------------------------------------------------------------
+            //DOUBLE CHECK - localVideo track was set at least once and once only - onResume can be called two after permissions alerts tapped
+            if(null != localVideoTrack){
+                //--------------------------------------------------------------------------------------
+                Log.d(TAG, "[VIDEOPLUGIN] localVideoTrack is created ok from camera capture");
 
+                //--------------------------------------------------------------------------------------
+                this.moveLocalVideoToThumbnailView();
+                //--------------------------------------------------------------------------------------
 
+            }else{
+                Log.e(TAG, "[VIDEOPLUGIN] localVideoTrack is null - failed to create from camera capture");
+            }
         }else{
             Log.i(TAG, "cameraCapturer FAILED - cant create VIDEOTRACK");
         }
     }
 
+    private void setup_local_camera(){
+        setup_cameraCapturer();
+        setup_localVideoTrack();
+    }
+
+    private void setup_cameraCapturer() {
+        if (null != cameraCapturer) {
+            Log.e(TAG, "cameraCapturer is not null - DONT RECREATE IT - resume can be called twice after permission request alerts");
+
+        } else {
+            Log.e(TAG, "cameraCapturer is null - CREATE IT ONCE");
+            cameraCapturer = new CameraCapturerCompat(this, getAvailableCameraSource());
+        }
+    }
+
+    private void setup_localVideoTrack(){
+        if(null != cameraCapturer) {
+            Log.i(TAG, "DOUBLE CHECK cameraCapturer CREATED OK - cant create VIDEOTRACK");
+
+            //------------------------------------------------------------------------------------------
+            boolean enableVideoAtStart = true;
+
+            if (config.isStartWithVideoOff()) {
+                Log.i(TAG, "[VIDEOPLUGIN] isStartWithAudioOff: TRUE - AUDIO disabled at start");
+                enableVideoAtStart = false;
+            } else {
+                enableVideoAtStart = true;
+            }
+            //------------------------------------------------------------------------------------------
+            //NOTE - proximity sensor in android triggers a single proximity:AWAY when its starts
+            //proximity:AWAY sets localVideoTrack.enabled to true so overwrites what you set here
+            // you need to make sure it doesnt start the camera if config.startWithVideoOff:true
+            // done in preventProximityTurningCameraOn()
+
+            //--------------------------------------------------------------------------------------
+            if (null != localVideoTrack) {
+                Log.e(TAG, "localVideoTrack is not null - DONT RECREATE IT - resume can be called twice after permission request alerts");
+
+            } else {
+                //----------------------------------------------------------------------------------
+                Log.d(TAG, "localVideoTrack is null - CREATE IT");
+                //----------------------------------------------------------------------------------
+                localVideoTrack = LocalVideoTrack.create(this,
+                        enableVideoAtStart,
+                        cameraCapturer.getVideoCapturer(),
+                        LOCAL_VIDEO_TRACK_NAME);
+                //----------------------------------------------------------------------------------
+            }
+        }
+    }
 
     private CameraSource getAvailableCameraSource() {
         return (CameraCapturer.isSourceAvailable(CameraSource.FRONT_CAMERA)) ?
@@ -2342,9 +2415,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             configureAudio(true);
 
             ConnectOptions.Builder connectOptionsBuilder = new ConnectOptions.Builder(accessToken)
-                    .roomName(this.roomId)
-                    .enableIceGatheringOnAnyAddressPorts(true);
+                                                                .roomName(this.roomId)
+                                                                .enableIceGatheringOnAnyAddressPorts(true);
 
+            //--------------------------------------------------------------------------------------
             /*
              * Add local audio track to connect options to share with participants.
              */
@@ -2354,17 +2428,18 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 Log.e(TAG, "[VIDEOPLUGIN] connectToRoom: localAudioTrack is null");
             }
 
-            //------------------------------------------------------------------------------------------
+            //--------------------------------------------------------------------------------------
             //Add local video track to connect options to share with participants.
             if (localVideoTrack != null) {
                 connectOptionsBuilder.videoTracks(Collections.singletonList(localVideoTrack));
             }else{
                 Log.e(TAG, "[VIDEOPLUGIN] connectToRoom: localVideoTrack is null");
             }
-            //------------------------------------------------------------------------------------------
+
+            //--------------------------------------------------------------------------------------
             Log.d(TAG, "[VIDEOPLUGIN] connectToRoom: CREATE ROOM: room = Video.connect(...)");
             room = Video.connect(this, connectOptionsBuilder.build(), roomListener());
-            //------------------------------------------------------------------------------------------
+            //--------------------------------------------------------------------------------------
         }
 
 
@@ -2408,9 +2483,6 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //DISCONNECT - always RED
         //------------------------------------------------------------------------------------------
         int colorButtonDisconnect = ContextCompat.getColor(this, FAKE_R.getColor("colorButtonDisconnect"));
-
-
-
 
         button_fab_disconnect.setBackgroundColor(colorButtonDisconnect);
 
@@ -2580,28 +2652,70 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
                 Log.d(TAG, "[VIDEOPLUGIN] button_localVideo_OnClickListener.onClick: ");
                 //Enable/disable the local video track
                 if (localVideoTrack != null) {
+
+                    //TOGGLE
                     boolean enabled = !localVideoTrack.isEnabled();
+
+                    //------------------------------------------------------------------------------
+                    //UPDATE TO ENABLED or DISABLED
+                    //------------------------------------------------------------------------------
                     localVideoTrack.enable(enabled);
 
                     //------------------------------------------------------------------------------
                     //CHANGE ICON and COLOR
                     //------------------------------------------------------------------------------
-                    enable_disable_localcamera(enabled);
+                    show_hide_localcamera(enabled);
                     //------------------------------------------------------------------------------
                     update_button_fab_localvideo_onoff(enabled);
-                    //------------------------------------------------------------------------------
 
+
+
+                    //------------------------------------------------------------------------------
+                    //not the first time this button is tapped video will be enabled so stopCapture() called
+                    //after that localVideoTrack is null so else below called
+                    if(enabled){
+                        Log.e(TAG, "button_localVideo_OnClickListener onClick: change to enabled:TRUE - dont stopCapture()");
+                    }else{
+                        Log.e(TAG, "button_localVideo_OnClickListener onClick: change to enabled:FALSE - call unpublishTrack + stopCapture()");
+                        //------------------------------------------------------------------------------
+                        //BUG on JS sdk - just disabling localTrack isnt enough you have to UNPUBLISH too
+                        //else web sdk wont get delegate
+                        //------------------------------------------------------------------------------
+                        unpublishTrack_localVideoTrack();
+                        stopCapture();
+                    }
+
+                    //------------------------------------------------------------------------------
                 }else{
-                    Log.e(TAG, "[VIDEOPLUGIN] onClick: localVideoTrack is null - TODO" );
+                    Log.e(TAG, "[VIDEOPLUGIN] onClick: localVideoTrack is null - CREATE IT" );
+
+                    setup_local_camera();
+
+                    //------------------------------------------------------------------------------
+                    //CHANGE ICON and COLOR
+                    //------------------------------------------------------------------------------
+                    show_hide_localcamera(true);
+                    //------------------------------------------------------------------------------
+                    update_button_fab_localvideo_onoff(true);
+                    //------------------------------------------------------------------------------
+                    setup_localvideo_moveLocalVideoToThumbnailView();
+
+                    //------------------------------------------------------------------------------
+                    //BUG on JS sdk - just enabling localTrack isnt enough you have to PUBLISH too
+                    //else web sdk wont get delegate
+
+                    publishTrack_localVideoTrack();
+
                 }
 
             }//onClick
         };
     }
-    private void enable_disable_localcamera(boolean enabled){
+    private void show_hide_localcamera(boolean enabled){
         if (enabled) {
             //--------------------------------------------------------------------------
             //LOCAL CAMERA IS ON
@@ -2645,7 +2759,11 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                  * disabled, the audio is muted.
                  */
                 if (localAudioTrack != null) {
+
+                    //TOGGLE CURRENT AUDIO VALUE
                     boolean enable = !localAudioTrack.isEnabled();
+
+                    //------------------------------------------------------------------------------
                     localAudioTrack.enable(enable);
 
                     //------------------------------------------------------------------------------
@@ -2653,11 +2771,44 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     update_button_fab_localaudio_onoff(enable);
                     //------------------------------------------------------------------------------
 
+                    if(enable){
+                        Log.e(TAG, "button_mute_OnClickListener onClick: change to enabled:TRUE - dont publishTrack_localAudioTrack()");
+                        publishTrack_localAudioTrack();
+                    }else{
+                        Log.e(TAG, "button_mute_OnClickListener onClick: change to enabled:FALSE - CALL unpublishTrack_localAudioTrack()");
+                        unpublishTrack_localAudioTrack();
+                    }
 
                 }else{
-                    Log.e(TAG, "[VIDEOPLUGIN] onClick: localAudioTrack is null");
-                }
+                    Log.e(TAG, "[VIDEOPLUGIN] onClick: localAudioTrack is null - RECREATE IT");
 
+
+
+//                    Log.e(TAG, "[VIDEOPLUGIN] onClick: localVideoTrack is null - CREATE IT" );
+//
+//                    setup_local_camera();
+//
+//                    //------------------------------------------------------------------------------
+//                    //CHANGE ICON and COLOR
+//                    //------------------------------------------------------------------------------
+//                    show_hide_localcamera(true);
+//                    //------------------------------------------------------------------------------
+//                    update_button_fab_localvideo_onoff(true);
+//                    //------------------------------------------------------------------------------
+//                    setup_localvideo_moveLocalVideoToThumbnailView();
+//
+//                    //------------------------------------------------------------------------------
+//                    //BUG on JS sdk - just enabling localTrack isnt enough you have to PUBLISH too
+//                    //else web sdk wont get delegate
+
+
+
+
+                    setup_local_audio();
+                    setup_localaudio_button();
+
+                    publishTrack_localVideoTrack();
+                }
 
             }
         };
@@ -3002,6 +3153,13 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         videoTrack.removeRenderer(fullScreenVideoView);
     }
 
+    //called by DISCONNECT                                      > dismiss > finish()
+    //called by DISCONNECTED_WITH_ERROR > handleConnectionError > dismiss > finish()
+    public void dismiss(){
+        Log.e(TAG, "[VIDEOPLUGIN] dismiss: CALLING finish()");
+        finish();
+    }
+
     /*
      * Room events listener
      */
@@ -3094,8 +3252,11 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 } else {
                     Log.d(TAG, "[VIDEOPLUGIN] Room.Listener >> onDisconnected: >> publishEvent(DISCONNECTED)");
                     publishEvent(CallEvent.DISCONNECTED);
+                    dismiss();
                 }
             }
+
+
 
             @Override
             public void onParticipantConnected(Room room, RemoteParticipant participant) {
@@ -3455,7 +3616,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private void handleConnectionError(String message) {
         if (config.isHandleErrorInApp()) {
             Log.i(TAG, "[VIDEOPLUGIN] Error handling disabled for the plugin. This error should be handled in the hybrid app");
-            this.finish();
+            dismiss();
             return;
         }
         Log.i(TAG, "[VIDEOPLUGIN] Connection error handled by the plugin");
@@ -3472,6 +3633,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //        AlertDialog alert = builder.create();
         //        alert.show();
         //------------------------------------------------------------------------------------------
+        //note it was in the alert code above but I removed it - TwilioVideoActivity.this.finish();
+
+        dismiss();
     }
 
 
