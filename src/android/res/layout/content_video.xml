@@ -67,14 +67,6 @@
     <!-- Z-AXIZ - the more lower down in this layout.xml the more to the front on the device it appears-->
 
     <!--    V1 - background color with alpha is only effect-->
-    <LinearLayout
-        android:id="@+id/blurredviewgroup"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#73FFFFFF"
-        android:orientation="vertical">
-
-    </LinearLayout>
 
     <!--    NO BACKGROUND COLOR - APPLY Blurry effect in code - seems to have no effect if ViewGroup is transparent-->
     <!--    <LinearLayout-->

@@ -118,7 +118,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //APPLYING BLUR
     private android.widget.FrameLayout video_container;
     private androidx.coordinatorlayout.widget.CoordinatorLayout activity_video_coordinatorlayout;
-    private android.widget.LinearLayout blurredviewgroup;
+//    private android.widget.LinearLayout blurredviewgroup;
 
     //----------------------------------------------------------------------------------------------
     //margins for zoom
@@ -207,7 +207,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
         activity_video_coordinatorlayout = findViewById(FAKE_R.getId("activity_video_coordinatorlayout"));
         video_container = findViewById(FAKE_R.getId("video_container"));
-        blurredviewgroup = findViewById(FAKE_R.getId("blurredviewgroup"));
+//        blurredviewgroup = findViewById(FAKE_R.getId("blurredviewgroup"));
         bottom_buttons_linearlayout = findViewById(FAKE_R.getId("bottom_buttons_linearlayout"));
 
         //------------------------------------------------------------------------------------------
@@ -1420,38 +1420,38 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     private void showHideBlurView(boolean showBlurView){
 
-        if(showBlurView){
-            if(null != this.blurredviewgroup){
-                //if alpha is 0.0 will still be hidden - a;pha is animated below
-                this.blurredviewgroup.setVisibility(View.VISIBLE);
-            }else{
-            	Log.e(TAG, "[VIDEOPLUGIN] this.blurredviewgroup is null");
-            }
-
-            //--------------------------------------------------------------------------------------
-            //TODO - works but needs tweaking
-            //--------------------------------------------------------------------------------------
-            //                        if(null != blurredviewgroup){
-            //                            Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(this.blurredviewgroup);
-            //
-            ////                            Blurry.with(TwilioVideoActivity.this).radius(10)
-            ////                                    .sampling(8)
-            ////                                    .color(Color.argb(66, 255, 255, 0))
-            ////                                    .async()
-            ////                                    .animate(500)
-            ////                                    .onto(blurredviewgroup);
-            //                        }else{
-            //                            Log.e(TAG, "blurredviewgroup is null");
-            //                        }
-            //--------------------------------------------------------------------------------------
-        }else{
-            if(null != this.blurredviewgroup){
-                //if alpha is 0.0 will still be hidden - a;pha is animated below
-                this.blurredviewgroup.setVisibility(View.GONE);
-            }else{
-                Log.e(TAG, "[VIDEOPLUGIN] this.blurredviewgroup is null");
-            }
-        }
+//        if(showBlurView){
+//            if(null != this.blurredviewgroup){
+//                //if alpha is 0.0 will still be hidden - a;pha is animated below
+//                this.blurredviewgroup.setVisibility(View.VISIBLE);
+//            }else{
+//            	Log.e(TAG, "[VIDEOPLUGIN] this.blurredviewgroup is null");
+//            }
+//
+//            //--------------------------------------------------------------------------------------
+//            //TODO - works but needs tweaking
+//            //--------------------------------------------------------------------------------------
+//            //                        if(null != blurredviewgroup){
+//            //                            Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(this.blurredviewgroup);
+//            //
+//            ////                            Blurry.with(TwilioVideoActivity.this).radius(10)
+//            ////                                    .sampling(8)
+//            ////                                    .color(Color.argb(66, 255, 255, 0))
+//            ////                                    .async()
+//            ////                                    .animate(500)
+//            ////                                    .onto(blurredviewgroup);
+//            //                        }else{
+//            //                            Log.e(TAG, "blurredviewgroup is null");
+//            //                        }
+//            //--------------------------------------------------------------------------------------
+//        }else{
+//            if(null != this.blurredviewgroup){
+//                //if alpha is 0.0 will still be hidden - a;pha is animated below
+//                this.blurredviewgroup.setVisibility(View.GONE);
+//            }else{
+//                Log.e(TAG, "[VIDEOPLUGIN] this.blurredviewgroup is null");
+//            }
+//        }
     }
 
     private void update_PreviewView_showInFullScreen(boolean changeToFullScreen, boolean isAnimated, boolean showBlurView) {
@@ -3613,28 +3613,21 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     * handleConnectionError
     * */
     private void handleConnectionError(String message) {
+
+        //if connection cant be made must stop audio or else it stays rinning till you likk the app
+        dialing_sound_stop();
+
         if (config.isHandleErrorInApp()) {
             Log.i(TAG, "[VIDEOPLUGIN] Error handling disabled for the plugin. This error should be handled in the hybrid app");
             dismiss();
             return;
         }
         Log.i(TAG, "[VIDEOPLUGIN] Connection error handled by the plugin");
-        //------------------------------------------------------------------------------------------
-        //no alert in plugin let main app handle it
-        //        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        //        builder.setMessage(message)
-        //                .setCancelable(false)
-        //                .setPositiveButton(config.getI18nAccept(), new DialogInterface.OnClickListener() {
-        //                    public void onClick(DialogInterface dialog, int id) {
-        //                        TwilioVideoActivity.this.finish();
-        //                    }
-        //                });
-        //        AlertDialog alert = builder.create();
-        //        alert.show();
-        //------------------------------------------------------------------------------------------
-        //note it was in the alert code above but I removed it - TwilioVideoActivity.this.finish();
 
+        //------------------------------------------------------------------------------------------
+        //close video ui - return to cordova
         dismiss();
+        //------------------------------------------------------------------------------------------
     }
 
 
