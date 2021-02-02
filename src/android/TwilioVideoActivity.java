@@ -60,12 +60,38 @@ import java.util.Collections;
 import java.util.List;
 
 import com.squareup.picasso.Picasso;
+
+import live.sea.chat.MainActivity;
 //DONT USE it works in this POC but when they integrate with the main sea/chat app theres no capacitor so it breaks
 //import capacitor.android.plugins.R;
 
 
 public class TwilioVideoActivity extends AppCompatActivity implements CallActionObserver {
     public static final String TAG = "TwilioVideoActivity";
+
+
+    //----------------------------------------------------------------------------------------------
+    //Is TwilioVideoActivity running?
+    //----------------------------------------------------------------------------------------------
+    //uses by onAnswer to switch to this Activity if it active if not then switch to MainActivity
+    //need for when app is stopped completely, you get call.
+    //onAnswer executes quickly so MainActivity may not have init the call
+    //MainActivity AND TwilioActivity should be init before you open TwilioVideoActivity from onAnswer
+    //https://stackoverflow.com/questions/5446565/android-how-do-i-check-if-activity-is-running
+    static int activeInstances = 0;
+    static boolean onResumeCompletedAtLeastOnce = false;
+
+
+    public static boolean isActive() {
+        return (activeInstances > 0);
+    }
+
+    public static boolean onResumeHasCompletedAtLeastOnce() {
+        return onResumeCompletedAtLeastOnce;
+    }
+    //set and removed in onStart onStop
+
+
     /*
      * Audio and video tracks can be created with names. This feature is useful for categorizing
      * tracks of participants. For example, if one participant publishes a video track with
@@ -401,8 +427,21 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
                 //<activity android:configChanges="orientation|screenSize" android:name="org.apache.cordova.twiliovideo.TwilioVideoActivity" android:theme="@style/Theme.AppCompat.Light.Translucent" android:launchMode="singleInstance"/>
                 //----------------------------------------------------------------------------------
+
+
 //FOR RELEASE - COMMENT IN
-                moveTaskToBack(true);
+//DONT USE on Asus and Samsung S7 Edge
+// can cause WHOLE task stack to move to background so user may see Launcher not MainActivity
+//                moveTaskToBack(true);
+
+                //----------------------------------------------------------------------------------
+                //works - doesnt create new instance of MainActivity
+                // /but you need sharedInstance on TwilioVideoActivity
+                Intent mIntent=new Intent(TwilioVideoActivity.this, MainActivity.class);
+                startActivity(mIntent);
+                //----------------------------------------------------------------------------------
+
+
                 //----------------------------------------------------------------------------------
 //FOR RELEASE - COMMENT OUT - DEBUG triggers startCall
 //                publishEvent(CallEvent.DEBUGSTARTACALL);
@@ -492,7 +531,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 String remote_user_name = intent.getStringExtra("remote_user_name");
                 String remote_user_photo_url = intent.getStringExtra("remote_user_photo_url");
 
-                Log.d(TAG, "[VIDEOPLUGIN] onCreate: INTENT > action:'"  + action + "' >> CALL this.openRoom()");
+                Log.d(TAG, "[VIDEOPLUGIN] parse_Intents: INTENT > action:'"  + action + "' >> CALL this.openRoom()");
                 this.action_openRoom(roomId, token, local_user_name, local_user_photo_url, remote_user_name, remote_user_photo_url);
 
             }
@@ -1864,6 +1903,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         }
     }
 
+
+
+
     @Override
     protected void onPause() {
 
@@ -1880,6 +1922,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE]  - onPause CALLED [" + this + "]");
         super.onPause();
     }
+
     private void unpublishTrack_localAudioTrack(){
         Log.e(TAG, "[VIDEOPLUGIN] unpublishTrack_localAudioTrack: CALLED >> localParticipant.unpublishTrack(localAudioTrack)");
 
@@ -2005,19 +2048,32 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE]  - onStart CALLED [" + this + "]");
+        //static var to track if thisActivity is running - used in onAnswer
+        activeInstances++;
+
+        onResumeCompletedAtLeastOnce = true;
+    }
+
+    @Override
     protected void onStop() {
         Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] - onStop CALLED - does nothing [" + this + "]");
         super.onStop();
+        //static var to track if thisActivity is running - used in onAnswer
+        activeInstances--;
     }
+
 
     @Override
     protected void onDestroy() {
         //BACK TO CALL button - calls moveToBack(..) this should not be called
 
         if(this.isFinishing()){
-            Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onDestroy CALLED - isFinishing:TRUE - finish() called somewhere [" + this + "]");
+            Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] - onDestroy CALLED - isFinishing:TRUE - finish() called somewhere [" + this + "]");
         }else{
-            Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onDestroy CALLED - isFinishing:FALSE - system is temporarily destroying this instance [" + this + "]");
+            Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] - onDestroy CALLED - isFinishing:FALSE - system is temporarily destroying this instance [" + this + "]");
         }
 
         /*
@@ -2025,7 +2081,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
          * ensure any memory allocated to the Room resource is freed.
          */
         if (room != null && room.getState() != Room.State.DISCONNECTED) {
+            Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] - onDestroy CALLED - CALLING room.disconnect();");
             room.disconnect();
+
             disconnectedFromOnDestroy = true;
         }
 
@@ -2143,12 +2201,18 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         }else{
             Log.d(TAG, "localAudioTrack is null - on to create it");
 
-            if(config.isStartWithAudioOff()){
-                Log.i(TAG, "[VIDEOPLUGIN] isStartWithAudioOff: TRUE - AUDIO disabled at start");
-                enableAudioAtStart = false;
+            if(null != config){
+                if(config.isStartWithAudioOff()){
+                    Log.i(TAG, "[VIDEOPLUGIN] isStartWithAudioOff: TRUE - AUDIO disabled at start");
+                    enableAudioAtStart = false;
+                }else{
+                    enableAudioAtStart = true;
+                }
             }else{
+            	Log.e(TAG, "config is null");
                 enableAudioAtStart = true;
             }
+
             //--------------------------------------------------------------
             localAudioTrack = LocalAudioTrack.create(this,
                                                     enableAudioAtStart,
@@ -3642,6 +3706,11 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         }
         //if user pressed RED disconnect button while mp3 is playing it will keep playing till app killed
         dialing_sound_stop();
+
+        Log.e(TAG, "[VIDEOPLUGIN][onDisconnect()] startActivity: >> MainActivity BEFORE finish");
+        Intent mIntent=new Intent(TwilioVideoActivity.this, MainActivity.class);
+        startActivity(mIntent);
+
 
         Log.e(TAG, "[VIDEOPLUGIN][onDisconnect()] onClick: >> finish()");
         finish();
