@@ -24,6 +24,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -80,6 +81,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //https://stackoverflow.com/questions/5446565/android-how-do-i-check-if-activity-is-running
     static int activeInstances = 0;
     static boolean onResumeCompletedAtLeastOnce = false;
+
+
 
 
     public static boolean isActive() {
@@ -213,7 +216,15 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     private boolean is_Activity_hiding_because_buttonBackToCall_tapped;
 
+    //----------------------------------------------------------------------------------------------
+    //DOUBLE TAP ON CAMERA CAN CAUSE CLICK
+    //prevents double taps - can cause crashes
+    boolean button_localVideo_OnClickListener_tapped = false;
+    Handler handler_onClick_camera_doubletap = null;
+    long delayMillis_onClick_camera_doubletap  = 1000; //1 sec - can only tap the button once a second
 
+    Runnable delayRunnable_onClick_camera_doubletap = null;
+    //----------------------------------------------------------------------------------------------
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -1609,10 +1620,21 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             Log.d(TAG, "[VIDEOPLUGIN] onClick: screen_width_pixels:" + screen_width_pixels + ",screen_height_pixels:"+ screen_height_pixels );
             //1080, 2076
 
-            int preview_mini_width = 350;
-            int preview_mini_height = 580;
-            int margin = 64;
-            int margin_bottom = 364;
+            //Motorola Android one - Android 10 - 720x1362
+            //dont hard code looked huge on Android 1
+            //int preview_mini_width = 350;
+            //int preview_mini_height = 580;
+
+            int preview_mini_width = screen_width_pixels / 3 ;
+            int preview_mini_height = screen_height_pixels / 3;
+
+
+            //int margin = 64;
+            //int margin_bottom = 364;
+            int margin = 32;
+            //int margin_bottom = 300; //too low on s7
+            //int margin_bottom = 320; //too low on s7
+            int margin_bottom = 340; //too low on s7
 
             if(null != this.bottom_buttons_linearlayout){
                 int[] location = new int[2];
@@ -2115,6 +2137,17 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 resultMic == PackageManager.PERMISSION_GRANTED;
     }
 
+    private boolean hasPermissionForMicrophone() {
+
+        int resultMic = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO);
+        return resultMic == PackageManager.PERMISSION_GRANTED;
+    }
+    private boolean hasPermissionForCamera() {
+
+        int resultCamera = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
+        return resultCamera == PackageManager.PERMISSION_GRANTED ;
+    }
+
     private void requestPermissions() {
         ActivityCompat.requestPermissions(
                 this,
@@ -2124,47 +2157,6 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     }
 
     private void setup_createAudioAndVideoTracks() {
-//        //------------------------------------------------------------------------------------------
-//        //AUDIO
-//        //------------------------------------------------------------------------------------------
-//        //cordova can start call with audio off config.startWithAudioOff:true
-//        boolean enableAudioAtStart = true;
-//
-//        //onResume can be called twice for a clean install
-//        // first when call started from web to android > void: answer >
-//        // show permission alerts
-//        // after permission request alerts press ok app comes to fireground and onResume called
-//        //localAudioTrack may be not nil - dont create it again else thrumnail can be blank (but camera looks ok on the web)
-//        if(null != localAudioTrack){
-//            Log.i(TAG, "localAudioTrack is not null - resume can be called twice after permission request alerts");
-//        }else{
-//        	Log.d(TAG, "localAudioTrack is null - on to create it");
-//
-//            if(config.isStartWithAudioOff()){
-//                Log.i(TAG, "[VIDEOPLUGIN] isStartWithAudioOff: TRUE - AUDIO disabled at start");
-//                enableAudioAtStart = false;
-//            }else{
-//                enableAudioAtStart = true;
-//            }
-//            //--------------------------------------------------------------
-//            localAudioTrack = LocalAudioTrack.create(this,
-//                                                        enableAudioAtStart,
-//                                                        LOCAL_AUDIO_TRACK_NAME);
-//            //--------------------------------------------------------------
-//            if(null != localAudioTrack){
-//                Log.d(TAG, "[VIDEOPLUGIN] localAudioTrack is created ok from  callers audio source");
-//                //--------------------------------------------------------------------------------------
-//                //UPDATE BUTTON STATE TO MATCH VIDEO ON/OFF
-//                //WHEN you TAP on a button to turn OFF video or AUDIO the button is SELECTED -
-//                //so if video/audio is enabled then button is unselected
-//                //--------------------------------------------------------------------------------------
-//                update_button_fab_localaudio_onoff(localAudioTrack.isEnabled());
-//                //--------------------------------------------------------------------------------------
-//
-//            }else{
-//                Log.e(TAG, "[VIDEOPLUGIN] localAudioTrack is null - failed to create from  callers audio source");
-//            }
-//        }
 
         //------------------------------------------------------------------------------------------
         //VIDEO - CALLER'S LOCAL AUDIO
@@ -2214,9 +2206,16 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             }
 
             //--------------------------------------------------------------
-            localAudioTrack = LocalAudioTrack.create(this,
-                                                    enableAudioAtStart,
-                                                    LOCAL_AUDIO_TRACK_NAME);
+            //was crashing but I do ask for permission above
+            // Caused by: java.lang.IllegalStateException: RECORD_AUDIO permission must be granted to create audio track
+            if(hasPermissionForMicrophone()){
+                localAudioTrack = LocalAudioTrack.create(this,
+                        enableAudioAtStart,
+                        LOCAL_AUDIO_TRACK_NAME);
+            }else{
+            	Log.e(TAG, "hasPermissionForMicrophone is false - localAudioTrack.create failed");
+            }
+
             //--------------------------------------------------------------
         }
     }
@@ -2310,6 +2309,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             if (config.isStartWithVideoOff()) {
                 Log.i(TAG, "[VIDEOPLUGIN] isStartWithAudioOff: TRUE - AUDIO disabled at start");
                 enableVideoAtStart = false;
+
             } else {
                 enableVideoAtStart = true;
             }
@@ -2327,10 +2327,15 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 //----------------------------------------------------------------------------------
                 Log.d(TAG, "localVideoTrack is null - CREATE IT");
                 //----------------------------------------------------------------------------------
-                localVideoTrack = LocalVideoTrack.create(this,
-                        enableVideoAtStart,
-                        cameraCapturer.getVideoCapturer(),
-                        LOCAL_VIDEO_TRACK_NAME);
+                if(hasPermissionForCamera()){
+                    localVideoTrack = LocalVideoTrack.create(this,
+                            enableVideoAtStart,
+                            cameraCapturer.getVideoCapturer(),
+                            LOCAL_VIDEO_TRACK_NAME);
+                }else{
+                	Log.e(TAG, "hasPermissionForCamera is null - request permissions should show alert - to test do clean install");
+                }
+
                 //----------------------------------------------------------------------------------
             }
         }
@@ -2724,70 +2729,163 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //----------------------------------------------------------------------------------------------
     //BUTTON - CAMERA ON/OFF
     //----------------------------------------------------------------------------------------------
+    private void button_fab_localvideo_onoff_disable(){
+
+        if(null != button_fab_localvideo_onoff){
+            button_fab_localvideo_onoff.setEnabled(false);
+
+            button_fab_localvideo_onoff.setVisibility(View.INVISIBLE);
+        }else{
+        	Log.e(TAG, "button_fab_localvideo_onoff  is null");
+        }
+    }
+    private void button_fab_localvideo_onoff_enable(){
+        if(null != button_fab_localvideo_onoff){
+            button_fab_localvideo_onoff.setVisibility(View.VISIBLE);
+            button_fab_localvideo_onoff.setEnabled(true);
+
+        }else{
+            Log.e(TAG, "button_fab_localvideo_onoff  is null");
+        }
+    }
+
     private View.OnClickListener button_localVideo_OnClickListener() {
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                Log.d(TAG, "[VIDEOPLUGIN] button_localVideo_OnClickListener.onClick: ");
-                //Enable/disable the local video track
-                if (localVideoTrack != null) {
+                Log.d(TAG, "[VIDEOPLUGIN] button_localVideo_OnClickListener.onClick: ADDED DELAY TIMER AS IT CRASHES ");
 
-                    //TOGGLE
-                    boolean enabled = !localVideoTrack.isEnabled();
+                //----------------------------------------------------------------------------------
+                //PREVENT DOUBLE TAP
 
-                    //------------------------------------------------------------------------------
-                    //UPDATE TO ENABLED or DISABLED
-                    //------------------------------------------------------------------------------
-                    localVideoTrack.enable(enabled);
+                if( handler_onClick_camera_doubletap == null){
 
-                    //------------------------------------------------------------------------------
-                    //CHANGE ICON and COLOR
-                    //------------------------------------------------------------------------------
-                    show_hide_localcamera(enabled);
-                    //------------------------------------------------------------------------------
-                    update_button_fab_localvideo_onoff(enabled);
+                    Log.e(TAG, "handler is null - CREATE ONCE");
+
+                    handler_onClick_camera_doubletap = new Handler();
+
+                    delayRunnable_onClick_camera_doubletap = new Runnable() {
+
+                        @Override
+                        public void run() {
+                            Log.e(TAG, "onCLick > run: WAIT COMPLETE - RESET  button_localVideo_OnClickListener_tapped TO false;");
+                            button_localVideo_OnClickListener_tapped = false;
+
+                            button_fab_localvideo_onoff_enable();
+
+                        }
+                    };
+
+                }else{
+                    Log.e(TAG, "handler_onClick_camera_doubletap is not null - DONT CREATE ON EVERY CLICK");
+                }
+                //----------------------------------------------------------------------------------
 
 
+                //IF YOU TAP TOO FAST then app can crash - you need to wait for local camera to be fully enabled or fully disabled before allowing another tap
+                if(button_localVideo_OnClickListener_tapped){
+                    Log.e(TAG, "onClick: button_localVideo_OnClickListener_tapped:TRUE - SKIP DOUBLE TAP CAN CAUSE APP TO CRASH IF CAMMAER NOT FULLY ON OR FULLY OFF" );
 
-                    //------------------------------------------------------------------------------
-                    //not the first time this button is tapped video will be enabled so stopCapture() called
-                    //after that localVideoTrack is null so else below called
-                    if(enabled){
-                        Log.e(TAG, "button_localVideo_OnClickListener onClick: change to enabled:TRUE - dont stopCapture()");
+                }else{
+                    //PREVENT DOUBLE TAPS
+                    button_localVideo_OnClickListener_tapped = true;
+
+                    //disable the button else you it looks clickable but does nothing
+                    button_fab_localvideo_onoff_disable();
+
+                    //Enable/disable the local video track
+                    if (localVideoTrack != null) {
+
+
+                        if(localVideoTrack.isEnabled()){
+                            Log.e(TAG, "[VIDEOPLUGIN] onClick: a1" );
+
+                            Log.e(TAG, "button_localVideo_OnClickListener onClick: change LOCAL VIDEO to enabled:FALSE - call unpublishTrack + stopCapture()");
+                            //--------------------------------------------------------------------------
+                            //DISABLED LOCAL VIDEO
+                            //--------------------------------------------------------------------------
+                            localVideoTrack.enable(false);
+
+                            //--------------------------------------------------------------------------
+                            //CHANGE ICON and COLOR
+                            //--------------------------------------------------------------------------
+                            show_hide_localcamera(false);
+                            //------------------------------------------------
+                            update_button_fab_localvideo_onoff(false);
+                            //--------------------------------------------------------------------------
+
+                            //--------------------------------------------------------------------------
+                            //BUG on JS sdk - just disabling localTrack isnt enough you have to UNPUBLISH too
+                            //else web sdk wont get delegate
+                            //--------------------------------------------------------------------------
+                            unpublishTrack_localVideoTrack();
+                            stopCapture();
+                            //--------------------------------------------------------------------------
+
+                        }else{
+
+                            //--------------------------------------------------------------------------
+                            //ENABLE LOCAL VIDEO - localVideoTrack != null is created above we only need to reenable it
+                            //--------------------------------------------------------------------------
+
+                            Log.e(TAG, "button_localVideo_OnClickListener onClick: change LOCAL VIDEO to enabled:TRUE - only call localVideoTrack.enable(true) DONT REPUBLISH HERE");
+
+                            localVideoTrack.enable(true);
+
+
+                            //--------------------------------------------------------------------------
+                            //CHANGE ICON and COLOR
+                            //--------------------------------------------------------------------------
+                            show_hide_localcamera(true);
+                            //------------------------------------------------
+                            update_button_fab_localvideo_onoff(true);
+                            //--------------------------------------------------------------------------
+                        }
+
+                        //------------------------------------------------------------------------------
                     }else{
-                        Log.e(TAG, "button_localVideo_OnClickListener onClick: change to enabled:FALSE - call unpublishTrack + stopCapture()");
+                        Log.e(TAG, "[VIDEOPLUGIN] onClick: localVideoTrack is null - CREATE IT" );
+
+                        setup_local_camera();
+
                         //------------------------------------------------------------------------------
-                        //BUG on JS sdk - just disabling localTrack isnt enough you have to UNPUBLISH too
+                        //CHANGE ICON and COLOR
+                        //------------------------------------------------------------------------------
+                        //MOVED DOWN I had issue when local camera is off when WEB calls ANDROID it gets stuck showing thumbnail
+                        // show_hide_localcamera(true);
+                        //------------------------------------------------------------------------------
+                        update_button_fab_localvideo_onoff(true);
+                        //------------------------------------------------------------------------------
+                        setup_localvideo_moveLocalVideoToThumbnailView();
+
+                        //------------------------------------------------------------------------------
+                        //BUG on JS sdk - just enabling localTrack isnt enough you have to PUBLISH too
                         //else web sdk wont get delegate
-                        //------------------------------------------------------------------------------
-                        unpublishTrack_localVideoTrack();
-                        stopCapture();
+
+                        publishTrack_localVideoTrack();
+
+
+                        //bug - I start call from web, camera off, tap once enables it,
+                        // tap again disables + unpublish, (first else clause above)
+                        // third tap black screen (this clause) , (here i enable it after recreating it)
+                        // 4th tap enables it
+                        localVideoTrack.enable(true);
+
+                        //i had to move down to AFTER localVideoTrack.enable
+                        show_hide_localcamera(true);
+
+
                     }
 
                     //------------------------------------------------------------------------------
-                }else{
-                    Log.e(TAG, "[VIDEOPLUGIN] onClick: localVideoTrack is null - CREATE IT" );
-
-                    setup_local_camera();
-
+                    //WAIT 1 sec before user can tap the button again - low level crash if we turn local camera on and off too quickly
                     //------------------------------------------------------------------------------
-                    //CHANGE ICON and COLOR
-                    //------------------------------------------------------------------------------
-                    show_hide_localcamera(true);
-                    //------------------------------------------------------------------------------
-                    update_button_fab_localvideo_onoff(true);
-                    //------------------------------------------------------------------------------
-                    setup_localvideo_moveLocalVideoToThumbnailView();
 
+                    handler_onClick_camera_doubletap.postDelayed(delayRunnable_onClick_camera_doubletap,
+                            delayMillis_onClick_camera_doubletap);
                     //------------------------------------------------------------------------------
-                    //BUG on JS sdk - just enabling localTrack isnt enough you have to PUBLISH too
-                    //else web sdk wont get delegate
-
-                    publishTrack_localVideoTrack();
-
                 }
-
             }//onClick
         };
     }
@@ -3175,12 +3273,28 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             if (localVideoView != null && thumbnailVideoView != null) {
                 localVideoView = thumbnailVideoView;
             }else{
-                Log.e(TAG, "[VIDEOPLUGIN] moveLocalVideoToThumbnailView: localVideoView != null && thumbnailVideoView != null FAILED");
+                Log.e(TAG, "[VIDEOPLUGIN] moveLocalVideoToThumbnailView: localVideoView != null && thumbnailVideoView != null FAILED OK IF LOCAL VIDEO IS OFF WHEN CALL STARTS");
+
             }
             //--------------------------------------------------------------------------------------
             //flip camera on horizontal axis?
             thumbnailVideoView.setMirror(cameraCapturer.getCameraSource() == CameraSource.FRONT_CAMERA);
             //--------------------------------------------------------------------------------------
+
+
+
+            if(null != localVideoTrack){
+                if(localVideoTrack.isEnabled()){
+                    Log.e(TAG, "localVideoTrack.isEnabled(): true");
+                }else{
+                    Log.e(TAG, "localVideoTrack.isEnabled(): false - Call started with video off so hide the black locla video with locla users photo ");
+                    //IF LOCAL VIDEO IS OFF WHEN CALL STARTS then localVideo is null and can be black
+                    //this put local users phot in its place
+                    show_hide_localcamera(false);
+                }
+            }else{
+            	Log.e(TAG, "localVideoTrack is null");
+            }
 
         }else{
             Log.d(TAG, "[VIDEOPLUGIN] moveLocalVideoToThumbnailView: refreshthumbnailVideoView is FALSE -- do nothing");
