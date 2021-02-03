@@ -1072,17 +1072,30 @@ NSString *const CLOSED = @"CLOSED";
             //--------------------------------------------------------------------------------------
             [self toggle_localVideoTrack];
             
-            if(self.room.localParticipant){
-                [self.room.localParticipant unpublishVideoTrack:self.localVideoTrack];
+            //CHECK STATE of VIDEO AFTER TOGGLE
+            //The video is OFF by default. The cordova js passed in video:off in answerCall by default
+            if (self.localVideoTrack.enabled) {
+                [self log_error:@"[toggle_localVideoTrack] VIDEO was TOGGLED ON to self.localVideoTrack.enabled:true"];
+                //self.localVideoTrack is not nil so no need to create it again
                 
-                //self.cameraSource
-                [self.camera stopCaptureWithCompletion:^(NSError *error) {
-                    self.localVideoTrack = nil;
-                    self.camera = nil;
-                }];
             }else{
-                [self log_error:@"[videoButtonPressed] self.room.localParticipant is NULL"];
+                //VIDEO WAS TOGGLE OFF - UNPUBLISH THE TRACK due to bug in Twilio.JS where delegate not thrown when you only change .enable - you need to unpublish/unpublish too
+                [self log_error:@"[toggle_localVideoTrack] VIDEO was TOGGLED OFF to self.localVideoTrack.enabled:false > UNPUBLISH the video(bug in Twilio JS)"];
+                
+                if(self.room.localParticipant){
+                    [self.room.localParticipant unpublishVideoTrack:self.localVideoTrack];
+                    
+                    //self.cameraSource
+                    [self.camera stopCaptureWithCompletion:^(NSError *error) {
+                        self.localVideoTrack = nil;
+                        self.camera = nil;
+                    }];
+                }else{
+                    [self log_error:@"[videoButtonPressed] self.room.localParticipant is NULL"];
+                }
             }
+            
+           
             //--------------------------------------------------------------------------------------
         } else {
             //--------------------------------------------------------------------------------------
@@ -1973,8 +1986,8 @@ NSString *const CLOSED = @"CLOSED";
     
     
     //DO NOT RELEASE - COMMENT OUT - cordova should send showOnline()
-//    [self.buttonDebug_showOnline setHidden:FALSE];
-//    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
+    [self.buttonDebug_showOnline setHidden:FALSE];
+    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
 
 }
 
@@ -1988,13 +2001,13 @@ NSString *const CLOSED = @"CLOSED";
     //------------------------------------------------------------------------------------------
     //FOR RELEASE - COMMENT THIS OUT
     //------------------------------------------------------------------------------------------
-//    [self.buttonDebugStartACall setHidden:FALSE];
-//    [self.view bringSubviewToFront:self.buttonDebugStartACall];
+    [self.buttonDebugStartACall setHidden:FALSE];
+    [self.view bringSubviewToFront:self.buttonDebugStartACall];
     
     //------------------------------------------------------------------------------------------
     //FOR RELEASE - COMMENT THIS IN
     //------------------------------------------------------------------------------------------
-    [self.buttonDebugStartACall setHidden:TRUE];
+//    [self.buttonDebugStartACall setHidden:TRUE];
     //------------------------------------------------------------------------------------------
 }
 
