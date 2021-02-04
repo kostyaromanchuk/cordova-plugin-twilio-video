@@ -2000,7 +2000,7 @@ NSString *const CLOSED = @"CLOSED";
 -(void)showhide_buttonDebugStartACall{
     //------------------------------------------------------------------------------------------
     //FOR RELEASE - COMMENT THIS OUT
-    //------------------------------------------------------------------------------------------
+//    //------------------------------------------------------------------------------------------
 //    [self.buttonDebugStartACall setHidden:FALSE];
 //    [self.view bringSubviewToFront:self.buttonDebugStartACall];
     
@@ -2091,6 +2091,11 @@ NSString *const CLOSED = @"CLOSED";
 
 - (void) dismiss {
     [[TwilioVideoManager getInstance] publishEvent: CLOSED];
+    
+    //this code was in viewWillDisappear but was being triggered when you do back to call
+    //and attach a photo from photo library or by taking a picture to attach
+    [self view_isDisappearing_shutdown];
+    
     [self dismissViewControllerAnimated:NO completion:nil];
 }
 
@@ -2582,27 +2587,42 @@ NSString *const CLOSED = @"CLOSED";
 
 -(void)viewWillDisappear:(BOOL)animated{
     [super viewWillDisappear: animated];
-    
-    //if user disconnects while waiting for remote user to answer
-    [self dialing_sound_stop];
-    //Strange issue where first time was quiet but 2nd, 3rd loud
-    //i think maybe multiple players?
-    audioPlayer = NULL;
-    
-    [self log_debug:@"[TwilioVideoViewController.m] viewWillDisappear >> stopCaptureWithCompletion"];
-    [self.camera stopCaptureWithCompletion:^(NSError * _Nullable error) {
-        if(error){
-            [self log_debug:[NSString stringWithFormat:@"[TwilioVideoViewController.m] stopCaptureWithCompletion: >> error:%@", error]];
-        }else{
-            [self log_debug:@"[TwilioVideoViewController.m] stopCaptureWithCompletion: OK"];
-        }
-    }];
-      
-    [self log_debug:@"[TwilioVideoViewController.m] viewWillDisappear >> stopProximitySensor"];
-    [self stopProximitySensor];
-    
-    [self log_info:@"[TwilioVideoViewController.m] viewWillDisappear - VIEW CONTROLLER closed"];
+    [self log_debug:@"[TwilioVideoViewController.m] viewWillDisappear CALLED - DOES NOTHING"];
+
 }
+
+//CODE WAS IN viewWillDisappear but hung camera in following use case
+//start a call
+//click on BACK TO CALL
+//click on attachment button
+//add a phot from PHOTO LIBRARY or TAKE A PIC (if you add a pic from Files it doesnt seem to trigger viewWillDisappear)
+//triggers viewWillDisappear - this was calling stopCaptureWithCompletion and killing the locak camera feed in the thubnail
+-(void)view_isDisappearing_shutdown{
+ 
+    [self log_debug:@"[TwilioVideoViewController.m] viewWillDisappear CALLED - DOES NOTHING"];
+        //if user disconnects while waiting for remote user to answer
+        //also when you do BACK TO CALL > Attach a file > attach a photo from phot libaray or photo from taking a pic it triggers viewWillDisappear
+        [self dialing_sound_stop];
+    
+        //Strange issue where first time was quiet but 2nd, 3rd loud
+        //i think maybe multiple players?
+        audioPlayer = NULL;
+    
+        [self log_debug:@"[TwilioVideoViewController.m] viewWillDisappear >> stopCaptureWithCompletion"];
+        [self.camera stopCaptureWithCompletion:^(NSError * _Nullable error) {
+            if(error){
+                [self log_debug:[NSString stringWithFormat:@"[TwilioVideoViewController.m] stopCaptureWithCompletion: >> error:%@", error]];
+            }else{
+                [self log_debug:@"[TwilioVideoViewController.m] stopCaptureWithCompletion: OK"];
+            }
+        }];
+    
+        [self log_debug:@"[TwilioVideoViewController.m] viewWillDisappear >> stopProximitySensor"];
+        [self stopProximitySensor];
+    
+        [self log_info:@"[TwilioVideoViewController.m] viewWillDisappear - VIEW CONTROLLER closed"];
+}
+
 
 -(void)stopProximitySensor
 {
