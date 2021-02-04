@@ -1986,8 +1986,8 @@ NSString *const CLOSED = @"CLOSED";
     
     
     //DO NOT RELEASE - COMMENT OUT - cordova should send showOnline()
-    [self.buttonDebug_showOnline setHidden:FALSE];
-    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
+//    [self.buttonDebug_showOnline setHidden:FALSE];
+//    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
 
 }
 
@@ -2001,13 +2001,13 @@ NSString *const CLOSED = @"CLOSED";
     //------------------------------------------------------------------------------------------
     //FOR RELEASE - COMMENT THIS OUT
     //------------------------------------------------------------------------------------------
-    [self.buttonDebugStartACall setHidden:FALSE];
-    [self.view bringSubviewToFront:self.buttonDebugStartACall];
+//    [self.buttonDebugStartACall setHidden:FALSE];
+//    [self.view bringSubviewToFront:self.buttonDebugStartACall];
     
     //------------------------------------------------------------------------------------------
     //FOR RELEASE - COMMENT THIS IN
     //------------------------------------------------------------------------------------------
-//    [self.buttonDebugStartACall setHidden:TRUE];
+    [self.buttonDebugStartACall setHidden:TRUE];
     //------------------------------------------------------------------------------------------
 }
 
