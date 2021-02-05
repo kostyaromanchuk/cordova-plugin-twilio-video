@@ -89,15 +89,310 @@ NSString *const CLOSED = @"CLOSED";
 @property (unsafe_unretained, nonatomic) IBOutlet UIImageView *imageViewSwitchVideo;
 @property (unsafe_unretained, nonatomic) IBOutlet UIButton *buttonBackToCall;
 
+#pragma mark - Device orientation
+@property (nonatomic, assign)  UIDeviceOrientation device_orientation;
 
 @end
 
 @implementation TwilioVideoViewController
 
-#pragma mark - UIViewController
+#pragma mark - Device orientation
 
+- (void)start_deviceOrientation_monitoring{
+    
+    //probably correct but till you move the phone it wont send the first notification
+    //so if you start the app with the phone faceup it ownt trigger a FACEUP notification till you move itup and down again
+    //self.device_orientation = UIDeviceOrientationUnknown;
+    
+    //so I change default to FaceUp so proximity sensor wont hide screen by default.
+    //its really only for when you move the phone to your ear
+    self.device_orientation = UIDeviceOrientationFaceUp;
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(deviceOrientationDidChange:) name:UIDeviceOrientationDidChangeNotification object:nil];
+    
+    [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
+}
+
+- (void)viewWillDisappear_TurnOffOrientationsNotifications{
+    
+    [[UIDevice currentDevice] endGeneratingDeviceOrientationNotifications];
+    
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+- (void)deviceOrientationDidChange:(NSNotification *)notification
+{
+    
+    self.device_orientation = [[UIDevice currentDevice] orientation];
+    
+    
+    //ISSUE - just by enabling proximity sensor iOS will turn off the whole screen if you approach the sensor
+    //So we need to turn it on an off for different orientations
+    
+    [self enable_proximityMonitoring_byOrientation:self.device_orientation];
+    
+}
+
+
+-(void)log_current_device_orientation{
+    NSString * orientationString = [NSString stringWithFormat:@"DEVICE ORIENTATION CHANGED:%@", [self getOrientationString: self.device_orientation]] ;
+    NSLog(@"%@", orientationString);
+}
+
+- (NSString *)getOrientationString: (UIDeviceOrientation)orientation {
+    NSString *orientationStr;
+    
+    //    https://developer.apple.com/documentation/uikit/uideviceorientation?language=objc
+    //    UIDeviceOrientationUnknown,
+    //    UIDeviceOrientationPortrait,            // Device oriented vertically, home button on the bottom
+    //    UIDeviceOrientationPortraitUpsideDown,  // Device oriented vertically, home button on the top
+    //    UIDeviceOrientationLandscapeLeft,       // Device oriented horizontally, home button on the right
+    //    UIDeviceOrientationLandscapeRight,      // Device oriented horizontally, home button on the left
+    //    UIDeviceOrientationFaceUp,              // Device oriented flat, face up
+    //    UIDeviceOrientationFaceDown             // Device oriented flat, face down
+    
+    //POSSIBLE CAUSES FOR EVENTS NOT BEING TRIGGERED
+    //IN iOS CONTROL CENTER MAKE SURE YOU DONT HAVE PORTRAIT LOCK TURNED ON
+    //IN XCODE PROJECT SETTINGS MAKE SURE YOU SUPPORT THR DEFAULT ROTATIONS LANDSCAPE/PORTRAIT
+    
+    //NOTE LANDSCAPE/PORTRAIT cant tell if phone pointing towared or away from you - prob need CKMotionManager for that
+    switch (orientation) {
+        case UIDeviceOrientationUnknown:
+            orientationStr = @"UIDeviceOrientation_Unknown";
+            break;
+        case UIDeviceOrientationPortrait:
+            orientationStr = @"UIDeviceOrientation_Portrait - HOME BUTTON /SWIPE AREA - AT BOTTOM";
+            break;
+        case UIDeviceOrientationPortraitUpsideDown:
+            orientationStr = @"UIDeviceOrientation_PortraitUpsideDown - HOME BUTTON /SWIPE AREA - AT TOP";
+            break;
+        case UIDeviceOrientationLandscapeLeft:
+            orientationStr = @"UIDeviceOrientationLandscapeLeft - Phone in landscape - HOME BUTTON /SWIPE AREA - AT RIGHT";
+            break;
+        case UIDeviceOrientationLandscapeRight:
+            orientationStr = @"UIDeviceOrientationLandscapeRight - Phone in landscape - HOME BUTTON /SWIPE AREA - AT LEFT";
+            break;
+        case UIDeviceOrientationFaceUp:
+            orientationStr = @"UIDeviceOrientationFaceUp";
+            break;
+        case UIDeviceOrientationFaceDown:
+            orientationStr = @"UIDeviceOrientationFaceDown";
+            break;
+        default:
+            orientationStr = @"UIDeviceOrientation_UNHANDLED_ASOFFEB20201";
+            break;
+    }
+    return orientationStr;
+}
+
+
+
+#pragma mark - ProximityMonitoring
+
+-(void) enable_ProximitySensor_addObserver
+{
+    [self log_info:@"[TwilioVideoViewController] startProximitySensor"];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(proximityStateDidChange:) name:UIDeviceProximityStateDidChangeNotification object:nil];
+    
+    //i default self.device_orientation to FaceUp so by default proximity should be off till user lift phone to ear
+    [self enable_proximityMonitoring_byOrientation:self.device_orientation];
+    
+}
+
+//if you turn proximityMonitoringEnabled to ON it causes iOS to turn whole screen on/off if you approach the sensor
+//[UIDevice currentDevice].proximityMonitoringEnabled = TRUE;
+//the code elsewhere only turns off the local twilio camera
+//but iOS can also turn off the whole screen
+//so we only want to enable it if orientation is UIDeviceOrientation_Portrait
+//this will also handle issue devs seesing where sensor triggered
+
+- (void)enable_proximityMonitoring_byOrientation:(UIDeviceOrientation)orientation {
+    
+    [self log_current_device_orientation];
+    
+    switch (orientation) {
+        case UIDeviceOrientationPortrait:
+            //I default to faceup because notification isnt triggered till you move the phone
+            //and most devs/qa start with the phone on table FaceUP
+            [self log_error:@"[PROXIMITY] UIDeviceOrientationPortrait - enable_proximityMonitoring (if user puts phone to ear then its in UIDeviceOrientationPortrait)"];
+            [self enable_proximityMonitoring];
+            break;
+            
+        default:
+            [self log_error:@"[PROXIMITY] NOT UIDeviceOrientationPortrait - disable_proximityMonitoring"];
+            [self disable_proximityMonitoring];
+            break;
+    }
+}
+
+-(void)enable_proximityMonitoring
+{
+    //----------------------------------------------------------------------------------------------
+    //just by turning this on - iOS may turn off whole screen as you approach the sensor with your finger
+    //in our code we turn off the camera but iOS can turn off the whole screen
+    
+    //so can interfere with UI when screen is flat on table
+    //so we should disable / enable it depending on orientation - dont enable for FaceUp
+    //----------------------------------------------------------------------------------------------
+    [UIDevice currentDevice].proximityMonitoringEnabled = TRUE;
+    
+    [self log_debug:@"[enable_proximityMonitoring] [UIDevice currentDevice].proximityMonitoringEnabled = TRUE"];
+}
+
+
+//turn off proximityMonitoring when phone faceUp else iOS triggers screen off when finger close to the sensor
+-(void)disable_proximityMonitoring
+{
+    [UIDevice currentDevice].proximityMonitoringEnabled = FALSE;
+    [self log_debug:@"[disable_proximityMonitoring] [UIDevice currentDevice].proximityMonitoringEnabled = FALSE"];
+}
+
+//called in view_isDisappearing_shutdown
+-(void)disable_proximityMonitoring_and_removeObserver
+{
+    [self disable_proximityMonitoring];
+    
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIDeviceProximityStateDidChangeNotification object:nil];
+    
+}
+
+-(NSString *)printableProximityInfo
+{
+    return (self.latestProximityReading == TRUE) ? @"CloseProximity" : @"DistantProximity";
+}
+
+-(BOOL) latestProximityReading
+{
+    return [UIDevice currentDevice].proximityState;
+}
+
+- (void)proximityStateDidChange:(NSNotification *)notification
+{
+    //--------------------------------------------------------------------------
+    //DEBUG
+    //    BOOL state = [UIDevice currentDevice].proximityState;
+    //    NSString *msg = [NSString stringWithFormat:@"[TwilioVideoViewController.m] proximityStateDidChange:%d", state];
+    //    [self logMessage:msg];
+    //[TwilioVideoViewController.m] proximityStateDidChange:0
+    //[TwilioVideoViewController.m] proximityStateDidChange:1
+    //--------------------------------------------------------------------------
+    //VIDEO is ON  > MOVE PHONE TO EAR        > TURN VIDEO OFF
+    //               MOVE PHONE AWAY FROM EAR > turn it back on
+
+    //VIDEO is OFF > MOVE PHONE TO EAR        > VIDEO STAYS OFF
+    //               MOVE PHONE AWAY FROM EAR > dont turn it back on
+    //--------------------------------------------------------------------------
+    if([UIDevice currentDevice].proximityState){
+        //PROXIMITY: is TRUE the phone is near users ear
+        //iOS will turn off the screen
+        //BUT twilio video will still be on and on other devices with see blurry ear
+
+        if(self.localVideoTrack.enabled){
+
+            //------------------------------------------------------------------------------
+            //TURN OFF LOCAL VIDEO (if phone not FaceUp)
+            //------------------------------------------------------------------------------
+            switch (self.device_orientation) {
+                    
+                case UIDeviceOrientationPortrait:
+                    [self log_error:@"[PROXIMITY: TRUE] UIDeviceOrientationPortrait - DO disable camera when proximity triggered"];
+                    
+                    //------------------------------------------------------------------------------
+                    //TURN OFF LOCAL VIDEO (only for UIDeviceOrientationPortrait)
+                    //note i have to turn proximityenabled ON for ONLY UIDeviceOrientationPortrait
+                    //because when you turn proximityenabled on iOS will TURN WHOLE SCREEN OFF when you approach the sensor
+                    //PROBLEM : fingers near top of screen were triggering the sensor
+                    //so I DISABLE ALL proxmity sensor if phone is NOT in Portrait
+                    //not perfect: user may have phone in front of them slightly raised in portrait
+                    //but its only way to sense 
+                    //------------------------------------------------------------------------------
+                    //Camera was ON when user moved phone to their ear.
+                    //later when user moves phone away from ear
+                    //and proximityStateDidChange triggered again
+                    //we should turn camera back on
+                    self.localVideoTrack_wasOnBeforeMovedPhoneToEar = TRUE;
+                    //------------------------------------------------------------------------------
+                    //Phone is at EAR > TURN VIDEO OFF - youll only se this on other phone
+                    //on this phone iOS turns users screen off
+                    [self log_info:@"[PROXIMITY: TRUE] TURN OFF VIDEO: self.localVideoTrack.enabled = FALSE"];
+                    self.localVideoTrack.enabled = FALSE;
+                    //------------------------------------------------------------------------------
+                    [self viewLocalCameraDisabled_show];
+                    //------------------------------------------------------------------------------
+                    break;
+
+                default:
+                    [self log_error:@"[PROXIMITY: TRUE] NOT UIDeviceOrientationPortrait - DONT disable camera when proximity triggered"];
+                    break;
+            }
+            //--------------------------------------------------------------------------------------
+
+        }else{
+            //Camera was OFF when user moved phone to their ear.
+            //later when user moves phone away from ear >  proximityStateDidChange called again
+            //we should NOT turn camera back on
+            self.localVideoTrack_wasOnBeforeMovedPhoneToEar = FALSE;
+
+            //video already off
+            [self log_info:@"[PROXIMITY: TRUE] Video already off - DO NOTHING"];
+        }
+    }else{
+        //PROXIMITY: FALSE - phone is not near face
+        //turn on video ONLY IF it had been previously ON
+        if(self.localVideoTrack_wasOnBeforeMovedPhoneToEar){
+
+            //turn it back on when you move phone away from ear
+            self.localVideoTrack.enabled = TRUE;
+            [self viewLocalCameraDisabled_hide];
+            [self log_info:@"[PROXIMITY: FALSE] TURN VIDEO BACK ON"];
+
+        }else{
+            //user moved phone away from ear but they had VIDEO off before
+            //so dont automatically turn it back on
+            [self log_info:@"[PROXIMITY: FALSE] VIDEO was off BEFORE dont turn back on"];
+        }
+    }
+}
+//if proximity triggered
+//if camera button set to off
+-(void)viewLocalCameraDisabled_show{
+    [self.viewLocalCameraDisabled setHidden:FALSE];
+    
+    //video feed gets inserted on top
+    [self.viewBorderFor_previewView bringSubviewToFront:self.viewLocalCameraDisabled];
+}
+-(void)viewLocalCameraDisabled_hide{
+    [self.viewLocalCameraDisabled setHidden:TRUE];
+}
+
+
+
+
+
+
+
+
+
+#pragma mark - UIViewController
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    //----------------------------------------------------------------------------------------------
+    //TURN LOGGIN ON/OFF - MUST DOO ASAP
+    //----------------------------------------------------------------------------------------------
+    [self configureLogging];
+    
+    
+    //----------------------------------------------------------------------------------------------
+    //MONITOR PROXIMITY and ORIENTATION
+    //----------------------------------------------------------------------------------------------
+    //used to chack if device is faceup
+    [self start_deviceOrientation_monitoring];
+    
+    //used to disable camera if device is near your ear (except if it face up)
+    [self enable_ProximitySensor_addObserver];
+    //----------------------------------------------------------------------------------------------
     
     self.view.tag = VC_VIEW_TAG;
     
@@ -125,9 +420,6 @@ NSString *const CLOSED = @"CLOSED";
     
     //---------------------------------------------------------
     [self placeVolumeIconOverButton];
-    
-    //---------------------------------------------------------
-    [self configureLogging];
     
     
     //---------------------------------------
@@ -187,10 +479,7 @@ NSString *const CLOSED = @"CLOSED";
         //self.cameraSwitchButton.backgroundColor = [TwilioVideoConfig colorFromHexString:secondaryColor];
     }
     
-    //----------------------------------------------------------------------------------------------
-    //INIT BUTTONS
-    //----------------------------------------------------------------------------------------------
-    [self startProximitySensor];
+    
     
     //----------------------------------------------------------------------------------------------
     //REMOTE PHOTO - In call
@@ -1376,7 +1665,7 @@ NSString *const CLOSED = @"CLOSED";
         //------------------------------------------------------------------------------------------
         //window
         //------------------------------------------------------------------------------------------
-        NSLog(@"[self.view.window.subviews count]:%lu", (unsigned long)[self.view.window.subviews count]);
+        //NSLog(@"[self.view.window.subviews count]:%lu", (unsigned long)[self.view.window.subviews count]);
 
         //------------------------------------------------------------------------------------------
         //WORKS moves front most view to the back but unsafe to do the other way
@@ -1489,12 +1778,12 @@ NSString *const CLOSED = @"CLOSED";
     UIView * window_subView_to_move = NULL;
     //------------------------------------------------------------------------------------------
     for (UIView *subView0 in self.view.window.subviews) {
-        NSInteger subView0_tag = subView0.tag;
-        NSLog(@"subView0 class:%@ [tag  :%ld]", NSStringFromClass([subView0 class]), (long)subView0_tag);
+        //NSInteger subView0_tag = subView0.tag;
+        //NSLog(@"subView0 class:%@ [tag  :%ld]", NSStringFromClass([subView0 class]), (long)subView0_tag);
         //------------------------------------------------------------------------------------------
         for (UIView *subView1 in subView0.subviews) {
             NSInteger subView1_tag = subView1.tag;
-            NSLog(@"    subView1 class:%@ [tag  :%ld]", NSStringFromClass([subView1 class]), (long)subView1_tag);
+            //NSLog(@"    subView1 class:%@ [tag  :%ld]", NSStringFromClass([subView1 class]), (long)subView1_tag);
             //------------------------------------------------------------------------------------------
             //our TVC.view is usually at this level
             if (VC_VIEW_TAG == subView1_tag) {
@@ -1507,7 +1796,7 @@ NSString *const CLOSED = @"CLOSED";
             
             for (UIView *subView2 in subView1.subviews) {
                 NSInteger subView2_tag = subView2.tag;
-                NSLog(@"        subView2 class:%@ [tag  :%ld]", NSStringFromClass([subView2 class]), (long)subView2_tag);
+                //NSLog(@"        subView2 class:%@ [tag  :%ld]", NSStringFromClass([subView2 class]), (long)subView2_tag);
                 
                 //our TVC.view is usually at parent level but added in case - may never be called the break; in the parent may cancel first
                 if (VC_VIEW_TAG == subView2_tag) {
@@ -2484,109 +2773,13 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 
-#pragma mark - ProximityMonitoring
-
--(BOOL)startProximitySensor
-{
-    [self log_info:@"[TwilioVideoViewController] startProximitySensor"];
-    
-    if([UIDevice currentDevice].proximityMonitoringEnabled == FALSE)
-        [UIDevice currentDevice].proximityMonitoringEnabled = TRUE;
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(proximityStateDidChange:) name:UIDeviceProximityStateDidChangeNotification object:nil];
-
-    
-    return [UIDevice currentDevice].proximityMonitoringEnabled;
-}
-
--(NSString *)printableProximityInfo
-{
-    return (self.latestProximityReading == TRUE) ? @"CloseProximity" : @"DistantProximity";
-}
-
--(BOOL) latestProximityReading
-{
-    return [UIDevice currentDevice].proximityState;
-}
-
-- (void)proximityStateDidChange:(NSNotification *)notification
-{
-    //--------------------------------------------------------------------------
-    //DEBUG
-    //    BOOL state = [UIDevice currentDevice].proximityState;
-    //    NSString *msg = [NSString stringWithFormat:@"[TwilioVideoViewController.m] proximityStateDidChange:%d", state];
-    //    [self logMessage:msg];
-    //[TwilioVideoViewController.m] proximityStateDidChange:0
-    //[TwilioVideoViewController.m] proximityStateDidChange:1
-    //--------------------------------------------------------------------------
-    //VIDEO is ON  > MOVE PHONE TO EAR        > TURN VIDEO OFF
-    //               MOVE PHONE AWAY FROM EAR > turn it back on
-    
-    //VIDEO is OFF > MOVE PHONE TO EAR        > VIDEO STAYS OFF
-    //               MOVE PHONE AWAY FROM EAR > dont turn it back on
-    //--------------------------------------------------------------------------
-    if([UIDevice currentDevice].proximityState){
-        //PROXIMITY: is TRUE the phone is near users ear
-        //iOS will turn off the screen
-        //BUT twilio video will still be on and on other devices with see blurry ear
-        
-        if(self.localVideoTrack.enabled){
-            //--------------------------------------------------------------------------------------
-            //Camera was ON when user moved phone to their ear.
-            //later when user moves phone away from ear
-            //and proximityStateDidChange triggered again
-            //we should turn camera back on
-            self.localVideoTrack_wasOnBeforeMovedPhoneToEar = TRUE;
-            //--------------------------------------------------------------------------------------
-            //Phone is at EAR > TURN VIDEO OFF - youll only se this on other phone
-            //on this phone iOS turns users screen off
-            [self log_info:@"[PROXIMITY: TRUE] TURN OFF VIDEO: self.localVideoTrack.enabled = FALSE"];
-            self.localVideoTrack.enabled = FALSE;
-            //--------------------------------------------------------------------------------------
-            [self viewLocalCameraDisabled_show];
-            //--------------------------------------------------------------------------------------
-            
-        }else{
-            //Camera was OFF when user moved phone to their ear.
-            //later when user moves phone away from ear >  proximityStateDidChange called again
-            //we should NOT turn camera back on
-            self.localVideoTrack_wasOnBeforeMovedPhoneToEar = FALSE;
-            
-            //video already off
-            [self log_info:@"[PROXIMITY: TRUE] Video already off - DO NOTHING"];
-        }
-    }else{
-        //PROXIMITY: FALSE - phone is not near face
-        //turn on video ONLY IF it had been previously ON
-        if(self.localVideoTrack_wasOnBeforeMovedPhoneToEar){
-            
-            //turn it back on when you move phone away from ear
-            self.localVideoTrack.enabled = TRUE;
-            [self viewLocalCameraDisabled_hide];
-            [self log_info:@"[PROXIMITY: FALSE] TURN VIDEO BACK ON"];
-            
-        }else{
-            //user moved phone away from ear but they had VIDEO off before
-            //so dont automatically turn it back on
-            [self log_info:@"[PROXIMITY: FALSE] VIDEO was off BEFORE dont turn back on"];
-        }
-    }
-}
-//if proximity triggered
-//if camera button set to off
--(void)viewLocalCameraDisabled_show{
-    [self.viewLocalCameraDisabled setHidden:FALSE];
-    
-    //video feed gets inserted on top
-    [self.viewBorderFor_previewView bringSubviewToFront:self.viewLocalCameraDisabled];
-}
--(void)viewLocalCameraDisabled_hide{
-    [self.viewLocalCameraDisabled setHidden:TRUE];
-}
 
 
 -(void)viewWillDisappear:(BOOL)animated{
     [super viewWillDisappear: animated];
+    
+    [self viewWillDisappear_TurnOffOrientationsNotifications];
+    
     [self log_debug:@"[TwilioVideoViewController.m] viewWillDisappear CALLED - DOES NOTHING"];
 
 }
@@ -2618,18 +2811,12 @@ NSString *const CLOSED = @"CLOSED";
         }];
     
         [self log_debug:@"[TwilioVideoViewController.m] viewWillDisappear >> stopProximitySensor"];
-        [self stopProximitySensor];
+        [self disable_proximityMonitoring_and_removeObserver];
     
         [self log_info:@"[TwilioVideoViewController.m] viewWillDisappear - VIEW CONTROLLER closed"];
 }
 
 
--(void)stopProximitySensor
-{
-    [UIDevice currentDevice].proximityMonitoringEnabled = FALSE;
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIDeviceProximityStateDidChangeNotification object:nil];
-    
-}
 
 
 #pragma mark -
@@ -2757,16 +2944,22 @@ NSString *const CLOSED = @"CLOSED";
 - (void)log_info:(NSString *)msg {
     if (_log_info_on) {
         NSLog(@"[VIDEOPLUGIN] [INFO ] %@", msg);
+    }else{
+        
     }
 }
 - (void)log_debug:(NSString *)msg {
     if (_log_debug_on) {
         NSLog(@"[VIDEOPLUGIN] [DEBUG] %@", msg);
+    }else{
+        
     }
 }
 - (void)log_error:(NSString *)msg {
     if (_log_error_on) {
         NSLog(@"[VIDEOPLUGIN] [ERROR] %@", msg);
+    }else{
+        
     }
 }
 
