@@ -960,7 +960,16 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             } else {
                 //----------------------------------------------------------------------------------
                 publishEvent(CallEvent.PERMISSIONS_REQUIRED);
-                TwilioVideoActivity.this.handleConnectionError(config.getI18nConnectionError());
+
+
+                if(null != config){
+                    TwilioVideoActivity.this.handleConnectionError(config.getI18nConnectionError());
+
+                }else{
+                    Log.e(TAG, "[VIDEOPLUGIN] onRequestPermissionsResult: config is null - cant get config.getI18nConnectionError() - ok PERMISSIONS_REQUIRED still published");
+                }
+
+
                 //----------------------------------------------------------------------------------
             }
         }else{
@@ -982,11 +991,12 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         if(null != config){
             if(config.isStartWithVideoOff()){
                 localVideoTrack_wasOnBeforeMovedPhoneToEar = false;
+
             }else{
-                Log.d(TAG, "[VIDEOPLUGIN] config.isStartWithVideoOff() is false");
+                Log.d(TAG, "[VIDEOPLUGIN] preventProximityTurningCameraOn: config.isStartWithVideoOff() is false >> localVideoTrack_wasOnBeforeMovedPhoneToEar = true;");
             }
         }else{
-            Log.e(TAG, "[VIDEOPLUGIN] config is null");
+            Log.e(TAG, "[VIDEOPLUGIN] config is null - ok FALLBACK TO localVideoTrack_wasOnBeforeMovedPhoneToEar = true;");
         }
     }
 
@@ -1819,11 +1829,20 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     //------------------------------------------------------------------------------
                     boolean enableVideoAtStart = true;
 
-                    if(config.isStartWithVideoOff()){
-                        Log.i(TAG, "[VIDEOPLUGIN] setupLocalCamera_ifnull: isStartWithAudioOff is TRUE - AUDIO disabled at start");
-                        enableVideoAtStart = false;
+                    if(null != config){
+                        if(config.isStartWithVideoOff()){
+                            Log.i(TAG, "[VIDEOPLUGIN] setupLocalCamera_ifnull: isStartWithAudioOff is TRUE - AUDIO disabled at start");
+                            enableVideoAtStart = false;
+
+                        }else{
+                            Log.i(TAG, "[VIDEOPLUGIN] setupLocalCamera_ifnull: isStartWithAudioOff is FALSE - enableVideoAtStart = true;");
+                            enableVideoAtStart = true;
+
+                        }
                     }else{
+                        Log.e(TAG, "[VIDEOPLUGIN] setupLocalCamera_ifnull: config is null - FALLBACK TO enableVideoAtStart = true;");
                         enableVideoAtStart = true;
+
                     }
 
                     //------------------------------------------------------------------------------
@@ -2195,13 +2214,16 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             if(null != config){
                 if(config.isStartWithAudioOff()){
-                    Log.i(TAG, "[VIDEOPLUGIN] isStartWithAudioOff: TRUE - AUDIO disabled at start");
+                    Log.i(TAG, "[VIDEOPLUGIN] setup_local_audio: TRUE - enableAudioAtStart = false;");
                     enableAudioAtStart = false;
+
                 }else{
+                    Log.i(TAG, "[VIDEOPLUGIN] setup_local_audio: FALSE - enableAudioAtStart = true;");
                     enableAudioAtStart = true;
+
                 }
             }else{
-            	Log.e(TAG, "config is null");
+            	Log.e(TAG, "setup_local_audio: config is null FALLBACK TO - enableAudioAtStart = true;");
                 enableAudioAtStart = true;
             }
 
@@ -2306,11 +2328,18 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //------------------------------------------------------------------------------------------
             boolean enableVideoAtStart = true;
 
-            if (config.isStartWithVideoOff()) {
-                Log.i(TAG, "[VIDEOPLUGIN] isStartWithAudioOff: TRUE - AUDIO disabled at start");
-                enableVideoAtStart = false;
 
-            } else {
+            if(null != config){
+                if (config.isStartWithVideoOff()) {
+                    Log.i(TAG, "[VIDEOPLUGIN] setup_localVideoTrack: isStartWithVideoOff: TRUE - AUDIO disabled at start");
+                    enableVideoAtStart = false;
+
+                } else {
+                    Log.i(TAG, "[VIDEOPLUGIN] setup_localVideoTrack: isStartWithVideoOff: FALSE - AUDIO enabled at start");
+                    enableVideoAtStart = true;
+                }
+            }else{
+                Log.e(TAG, "[VIDEOPLUGIN] setup_localVideoTrack: config is null - FALLBACK TO isStartWithVideoOff: TRUE");
                 enableVideoAtStart = true;
             }
             //------------------------------------------------------------------------------------------
@@ -2990,6 +3019,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
                         // Propagating the event to the web side in order to allow developers to do something else before disconnecting the room
                         publishEvent(CallEvent.HANG_UP);
+
                     } else {
                         Log.e(TAG, "[VIDEOPLUGIN][button_disconnect_OnClickListener] onClick: >> isHangUpInApp:FALSE >> onDisconnect");
 
@@ -2997,7 +3027,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     }
                 }else{
                     //happnes when you call show_twiliovideo before openRoom - disconnect button will crash cos config is null
-                	Log.e(TAG, "config is null - activity created but not configured ");
+                	Log.e(TAG, "button_disconnect_OnClickListener: config is null - activity created but config is null - FALLBACK call onDisconnect ");
+                    onDisconnect();
                 }
 
             }
@@ -3392,7 +3423,14 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 Log.d(TAG, "[VIDEOPLUGIN] Room.Listener onConnectFailure: ");
 
                 publishEvent(CallEvent.CONNECT_FAILURE, TwilioVideoUtils.convertToJSON(e));
-                TwilioVideoActivity.this.handleConnectionError(config.getI18nConnectionError());
+
+                if(null != config){
+                    TwilioVideoActivity.this.handleConnectionError(config.getI18nConnectionError());
+
+                }else{
+                    Log.e(TAG, "[VIDEOPLUGIN] onConnectFailure: config is null - cant get config.getI18nConnectionError()");
+                }
+
             }
 
             @Override
@@ -3424,7 +3462,14 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     Log.e(TAG, "[VIDEOPLUGIN] Room.Listener >> onDisconnected: >> publishEvent(DISCONNECTED_WITH_ERROR) error:" + e);
 
                     publishEvent(CallEvent.DISCONNECTED_WITH_ERROR, TwilioVideoUtils.convertToJSON(e));
-                    TwilioVideoActivity.this.handleConnectionError(config.getI18nDisconnectedWithError());
+
+
+                    if(null != config){
+                        TwilioVideoActivity.this.handleConnectionError(config.getI18nDisconnectedWithError());
+
+                    }else{
+                        Log.e(TAG, "[VIDEOPLUGIN] onConnectFailure: config is null - cant get config.getI18nDisconnectedWithError()");
+                    }
 
                 } else {
                     Log.d(TAG, "[VIDEOPLUGIN] Room.Listener >> onDisconnected: >> publishEvent(DISCONNECTED)");
@@ -3795,11 +3840,18 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //if connection cant be made must stop audio or else it stays rinning till you likk the app
         dialing_sound_stop();
 
-        if (config.isHandleErrorInApp()) {
-            Log.i(TAG, "[VIDEOPLUGIN] Error handling disabled for the plugin. This error should be handled in the hybrid app");
-            dismiss();
-            return;
+        //------------------------------------------------------------------------------------------
+        // TODO: 08/02/21 NEEDED? we call dismiss() anyway
+        if(null != config){
+            if (config.isHandleErrorInApp()) {
+                Log.i(TAG, "[VIDEOPLUGIN] handleConnectionError: config.isHandleErrorInApp(): TRUE - Error handling disabled for the plugin. This error should be handled in the hybrid app");
+                dismiss();
+                return;
+            }
+        }else{
+            Log.e(TAG, "[VIDEOPLUGIN] config is null");
         }
+
         Log.i(TAG, "[VIDEOPLUGIN] Connection error handled by the plugin");
 
         //------------------------------------------------------------------------------------------
