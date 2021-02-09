@@ -19,6 +19,9 @@
         [self.eventDelegate onCallEvent:event with:data];
     }
 }
+//TwilioVideoPlugin closeRoom: used to call this
+//but it doesnt do callbacks
+//so instead in wilioVideoPlugin closeRoom: I call TVA.onDisconnect directly
 - (BOOL)publishDisconnection {
     if (self.actionDelegate != NULL) {
         [self.actionDelegate onDisconnect];

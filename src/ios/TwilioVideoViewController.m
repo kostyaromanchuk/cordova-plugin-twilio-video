@@ -82,6 +82,7 @@ NSString *const CLOSED = @"CLOSED";
 
 @property (unsafe_unretained, nonatomic) IBOutlet UIButton *buttonDebug_showOffline;
 @property (unsafe_unretained, nonatomic) IBOutlet UIButton *buttonDebug_showOnline;
+@property (unsafe_unretained, nonatomic) IBOutlet UIButton *buttonDebug_closeRoom;
 
 @property (unsafe_unretained, nonatomic) IBOutlet UIView *viewAudioWrapper;
 @property (unsafe_unretained, nonatomic) IBOutlet UIVisualEffectView *uiVisualEffectViewBlur1;
@@ -1104,6 +1105,9 @@ NSString *const CLOSED = @"CLOSED";
     [self log_debug:@"[TwilioVideoViewController] [openRoom]"];
     
     [self showhide_buttonDebugStartACall];
+    [self showhide_closeRoom];
+
+    
     
     //----------------------------------------------------------------------------------------------
     //STORE PARAMS
@@ -2269,7 +2273,7 @@ NSString *const CLOSED = @"CLOSED";
 
 //internet gone - seachat tells plugin to show alert
 - (void)showOffline{
-    
+    //RELEASE - should be commented in always
     [self.viewAlert setHidden:FALSE];
     [self.view bringSubviewToFront:self.viewAlert];
     
@@ -2300,6 +2304,36 @@ NSString *const CLOSED = @"CLOSED";
     //------------------------------------------------------------------------------------------
 }
 
+-(void)showhide_showOnline{
+    //------------------------------------------------------------------------------------------
+    //FOR RELEASE - COMMENT THIS OUT
+//    //------------------------------------------------------------------------------------------
+//    [self.buttonDebug_showOnline setHidden:FALSE];
+//    [self.view bringSubviewToFront:self.buttonDebugStartACall];
+    
+    //------------------------------------------------------------------------------------------
+    //FOR RELEASE - COMMENT THIS IN
+    //------------------------------------------------------------------------------------------
+    [self.buttonDebug_showOnline setHidden:TRUE];
+    //------------------------------------------------------------------------------------------
+}
+
+-(void)showhide_closeRoom{
+    
+    //------------------------------------------------------------------------------------------
+    //FOR RELEASE - COMMENT THIS OUT
+    //------------------------------------------------------------------------------------------
+//    [self.buttonDebug_closeRoom setHidden:FALSE];
+//    [self.view bringSubviewToFront:self.buttonDebug_closeRoom];
+    
+    //------------------------------------------------------------------------------------------
+    //FOR RELEASE - COMMENT THIS IN
+    //------------------------------------------------------------------------------------------
+    [self.buttonDebug_closeRoom setHidden:TRUE];
+    
+    
+}
+
 - (IBAction)buttonDebug_showOffline_Action:(id)sender {
     [self showOffline];
     
@@ -2312,13 +2346,28 @@ NSString *const CLOSED = @"CLOSED";
 }
 
 - (IBAction)buttonDebug_showOnline_Action:(id)sender {
+//showOnline
+    //------------------------------------------------------------------------------------------
     [self showOnline];
-    
+
     [self.buttonDebug_showOnline setHidden:TRUE];
-    
+
     //its hidden in answercall  for REMOTE user just bring to front may stil be hidden
     //[self.buttonDebugStartACall setHidden:FALSE];
     [self.view bringSubviewToFront:self.buttonDebugStartACall];
+
+    //------------------------------------------------------------------------------------------
+
+    
+}
+
+- (IBAction)buttonDebug_closeRoom_Action:(id)sender {
+ 
+    //test closeRoom - sends message to Js to call closeRoom()
+    //RELEASE
+//    [[TwilioVideoManager getInstance] publishEvent: @"DEBUGCLOSEROOM"];
+    
+    
 }
 
 
@@ -2390,15 +2439,23 @@ NSString *const CLOSED = @"CLOSED";
 
 #pragma mark - TwilioVideoActionProducerDelegate
 
+//also called by JS closeRoom()
+//see also TwilioVideoPlugin closeRoom:
+//I added a callback to JS closeRoom so that it can return CLOSED/DISCONNECTED in a callback
+//this was because when we are in a call and get a second call the JS app will call closeRoom() and answerRoom()
+//but answerRoom() should not be called till CLOSED + DISCONNECTED received.
+
 - (void)onDisconnect {
     [self log_debug:@"[TwilioVideoViewController] [TwilioVideoActionProducerDelegate.onDisconnect] >> [self.room disconnect]"];
     if (self.room != NULL) {
+        //THIS will send CLOSED message back
         [self.room disconnect];
     }else{
         NSLog(@"self.room is NULL - OK if LOCAL/STAGE1/");
         
         //NOTE - if LOCAL USER hasnt connected to Room this isnt called
         //onDiconnect needs to manually
+        //this will send 'DISCONNECTED' message back to cordova
         [self disconnectFromUIAndSend_DISCONNECTED:nil];
     }
 }
@@ -2965,7 +3022,8 @@ NSString *const CLOSED = @"CLOSED";
 
 
 - (IBAction)buttonDebugStartACall_action:(id)sender {
-    [[TwilioVideoManager getInstance] publishEvent: @"DEBUGSTARTACALL"];
+    //RELEASE
+//    [[TwilioVideoManager getInstance] publishEvent: @"DEBUGSTARTACALL"];
 }
 
 - (void)didReceiveMemoryWarning {

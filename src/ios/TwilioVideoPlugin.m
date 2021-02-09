@@ -355,14 +355,54 @@
     });
 }
 
+//- (void)closeRoom:(CDVInvokedUrlCommand*)command {
+//    if ([[TwilioVideoManager getInstance] publishDisconnection]) {
+//        [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
+//    } else {
+//        CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Twilio video is not running"];
+//        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+//    }
+//}
+
 - (void)closeRoom:(CDVInvokedUrlCommand*)command {
-    if ([[TwilioVideoManager getInstance] publishDisconnection]) {
-        [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
-    } else {
-        CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Twilio video is not running"];
-        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
-    }
+    self.listenerCallbackID = command.callbackId;
+  
+    //NO ARGUMENTS - NSArray *args = command.arguments;
+    
+    
+    //v1 - this came with the plugin but it has no call backs
+    //[[TwilioVideoManager getInstance] publishDisconnection]
+    
+    //v2 - add support for call backs
+    //TwilioVideoManager.publishDisconnection: just calls onDisconnect on TVA
+    //so just call it directly here
+   
+    dispatch_async(dispatch_get_main_queue(), ^{
+        //----------------------------------------------------------------------
+        //ISSUE - the 2nd time openRoom called UI(TVC) doesnt appear
+        //so always PRESENTVC then openRoom:
+        //----------------------------------------------------------------------
+        if (NULL == self.tvc) {
+            NSLog(@"ERROR [self.tvc hide_twiliovideo] FAILED - self.tvc is null");
+        }else{
+          
+            //------------------------------------------------------------------
+            //Create VC
+            //------------------------------------------------------------------
+            [self.tvc onDisconnect];
+            //delegates will return CLOSED(twilio room closed) and DISCONECTED(TVC dismissed)
+            //------------------------------------------------------------------
+        }
+        
+        //----------------------------------------------------------------------
+    });
 }
+
+
+
+
+
+
 
 - (void)hasRequiredPermissions:(CDVInvokedUrlCommand*)command {
     BOOL hasRequiredPermissions = [TwilioVideoPermissions hasRequiredPermissions];

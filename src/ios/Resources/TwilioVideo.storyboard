@@ -26,6 +26,17 @@
                                     <action selector="buttonDebugStartACall_action:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="TYg-Kw-SRo"/>
                                 </connections>
                             </button>
+                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MOz-y7-RXA">
+                                <rect key="frame" x="16" y="182" width="82" height="30"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="82" id="kEy-pl-fWd"/>
+                                    <constraint firstAttribute="height" constant="30" id="sxt-xv-BHT"/>
+                                </constraints>
+                                <state key="normal" title="showOffline"/>
+                                <connections>
+                                    <action selector="buttonDebug_showOffline_Action:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="1IZ-sU-Nbh"/>
+                                </connections>
+                            </button>
                             <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="qSc-QC-8BN">
                                 <rect key="frame" x="16" y="228" width="80" height="30"/>
                                 <constraints>
@@ -318,17 +329,6 @@
                                     <constraint firstItem="nMo-w9-F3W" firstAttribute="top" secondItem="XQ5-Rc-4OJ" secondAttribute="top" id="rwe-Mg-pQM"/>
                                 </constraints>
                             </view>
-                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MOz-y7-RXA">
-                                <rect key="frame" x="16" y="182" width="82" height="30"/>
-                                <constraints>
-                                    <constraint firstAttribute="width" constant="82" id="kEy-pl-fWd"/>
-                                    <constraint firstAttribute="height" constant="30" id="sxt-xv-BHT"/>
-                                </constraints>
-                                <state key="normal" title="showOffline"/>
-                                <connections>
-                                    <action selector="buttonDebug_showOffline_Action:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="1IZ-sU-Nbh"/>
-                                </connections>
-                            </button>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="W4Q-Ml-m6q" userLabel="imageViewRemoteParticipantInCall">
                                 <rect key="frame" x="149.5" y="295.5" width="76" height="76"/>
                                 <constraints>
@@ -347,6 +347,18 @@
                                     <action selector="buttonBackTocCall_HideVCView:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="7HK-rf-M2S"/>
                                 </connections>
                             </button>
+                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="LPB-Vp-nyU">
+                                <rect key="frame" x="16" y="266" width="80" height="30"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="80" id="5Db-gW-mdH"/>
+                                    <constraint firstAttribute="height" constant="30" id="UaJ-hD-gdh"/>
+                                </constraints>
+                                <state key="normal" title="closeRoom"/>
+                                <connections>
+                                    <action selector="buttonDebug_closeRoom_Action:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="fPz-cn-Yfs"/>
+                                    <action selector="buttonDebug_showOnline_Action:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="sl2-DC-mzE"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" red="0.066666666666666666" green="0.14509803921568626" blue="0.22352941176470587" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
@@ -361,12 +373,14 @@
                             <constraint firstItem="XQ5-Rc-4OJ" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leadingMargin" constant="20" id="K3d-ne-lEn"/>
                             <constraint firstItem="tZu-uw-hgi" firstAttribute="top" secondItem="XQ5-Rc-4OJ" secondAttribute="bottom" constant="8" id="PQI-YZ-bLJ"/>
                             <constraint firstAttribute="trailing" secondItem="r4p-h9-xiA" secondAttribute="trailing" constant="8" id="QEd-vK-reu"/>
+                            <constraint firstItem="LPB-Vp-nyU" firstAttribute="top" secondItem="qSc-QC-8BN" secondAttribute="bottom" constant="8" symbolic="YES" id="a2q-AA-MjX"/>
                             <constraint firstItem="l3a-7A-hrE" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leading" id="bTm-oi-Lbg"/>
                             <constraint firstItem="7RT-Bo-1q4" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leading" constant="239" id="dcc-Xw-QGP"/>
                             <constraint firstItem="XQ5-Rc-4OJ" firstAttribute="top" secondItem="l3a-7A-hrE" secondAttribute="bottom" id="eTy-RJ-DBC"/>
                             <constraint firstItem="W4Q-Ml-m6q" firstAttribute="centerY" secondItem="3Bh-pO-6uY" secondAttribute="centerY" id="f5e-yv-O76"/>
                             <constraint firstItem="W4Q-Ml-m6q" firstAttribute="centerX" secondItem="3Bh-pO-6uY" secondAttribute="centerX" id="fMH-Cm-KvF"/>
                             <constraint firstItem="MOz-y7-RXA" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leadingMargin" id="gqL-ZH-vHm"/>
+                            <constraint firstItem="LPB-Vp-nyU" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leadingMargin" id="j5H-wk-UdO"/>
                             <constraint firstAttribute="bottom" secondItem="7RT-Bo-1q4" secondAttribute="bottom" constant="144" id="jTx-oS-ZoI"/>
                             <constraint firstAttribute="trailing" secondItem="l3a-7A-hrE" secondAttribute="trailing" id="lZ3-lj-wT5"/>
                             <constraint firstItem="Mof-LL-MfS" firstAttribute="leading" secondItem="3Bh-pO-6uY" secondAttribute="leading" id="ndP-es-mED"/>
@@ -379,6 +393,7 @@
                     <connections>
                         <outlet property="buttonBackToCall" destination="hiG-4D-JfK" id="r4u-fE-99E"/>
                         <outlet property="buttonDebugStartACall" destination="aXX-R8-WN1" id="l9Z-vv-qjC"/>
+                        <outlet property="buttonDebug_closeRoom" destination="LPB-Vp-nyU" id="WiW-uU-gZq"/>
                         <outlet property="buttonDebug_showOffline" destination="MOz-y7-RXA" id="b9f-6C-mu3"/>
                         <outlet property="buttonDebug_showOnline" destination="qSc-QC-8BN" id="qm5-3e-D1f"/>
                         <outlet property="disconnectButton" destination="krA-sT-Z3g" id="uQu-1U-Ree"/>
