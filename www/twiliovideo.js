@@ -220,6 +220,68 @@ var exec = require("cordova/exec");
              [token, room, local_user_name, local_user_photo_url, remote_user_name, remote_user_photo_url, config]
         );
     };
+
+    TwilioVideo.closeRoom = function (eventCallback) {
+
+            exec(
+                function (e) {
+                    //console.log("[VIDEOPLUGIN]Twilio closeRoom event fired: " + e);
+                    //just logs [log] - Twilio closeRoom event fired: [object Object]
+                    //then passes to index.js
+                    //[log] - [index.js] window.twiliovideo.closeRoom(COME OUT IN THE CALLBACK)
+
+                    //----------------------------------------------------------------------
+                    //eventCallback(e.event, e.data)
+                    //    data {
+                    //        code = 20101;
+                    //        description = "Invalid Access Token";
+                    //    }
+                    //----------------------------------------------------------------------
+                    //YOU NEED TO name each sub property else JS just says [object Object] for description
+                    if (e.data) {
+                        if (e.data.code) {
+                            console.log(
+                                "[VIDEOPLUGIN][twilio.js][Twilio.closeRoom][EVENT NAME:'" +
+                                    e.event +
+                                    "'] [ERROR CODE - e.data.code:'" +
+                                    e.data.code +
+                                    "']"
+                            );
+                        } else {
+                            console.log(
+                                "[VIDEOPLUGIN][twilio.js][Twilio.closeRoom][EVENT NAME:'" + e.event + "'] [ERROR CODE - e.data.code is nil"
+                            );
+                        }
+                        if (e.data.description) {
+                            console.log(
+                                "[VIDEOPLUGIN][twilio.js][Twilio.closeRoom][EVENT NAME:'" +
+                                    e.event +
+                                    "'] [ERROR DESC - e.data.description:'" +
+                                    e.data.description +
+                                    "']"
+                            );
+                        } else {
+                            console.log(
+                                "[VIDEOPLUGIN][twilio.js][Twilio.closeRoom][EVENT NAME:'" +
+                                    e.event +
+                                    "'] [ERROR DESC - e.data.description is nil"
+                            );
+                        }
+
+                    } else {
+                        //console.log("[VIDEOPLUGIN][twilio.js][Twilio.closeRoom][EVENT NAME:'" + e.event + "']  e.data is nil - ok if not error");
+                        console.log("[VIDEOPLUGIN][twilio.js][Twilio.closeRoom][EVENT NAME:'" + e.event + "']");
+                    }
+                    if (eventCallback) {
+                        eventCallback(e.event, e.data);
+                    }
+                },
+                null,
+                "TwilioVideoPlugin",
+                "closeRoom",
+                 []
+            );
+        };
         
     //internet gone on device - tell plugin to show alert
     TwilioVideo.showOffline = function (success, error) {

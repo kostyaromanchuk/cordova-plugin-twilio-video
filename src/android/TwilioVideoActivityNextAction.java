@@ -21,6 +21,7 @@ class TwilioVideoActivityNextAction {
     static String action_showOnline = "showOnline";
     static String action_show_twiliovideo = "show_twiliovideo";
     static String action_hide_twiliovideo = "hide_twiliovideo";
+    static String action_closeRoom = "closeRoom";
 
 
     //"openRoom"

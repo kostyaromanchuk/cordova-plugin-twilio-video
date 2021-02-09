@@ -69,6 +69,7 @@ public class TwilioVideo extends CordovaPlugin {
                 this.hide_twiliovideo(args, callbackContext);
                 break;
             case "closeRoom":
+                this.registerCallListener(callbackContext);
                 this.closeRoom(callbackContext);
                 break;
             case "hasRequiredPermissions":
@@ -739,10 +740,10 @@ public class TwilioVideo extends CordovaPlugin {
 
                 if(null != event){
                     if(event.equals("CLOSED")){
-                        Log.d(TAG, "[VIDEOPLUGIN] onEvent: CLOSED received - KILL TwilioActivity");
+                        Log.d(TAG, "[VIDEOPLUGIN] onEvent: CLOSED received - room.disconnect() was called by TVA");
 
                     }else if(event.equals("DISCONNECTED")){
-                        Log.d(TAG, "[VIDEOPLUGIN] onEvent: DISCONNECTED received");
+                        Log.d(TAG, "[VIDEOPLUGIN] onEvent: DISCONNECTED received - TWA finish; called");
 
                     }else{
                         Log.d(TAG, "[VIDEOPLUGIN] onEvent: UNHANDLED EVENT - ignore passed back to twilio.js:" + event);
@@ -772,12 +773,72 @@ public class TwilioVideo extends CordovaPlugin {
 
 
 
-    private void closeRoom(CallbackContext callbackContext) {
-        if (TwilioVideoManager.getInstance().publishDisconnection()) {
-            callbackContext.success();
-        } else {
-            callbackContext.error("Twilio video is not running");
+//    private void closeRoom(CallbackContext callbackContext) {
+//        Log.e(TAG, "[VIDEOPLUGIN] closeRoom: CALL TwilioVideoManager.getInstance().publishDisconnection() >> actionListener.onDisconnect(); >> TwilioVideoActivity.onDisconnect ");
+//        if (TwilioVideoManager.getInstance().publishDisconnection()) {
+//            Log.e(TAG, "[VIDEOPLUGIN] closeRoom: publishDisconnection: OK >> sendPluginErrorResult");
+//
+//            this.sendPluginOkResult(callbackContext);
+//
+//        } else {
+//            Log.e(TAG, "[VIDEOPLUGIN] closeRoom: publishDisconnection: failed >> sendPluginErrorResult");
+//            this.sendPluginErrorResult(callbackContext);
+//        }
+//    }
+
+    public void closeRoom(CallbackContext callbackContext) {
+        Log.e(TAG, "[VIDEOPLUGIN][TwilioVideo.java] closeRoom CALLED");
+
+        //no params try catch not needed
+        //--------------------------------------------------------------------------------------
+        //putExtra can throw error: local variables referenced from an inner class must be final or effectively final
+        //so copy values into final versions of same
+        //--------------------------------------------------------------------------------------
+
+        final CordovaPlugin that = this;
+        try {
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                    Intent intent_TwilioVideoActivity = new Intent(Intent.ACTION_VIEW);
+
+                    intent_TwilioVideoActivity.setClass(that.cordova.getActivity().getBaseContext(), TwilioVideoActivity.class);
+                    intent_TwilioVideoActivity.setPackage(that.cordova.getActivity().getApplicationContext().getPackageName());
+
+
+                    //------------------------------------------------------------------------------
+                    //Android same activity
+                    String nextAction = TwilioVideoActivityNextAction.action_closeRoom;
+                    intent_TwilioVideoActivity.putExtra("action", nextAction);
+
+                    //getIntent() only gets the intent set startActivity > onCreate
+                    //for showOnline only onResume is called so getIntent still shows "openRoom"
+
+                    TwilioVideoActivityNextAction.setNextAction(nextAction);
+
+                    //------------------------------------------------------------------------------
+                    //prevent action_closeRoom > startActivity from creating new instance
+                    //------------------------------------------------------------------------------
+
+                    //but showOnline should use existing instance
+                    //single instance - reuse existing one if available
+                    intent_TwilioVideoActivity.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+
+                    //------------------------------------------------------------------------------
+                    //DEBUG its MainActivity
+                    //Activity cordova_activity = that.cordova.getActivity();
+
+                    that.cordova.getActivity().startActivity(intent_TwilioVideoActivity);
+
+                }
+
+            });
+        } catch (Exception exception) {
+            Log.e(TAG, "[VIDEOPLUGIN] closeRoom failed", exception);
+            this.sendPluginErrorResult(callbackContext);
+            return;
         }
+        this.sendPluginOkResult(callbackContext);
     }
 
     private void hasRequiredPermissions(CallbackContext callbackContext) {

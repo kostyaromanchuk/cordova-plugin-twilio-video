@@ -62,7 +62,11 @@ import java.util.List;
 
 import com.squareup.picasso.Picasso;
 
+
+//RELEASE - comment in before release no MainActivity in POC
 import live.sea.chat.MainActivity;
+
+
 //DONT USE it works in this POC but when they integrate with the main sea/chat app theres no capacitor so it breaks
 //import capacitor.android.plugins.R;
 
@@ -318,7 +322,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             @Override
             public void onClick(View view) {
                 Log.d(TAG, "[VIDEOPLUGIN] onClick: buttonHiddenSwitchVideo tapped - flip camera if not in full screen");
-
+                //--------------------------------------------------------------------------------------
+//RELEASE - put back
                 //dont flip  if in full screen in openRoom - can be trigger too easily when you tap on 4 main buttons
                 if(previewIsFullScreen){
                     Log.d(TAG, "[VIDEOPLUGIN] previewIsFullScreen is true - dont flip camera - too near the big buttons");
@@ -338,8 +343,12 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     }else{
                         Log.e(TAG, "[VIDEOPLUGIN] cameraCapturer is null");
                     }
-                    //------------------------------------------------------------------------------
+                    //----------------------------------------------------------------------------
                 }
+                //----------------------------------------------------------------------------------
+//RELEASE - comment out
+//                publishEvent(CallEvent.DEBUGCLOSEROOM);
+
 
             }
         });
@@ -441,13 +450,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
 
 //FOR RELEASE - COMMENT IN
-//DONT USE on Asus and Samsung S7 Edge
-// can cause WHOLE task stack to move to background so user may see Launcher not MainActivity
-//                moveTaskToBack(true);
-
                 //----------------------------------------------------------------------------------
                 //works - doesnt create new instance of MainActivity
-                // /but you need sharedInstance on TwilioVideoActivity
+                 ///but you need sharedInstance on TwilioVideoActivity
                 Intent mIntent=new Intent(TwilioVideoActivity.this, MainActivity.class);
                 startActivity(mIntent);
                 //----------------------------------------------------------------------------------
@@ -456,6 +461,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 //----------------------------------------------------------------------------------
 //FOR RELEASE - COMMENT OUT - DEBUG triggers startCall
 //                publishEvent(CallEvent.DEBUGSTARTACALL);
+                //----------------------------------------------------------------------------------
+
             }
         });
 //FOR RELEASE - COMMENT IN
@@ -608,6 +615,19 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
                 Log.d(TAG, "[VIDEOPLUGIN] onCreate: INTENT > action:'"  + action + "' >> CALL this.showOnline()");
                 this.action_showOnline();
+
+            }
+            else if(action.equals(TwilioVideoActivityNextAction.action_closeRoom))
+            {
+                //----------------------------------------------------------------------------------
+                //CORDOVA > closeRoom()
+                //----------------------------------------------------------------------------------
+
+                //needed for flow after onRequestPermissionsResult
+                this.action_current = TwilioVideoActivityNextAction.action_closeRoom;
+
+                Log.d(TAG, "[VIDEOPLUGIN] onCreate: INTENT > action:'"  + action + "' >> CALL this.closeRoom()");
+                this.action_closeRoom();
 
             }
             else{
@@ -889,6 +909,18 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         }else {
             Log.e(TAG, "[VIDEOPLUGIN] [action_showOnline] this.viewAlert is null");
         }
+    }
+
+    private void action_closeRoom()
+    {
+        Log.d(TAG, "[VIDEOPLUGIN] action_closeRoom: CALL onDisconnect");
+
+        //closeRoom in TwilioVideo.java call
+        //TwilioVideoManager.getInstance().publishDisconnection()
+        //which calls onDisconnect
+        onDisconnect();
+        //closes room > CLOSED
+        //finish > DISCONNECTED
     }
 
 
@@ -1753,13 +1785,13 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
 
-        Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onNewIntent: CALLED - because launchMode is singleInstance:" + this);
+        Log.d(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onNewIntent: CALLED - because launchMode is singleInstance:" + this);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE]  onResume: STARTED:" + this);
+        Log.d(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE]  onResume: STARTED:" + this);
 
         //reset to default - changed in buttonBackToCall handler in onCreate
         is_Activity_hiding_because_buttonBackToCall_tapped = true;
@@ -3450,7 +3482,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             @Override
             public void onDisconnected(Room room, TwilioException e) {
                 //----------------------------------------------------------------------------------
-                //ROOM - onDisconnected
+                //ROOM - onDisconnected - dont mix up with onDisconnect
                 //----------------------------------------------------------------------------------
 
                 localParticipant = null;
@@ -3861,29 +3893,46 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     }
 
 
+    //onDisconnect() - disconnect and close TVA
+    //triggers Room delegate onDisconnected() which returns DISCONNECTED to Cordova
+    //TVA.finish > onDestroy                 which returns  CLOSED       to Cordova
+
     @Override
     public void onDisconnect() {
-        Log.e(TAG, "[VIDEOPLUGIN][onDisconnect()] onClick: >> room.disconnect()");
+        Log.e(TAG, "[VIDEOPLUGIN] TwilioVideoActivity.onDisconnect()] CALLED");
         /*
          * Disconnect from room
          */
         if (room != null) {
+            Log.e(TAG, "[VIDEOPLUGIN] TwilioVideoActivity.onDisconnect()] CALL room.disconnect()");
             room.disconnect();
+        }else{
+            Log.e(TAG, "[VIDEOPLUGIN] TwilioVideoActivity.onDisconnect()]  room is null cant call room.disconnect()");
         }
+
         //if user pressed RED disconnect button while mp3 is playing it will keep playing till app killed
         dialing_sound_stop();
 
+        //------------------------------------------------------------------------------------------
+//RELEASE - doesnt work in POC but comment in before release as it builds ok there
+        //in older Android MainActivity may not be right behind TwilioVideoActivity
+        //sometime InCallActivity is
+        //so need to switch to MainA here before finish;
+        //------------------------------------------------------------------------------------------
         Log.e(TAG, "[VIDEOPLUGIN][onDisconnect()] startActivity: >> MainActivity BEFORE finish");
         Intent mIntent=new Intent(TwilioVideoActivity.this, MainActivity.class);
         startActivity(mIntent);
 
-
+        //------------------------------------------------------------------------------------------
         Log.e(TAG, "[VIDEOPLUGIN][onDisconnect()] onClick: >> finish()");
         finish();
+
+        //------------------------------------------------------------------------------------------
         //BUG - openRoom() > startCall() we need Activity to stay alive so we added FLAG_ACTIVITY_REORDER_TO_FRONT
         //but restarting a call is causing issues so when we hit RED disconnect button CLOSED should tell TwilioVideo.java to remove the Activity fully from memory
         //triggers onDestroy() which wil send CLOSED
         //TwilioPlugin.java CLOSED will remove the Activity
+        //------------------------------------------------------------------------------------------
     }
 
     @Override
