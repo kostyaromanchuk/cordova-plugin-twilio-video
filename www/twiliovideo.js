@@ -306,22 +306,6 @@ var exec = require("cordova/exec");
              []  /* no params */
              );
     };
-
-    TwilioVideo.closeRoom = function () {
-        return new Promise(function (resolve, reject) {
-            exec(
-                function () {
-                    resolve();
-                },
-                function (error) {
-                    reject(error);
-                },
-                "TwilioVideoPlugin",
-                "closeRoom",
-                []
-            );
-        });
-    };
     
     TwilioVideo.show_twiliovideo = function (success, error) {
         console.log("[VIDEOPLUGIN][twilio.js][Twilio.show_twiliovideo] CALLED");
