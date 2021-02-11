@@ -42,7 +42,7 @@ public class TwilioVideo extends CordovaPlugin {
 
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) {
         this.callbackContext = callbackContext;
-        Log.d(TAG, "[VIDEOPLUGIN] execute(): action received:'" + action + "'" );
+        Log.d(TAG, "[VIDEOPLUGIN] JSMESSAGE IN > execute(): action received:'" + action + "'" );
         switch (action) {
             case "openRoom":
                 this.registerCallListener(callbackContext);

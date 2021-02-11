@@ -87,8 +87,6 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     static boolean onResumeCompletedAtLeastOnce = false;
 
 
-
-
     public static boolean isActive() {
         return (activeInstances > 0);
     }
@@ -97,6 +95,13 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         return onResumeCompletedAtLeastOnce;
     }
     //set and removed in onStart onStop
+
+
+    public static TwilioVideoActivity twilioVideoActivity = null;
+    public static boolean endCall_can_disconnect = true;
+
+
+
 
 
     /*
@@ -178,6 +183,11 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private int previousAudioMode;
     private boolean previousMicrophoneMute;
     private boolean disconnectedFromOnDestroy;
+
+
+    private boolean roomListener_onDisconnectedCalled = false;
+
+
     private VideoRenderer localVideoView;
 
     //play ringing.mp3
@@ -232,7 +242,13 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.e(TAG, "[VIDEOPLUGIN][LIFECYCLE] onCreate: STARTED:" + this);
+        Log.w(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onCreate: STARTED:" + this);
+
+
+        TwilioVideoActivity.twilioVideoActivity = this;
+
+
+
 
         TwilioVideoManager.getInstance().setActionListenerObserver(this);
 
@@ -1966,7 +1982,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 if (localParticipant != null) {
                     localParticipant.publishTrack(localVideoTrack);
                 }else{
-                    Log.i(TAG, "[VIDEOPLUGIN] publishTrack_video: localVideoTrack is OK BUT localParticipant is null >> wait for room.connect");
+                    Log.d(TAG, "[VIDEOPLUGIN] publishTrack_video: localVideoTrack is OK BUT localParticipant is null >> wait for room.connect");
 
                 }
             }else{
@@ -1983,16 +1999,16 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     protected void onPause() {
 
         if(this.is_Activity_hiding_because_buttonBackToCall_tapped){
-            Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE]  - onPause CALLED because_buttonBackToCall_tapped - dont unpublish videoTrack  [" + this + "]");
+            Log.w(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onPause CALLED because_buttonBackToCall_tapped - dont unpublish videoTrack  [" + this + "]");
         }else{
-            Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE]  - onPause CALLED finish() called in DISCONNECT button - must unpublish videoTrack  [" + this + "]");Log.e(TAG, " is null");
+            Log.w(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onPause CALLED finish() called in DISCONNECT button - must unpublish videoTrack  [" + this + "]");Log.e(TAG, " is null");
 
             //--------------------------------------------------------------------------------------
             unpublishTrack_localVideoTrack();
             //--------------------------------------------------------------------------------------
         }
 
-        Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE]  - onPause CALLED [" + this + "]");
+        Log.w(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onPause CALLED [" + this + "]");
         super.onPause();
     }
 
@@ -2115,7 +2131,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] - onBackPressed CALLED [" + this + "]");
+        Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onBackPressed CALLED [" + this + "]");
 
         overridePendingTransition(0, 0);
     }
@@ -2123,7 +2139,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     @Override
     protected void onStart() {
         super.onStart();
-        Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE]  - onStart CALLED [" + this + "]");
+        Log.w(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onStart CALLED [" + this + "]");
         //static var to track if thisActivity is running - used in onAnswer
         activeInstances++;
 
@@ -2132,7 +2148,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     @Override
     protected void onStop() {
-        Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] - onStop CALLED - does nothing [" + this + "]");
+        Log.w(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onStop CALLED - does nothing [" + this + "]");
         super.onStop();
         //static var to track if thisActivity is running - used in onAnswer
         activeInstances--;
@@ -2144,9 +2160,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //BACK TO CALL button - calls moveToBack(..) this should not be called
 
         if(this.isFinishing()){
-            Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] - onDestroy CALLED - isFinishing:TRUE - finish() called somewhere [" + this + "]");
+            Log.w(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onDestroy CALLED - isFinishing:TRUE - finish() called somewhere [" + this + "]");
         }else{
-            Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] - onDestroy CALLED - isFinishing:FALSE - system is temporarily destroying this instance [" + this + "]");
+            Log.w(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onDestroy CALLED - isFinishing:FALSE - system is temporarily destroying this instance [" + this + "]");
         }
 
         /*
@@ -2154,7 +2170,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
          * ensure any memory allocated to the Room resource is freed.
          */
         if (room != null && room.getState() != Room.State.DISCONNECTED) {
-            Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] - onDestroy CALLED - CALLING room.disconnect();");
+            Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onDestroy CALLED - CALLING room.disconnect();");
             room.disconnect();
 
             disconnectedFromOnDestroy = true;
@@ -2178,6 +2194,28 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
         TwilioVideoManager.getInstance().setActionListenerObserver(null);
 
+        //------------------------------------------------------------------------------------------
+        //WEB disconnects > delegates call onDisconnected > finish; > onPause > onStop > onDestroy
+
+        // TODO: 11/02/21 cleanup
+        //Log.d(TAG, "[VIDEOPLUGIN] onDestroy() >> endCall_can_disconnect = false; - next 'endCall' messages will be skipped");
+        //endCall_can_disconnect = false;
+        //default is true else where
+
+
+//HACK
+//        //--------------------------------------------------------------------------------------
+//        if(roomListener_onDisconnectedCalled){
+//            //CASE 1 - if remote caller hangs up - twiliosdk room listenert.onDisconnected called - need to also process 1 endCall to hangup the VOIP
+//            //CASE 2 - incoming other call - close the room
+//
+//
+//            Log.d(TAG, "[VIDEOPLUGIN] onDestroy() >> endCall_can_disconnect = true; - next 'endCall' messages will be skipped");
+//            endCall_can_disconnect = true;
+//        }else{
+//            endCall_can_disconnect = false;
+//        }
+        //------------------------------------------------------------------------------------------
         super.onDestroy();
     }
 
@@ -2250,7 +2288,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     enableAudioAtStart = false;
 
                 }else{
-                    Log.i(TAG, "[VIDEOPLUGIN] setup_local_audio: FALSE - enableAudioAtStart = true;");
+                    Log.d(TAG, "[VIDEOPLUGIN] setup_local_audio: FALSE - enableAudioAtStart = true;");
                     enableAudioAtStart = true;
 
                 }
@@ -2363,7 +2401,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             if(null != config){
                 if (config.isStartWithVideoOff()) {
-                    Log.i(TAG, "[VIDEOPLUGIN] setup_localVideoTrack: isStartWithVideoOff: TRUE - AUDIO disabled at start");
+                    Log.d(TAG, "[VIDEOPLUGIN] setup_localVideoTrack: isStartWithVideoOff: TRUE - AUDIO disabled at start");
                     enableVideoAtStart = false;
 
                 } else {
@@ -2453,7 +2491,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //On the CALLING PHONE it will trigger
     //participantDidConnect_LocalUserAndCallerHaveConnectedToRoom_StartTalking
     private void participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom(){
-        Log.w(TAG, "[VIDEOPLUGIN] [participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom] START");
+        Log.d(TAG, "[VIDEOPLUGIN] [participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom] START");
     
         this.dialing_sound_stop();
 
@@ -2550,7 +2588,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
         //onResume can be called twice (if permissions alert appear) - dont connect to the room again
         if(null != room){
-            Log.e(TAG, "[VIDEOPLUGIN] connectToRoom: room is NOT null - DONT RECREATE - onResume can be called twice (if permissions alert appear) - dont connect to the room again");
+            Log.d(TAG, "[VIDEOPLUGIN] connectToRoom: room is NOT null - DONT RECREATE - onResume can be called twice (if permissions alert appear) - dont connect to the room again");
         }else{
         	Log.d(TAG, "[VIDEOPLUGIN] connectToRoom: room is null - CONNECT AND CREATE IT");
 
@@ -3330,13 +3368,13 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 localVideoTrack.removeRenderer(fullScreenVideoView);
                 localVideoTrack.addRenderer(thumbnailVideoView);
             }else{
-                Log.e(TAG, "[VIDEOPLUGIN] moveLocalVideoToThumbnailView: localVideoTrack is null");
+                Log.d(TAG, "[VIDEOPLUGIN] moveLocalVideoToThumbnailView: localVideoTrack is null");
             }
             //--------------------------------------------------------------------------------------
             if (localVideoView != null && thumbnailVideoView != null) {
                 localVideoView = thumbnailVideoView;
             }else{
-                Log.e(TAG, "[VIDEOPLUGIN] moveLocalVideoToThumbnailView: localVideoView != null && thumbnailVideoView != null FAILED OK IF LOCAL VIDEO IS OFF WHEN CALL STARTS");
+                Log.d(TAG, "[VIDEOPLUGIN] moveLocalVideoToThumbnailView: localVideoView != null && thumbnailVideoView != null FAILED OK IF LOCAL VIDEO IS OFF WHEN CALL STARTS");
 
             }
             //--------------------------------------------------------------------------------------
@@ -3396,7 +3434,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //called by DISCONNECT                                      > dismiss > finish()
     //called by DISCONNECTED_WITH_ERROR > handleConnectionError > dismiss > finish()
     public void dismiss(){
-        Log.e(TAG, "[VIDEOPLUGIN] dismiss: CALLING finish()");
+        Log.w(TAG, "[VIDEOPLUGIN] dismiss: CALLING finish()");
         finish();
     }
 
@@ -3411,8 +3449,16 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 //----------------------------------------------------------------------------------
                 //ROOM - onConnected
                 //----------------------------------------------------------------------------------
-                Log.i(TAG, "[VIDEOPLUGIN] Room.Listener onConnected: ");
+                Log.d(TAG, "[VIDEOPLUGIN] Room.Listener onConnected: ");
 
+
+                //SINGLE CALL - if remote hangs up then Room listener onDisconnected called
+                //MAIN APP will send endCall so we must process it
+                //RESET
+                roomListener_onDisconnectedCalled = false;
+
+
+                //--------------------------------------------------------------------------------------
                 localParticipant = room.getLocalParticipant();
 
                 publishEvent(CallEvent.CONNECTED);
@@ -3485,13 +3531,18 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 //ROOM - onDisconnected - dont mix up with onDisconnect
                 //----------------------------------------------------------------------------------
 
+                //SINGLE CALL - if remote hangs up then Room listener onDisconnected called
+                //MAIN APP will send endCall so we must process it
+                roomListener_onDisconnectedCalled = true;
+
+
                 localParticipant = null;
                 TwilioVideoActivity.this.room = null;
 
                 // Only reinitialize the UI if disconnect was not called from onDestroy()
                 if (!disconnectedFromOnDestroy && e != null) {
 
-                    Log.e(TAG, "[VIDEOPLUGIN] Room.Listener >> onDisconnected: >> publishEvent(DISCONNECTED_WITH_ERROR) error:" + e);
+                    Log.w(TAG, "[VIDEOPLUGIN] Room.Listener >> onDisconnected: >> publishEvent(DISCONNECTED_WITH_ERROR) error:" + e);
 
                     publishEvent(CallEvent.DISCONNECTED_WITH_ERROR, TwilioVideoUtils.convertToJSON(e));
 
@@ -3599,9 +3650,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onAudioTrackPublished(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication) {
-                Log.d(TAG, "[VIDEOPLUGIN] RemoteParticipant.Listener onAudioTrackPublished: ");
+                Log.w(TAG, "[VIDEOPLUGIN] RemoteParticipant.Listener onAudioTrackPublished: ");
 
-                Log.e(TAG, String.format("[VIDEOPLUGIN] onAudioTrackPublished: " +
+                Log.w(TAG, String.format("[VIDEOPLUGIN] onAudioTrackPublished: " +
                                 "[RemoteParticipant: identity=%s], " +
                                 "[RemoteAudioTrackPublication: sid=%s, enabled=%b, " +
                                 "subscribed=%b, name=%s]",
@@ -3614,9 +3665,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onAudioTrackUnpublished(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication) {
-                Log.d(TAG, "[VIDEOPLUGIN] RemoteParticipant.Listener onAudioTrackUnpublished: ");
+                Log.w(TAG, "[VIDEOPLUGIN] RemoteParticipant.Listener onAudioTrackUnpublished: ");
 
-                Log.i(TAG, String.format("[VIDEOPLUGIN] onAudioTrackUnpublished: " +
+                Log.w(TAG, String.format("[VIDEOPLUGIN] onAudioTrackUnpublished: " +
                                 "[RemoteParticipant: identity=%s], " +
                                 "[RemoteAudioTrackPublication: sid=%s, enabled=%b, " +
                                 "subscribed=%b, name=%s]",
@@ -3629,9 +3680,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onAudioTrackSubscribed(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication, RemoteAudioTrack remoteAudioTrack) {
-                Log.d(TAG, "[VIDEOPLUGIN] RemoteParticipant.Listener onAudioTrackSubscribed: ");
+                Log.w(TAG, "[VIDEOPLUGIN] RemoteParticipant.Listener onAudioTrackSubscribed: ");
 
-                Log.i(TAG, String.format("[VIDEOPLUGIN] onAudioTrackSubscribed: " +
+                Log.w(TAG, String.format("[VIDEOPLUGIN] onAudioTrackSubscribed: " +
                                 "[RemoteParticipant: identity=%s], " +
                                 "[RemoteAudioTrack: enabled=%b, playbackEnabled=%b, name=%s]",
                         remoteParticipant.getIdentity(),
@@ -3928,16 +3979,28 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         finish();
 
         //------------------------------------------------------------------------------------------
+        //when you end a call - null this
+        //its used for incoming calls while your in a video call
+        //to check if TVA is running
+        //but was showing as not null even when TVA not showing in activityes list
+        ///Users/gbxc/Library/Android/sdk/platform-tools/adb shell dumpsys activity activities | sed -En -e '/Stack #/p' -e '/Running activities/,/Run #0/p'
+//        TwilioVideoActivity.twilioVideoActivity = null;
+
+        //------------------------------------------------------------------------------------------
         //BUG - openRoom() > startCall() we need Activity to stay alive so we added FLAG_ACTIVITY_REORDER_TO_FRONT
         //but restarting a call is causing issues so when we hit RED disconnect button CLOSED should tell TwilioVideo.java to remove the Activity fully from memory
         //triggers onDestroy() which wil send CLOSED
         //TwilioPlugin.java CLOSED will remove the Activity
         //------------------------------------------------------------------------------------------
+
+        //for single call - if WEB disconnects then this method called by twilio delegates
+        //but endCall will still be send from cordova so we should handle the first endCall
+        endCall_can_disconnect = true;
     }
 
     @Override
     public void finish() {
-        Log.e(TAG, "[VIDEOPLUGIN][finish()] AUDIO OFF >> super.finish()");
+        Log.d(TAG, "[VIDEOPLUGIN][finish()] AUDIO OFF >> super.finish()");
 
         configureAudio(false);
         super.finish();
