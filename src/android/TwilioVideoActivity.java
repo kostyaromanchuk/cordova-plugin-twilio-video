@@ -91,6 +91,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         return (activeInstances > 0);
     }
 
+
+    //USED BY MyConnectionService [if(TwilioVideoActivity.onResumeHasCompletedAtLeastOnce())]
     public static boolean onResumeHasCompletedAtLeastOnce() {
         return onResumeCompletedAtLeastOnce;
     }
@@ -98,7 +100,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
 
     public static TwilioVideoActivity twilioVideoActivity = null;
-    public static boolean endCall_can_disconnect = true;
+    //public static boolean endCall_can_disconnect = true;
 
 
 
@@ -1767,7 +1769,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 //RELEASE PUT BACK
             mediaPlayer.start();
             //--------------------------------------------------------------------------------------
-            //use .start() + pause() 
+            //use .start() + pause()
             //not .start() + .stop() seems to kill it, next .play() fails
             //--------------------------------------------------------------------------------------
         }else{
@@ -1778,7 +1780,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private void dialing_sound_pause(){
         if (mediaPlayer != null) {
             mediaPlayer.pause();
-            //use .start() + pause() 
+            //use .start() + pause()
             //not .start() + .stop() seems to kill it, next .play() fails
 
         }else{
@@ -1789,7 +1791,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private void dialing_sound_stop(){
         if (mediaPlayer != null) {
             mediaPlayer.stop();
-            //use .start() + pause() 
+            //use .start() + pause()
             //not .start() + .stop() seems to kill it, next .play() fails
 
         }else{
@@ -1807,7 +1809,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE]  onResume: STARTED:" + this);
+        Log.w(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE]  onResume: STARTED:" + this);
 
         //reset to default - changed in buttonBackToCall handler in onCreate
         is_Activity_hiding_because_buttonBackToCall_tapped = true;
@@ -1999,9 +2001,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     protected void onPause() {
 
         if(this.is_Activity_hiding_because_buttonBackToCall_tapped){
-            Log.w(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onPause CALLED because_buttonBackToCall_tapped - dont unpublish videoTrack  [" + this + "]");
+            Log.d(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onPause CALLED because_buttonBackToCall_tapped - dont unpublish videoTrack  [" + this + "]");
         }else{
-            Log.w(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onPause CALLED finish() called in DISCONNECT button - must unpublish videoTrack  [" + this + "]");Log.e(TAG, " is null");
+            Log.d(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onPause CALLED finish() called in DISCONNECT button - must unpublish videoTrack  [" + this + "]");Log.e(TAG, " is null");
 
             //--------------------------------------------------------------------------------------
             unpublishTrack_localVideoTrack();
@@ -2170,7 +2172,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
          * ensure any memory allocated to the Room resource is freed.
          */
         if (room != null && room.getState() != Room.State.DISCONNECTED) {
-            Log.e(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onDestroy CALLED - CALLING room.disconnect();");
+            Log.w(TAG, "[VIDEOPLUGIN][TwilioVideoActivity][LIFECYCLE] onDestroy CALLED - CALLING room.disconnect();");
             room.disconnect();
 
             disconnectedFromOnDestroy = true;
@@ -2189,7 +2191,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             localVideoTrack = null;
         }
 
-        Log.d(TAG, "[VIDEOPLUGIN] onDestroy() >> publishEvent(CLOSED) (Activity started with FLAG_ACTIVITY_REORDER_TO_FRONT so may not be destroyed)");
+        Log.w(TAG, "[VIDEOPLUGIN] onDestroy() >> publishEvent(CLOSED) (Activity started with FLAG_ACTIVITY_REORDER_TO_FRONT so may not be destroyed)");
         publishEvent(CallEvent.CLOSED);
 
         TwilioVideoManager.getInstance().setActionListenerObserver(null);
@@ -2293,7 +2295,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
                 }
             }else{
-            	Log.e(TAG, "setup_local_audio: config is null FALLBACK TO - enableAudioAtStart = true;");
+                Log.e(TAG, "setup_local_audio: config is null FALLBACK TO - enableAudioAtStart = true;");
                 enableAudioAtStart = true;
             }
 
@@ -2305,7 +2307,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                         enableAudioAtStart,
                         LOCAL_AUDIO_TRACK_NAME);
             }else{
-            	Log.e(TAG, "hasPermissionForMicrophone is false - localAudioTrack.create failed");
+                Log.e(TAG, "hasPermissionForMicrophone is false - localAudioTrack.create failed");
             }
 
             //--------------------------------------------------------------
@@ -2432,7 +2434,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                             cameraCapturer.getVideoCapturer(),
                             LOCAL_VIDEO_TRACK_NAME);
                 }else{
-                	Log.e(TAG, "hasPermissionForCamera is null - request permissions should show alert - to test do clean install");
+                    Log.e(TAG, "hasPermissionForCamera is null - request permissions should show alert - to test do clean install");
                 }
 
                 //----------------------------------------------------------------------------------
@@ -2492,12 +2494,12 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     //participantDidConnect_LocalUserAndCallerHaveConnectedToRoom_StartTalking
     private void participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom(){
         Log.d(TAG, "[VIDEOPLUGIN] [participantDidConnect_RemoteUserSide_CallerHasEnteredTheRoom] START");
-    
+
         this.dialing_sound_stop();
 
 
         if(this.previewIsFullScreen){
-            
+
             //hide Waiting... / show back arrow
             this.hide_viewRemoteParticipantInfo();
             this.show_buttonBackToCall();
@@ -2525,7 +2527,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         this.dialing_sound_stop();
 
         if(this.previewIsFullScreen){
-        
+
             this.hide_viewRemoteParticipantInfo();
             this.show_buttonBackToCall();
 
@@ -2544,7 +2546,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
 
         }else{
-        Log.w(TAG, "[VIDEOPLUGIN] [participantDidConnect_LocalUserAndCallerHaveConnectedToRoom_StartTalking] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL");
+            Log.w(TAG, "[VIDEOPLUGIN] [participantDidConnect_LocalUserAndCallerHaveConnectedToRoom_StartTalking] new participant joined room BUT previewIsFullScreen is false - shouldnt happen for 1..1 CALL");
         }
     }
 
@@ -2559,7 +2561,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private void participantDidDisconnect(String remoteParticipant_identity){
 
         if(this.previewIsFullScreen){
-        Log.w(TAG, "[VIDEOPLUGIN] [participantDidDisconnect] new participant joined room BUT previewIsFullScreen is true - shouldnt happen for 1..1 CALL");
+            Log.w(TAG, "[VIDEOPLUGIN] [participantDidDisconnect] new participant joined room BUT previewIsFullScreen is true - shouldnt happen for 1..1 CALL");
 
         }else{
             //REMOTE USER DISCONNECTED
@@ -2567,7 +2569,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             //if app running on REMOTE photo will just show white circle no photo
             //this is so Disconnected isnt off center
-        
+
             this.show_viewRemoteParticipantInfoWithState("Disconnected");
             this.hide_buttonBackToCall();
 
@@ -2577,12 +2579,12 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //Zoom the preview from MINI to FULL SCREEN
             //ONLY show BLUR when dialing
             //Here remote has disconnected so dont show blur
-        
+
             this.update_PreviewView_showInFullScreen(true,true, false);
         }
     }
-    
-    
+
+
 
     private void connectToRoom() {
 
@@ -2590,7 +2592,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         if(null != room){
             Log.d(TAG, "[VIDEOPLUGIN] connectToRoom: room is NOT null - DONT RECREATE - onResume can be called twice (if permissions alert appear) - dont connect to the room again");
         }else{
-        	Log.d(TAG, "[VIDEOPLUGIN] connectToRoom: room is null - CONNECT AND CREATE IT");
+            Log.d(TAG, "[VIDEOPLUGIN] connectToRoom: room is null - CONNECT AND CREATE IT");
 
             configureAudio(true);
 
@@ -2835,7 +2837,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             button_fab_localvideo_onoff.setVisibility(View.INVISIBLE);
         }else{
-        	Log.e(TAG, "button_fab_localvideo_onoff  is null");
+            Log.e(TAG, "button_fab_localvideo_onoff  is null");
         }
     }
     private void button_fab_localvideo_onoff_enable(){
@@ -3059,15 +3061,15 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
 
 //DIDNT WORK - it does recrate the localAudio track but doesnt connect it to the room
-//instead in unpublish I call unpublish but I dont set localTrack to nil so in publsih Im using same instance 
+//instead in unpublish I call unpublish but I dont set localTrack to nil so in publsih Im using same instance
 //this else clause should never happen
- //                   setup_local_audio();
- //                   setup_localaudio_button();
- //
- //                    publishTrack_localVideoTrack();
+                    //                   setup_local_audio();
+                    //                   setup_localaudio_button();
+                    //
+                    //                    publishTrack_localVideoTrack();
 
                     //DELEGATE on WEB and iOS wasnt being called
- //                    localAudioTrack.enable(true);
+                    //                    localAudioTrack.enable(true);
                 }
 
             }
@@ -3097,7 +3099,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     }
                 }else{
                     //happnes when you call show_twiliovideo before openRoom - disconnect button will crash cos config is null
-                	Log.e(TAG, "button_disconnect_OnClickListener: config is null - activity created but config is null - FALLBACK call onDisconnect ");
+                    Log.e(TAG, "button_disconnect_OnClickListener: config is null - activity created but config is null - FALLBACK call onDisconnect ");
                     onDisconnect();
                 }
 
@@ -3200,7 +3202,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //                }else{
         //                    Log.e(TAG, "[VIDEOPLUGIN] blurredviewgroup is null");
         //                }
-                //----------------------------------------------------------------------------------
+        //----------------------------------------------------------------------------------
         //                if(null != video_container){
         //                    Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(video_container);
         //
@@ -3213,7 +3215,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //                }else{
         //                    Log.e(TAG, "[VIDEOPLUGIN] video_container is null");
         //                }
-                //----------------------------------------------------------------------------------
+        //----------------------------------------------------------------------------------
         //                if(null != activity_video_coordinatorlayout){
         //                    Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(activity_video_coordinatorlayout);
         //
@@ -3394,7 +3396,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     show_hide_localcamera(false);
                 }
             }else{
-            	Log.e(TAG, "localVideoTrack is null");
+                Log.e(TAG, "localVideoTrack is null");
             }
 
         }else{
@@ -3555,7 +3557,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     }
 
                 } else {
-                    Log.d(TAG, "[VIDEOPLUGIN] Room.Listener >> onDisconnected: >> publishEvent(DISCONNECTED)");
+                    Log.w(TAG, "[VIDEOPLUGIN] Room.Listener >> onDisconnected: >> publishEvent(DISCONNECTED)");
                     publishEvent(CallEvent.DISCONNECTED);
                     dismiss();
                 }
@@ -3680,9 +3682,9 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
             @Override
             public void onAudioTrackSubscribed(RemoteParticipant remoteParticipant, RemoteAudioTrackPublication remoteAudioTrackPublication, RemoteAudioTrack remoteAudioTrack) {
-                Log.w(TAG, "[VIDEOPLUGIN] RemoteParticipant.Listener onAudioTrackSubscribed: ");
+                Log.d(TAG, "[VIDEOPLUGIN] RemoteParticipant.Listener onAudioTrackSubscribed: ");
 
-                Log.w(TAG, String.format("[VIDEOPLUGIN] onAudioTrackSubscribed: " +
+                Log.d(TAG, String.format("[VIDEOPLUGIN] onAudioTrackSubscribed: " +
                                 "[RemoteParticipant: identity=%s], " +
                                 "[RemoteAudioTrack: enabled=%b, playbackEnabled=%b, name=%s]",
                         remoteParticipant.getIdentity(),
@@ -3779,7 +3781,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     show_fullScreenVideoView();
                     hide_imageViewRemoteParticipantInCall();
                 }else{
-                	Log.d(TAG, "[VIDEOPLUGIN] remoteVideoTrack.isEnabled():TRUE");
+                    Log.d(TAG, "[VIDEOPLUGIN] remoteVideoTrack.isEnabled():TRUE");
                     hide_fullScreenVideoView();
                     show_imageViewRemoteParticipantInCall();
                 }
@@ -3916,8 +3918,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
 
     /*
-    * handleConnectionError
-    * */
+     * handleConnectionError
+     * */
     private void handleConnectionError(String message) {
 
         //if connection cant be made must stop audio or else it stays rinning till you likk the app
@@ -3955,7 +3957,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
          * Disconnect from room
          */
         if (room != null) {
-            Log.e(TAG, "[VIDEOPLUGIN] TwilioVideoActivity.onDisconnect()] CALL room.disconnect()");
+            Log.d(TAG, "[VIDEOPLUGIN] TwilioVideoActivity.onDisconnect()] CALL room.disconnect()");
             room.disconnect();
         }else{
             Log.e(TAG, "[VIDEOPLUGIN] TwilioVideoActivity.onDisconnect()]  room is null cant call room.disconnect()");
@@ -3995,7 +3997,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
         //for single call - if WEB disconnects then this method called by twilio delegates
         //but endCall will still be send from cordova so we should handle the first endCall
-        endCall_can_disconnect = true;
+// TODO: 15/02/21 CLEANUP
+//        endCall_can_disconnect = true;
     }
 
     @Override
