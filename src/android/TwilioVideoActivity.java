@@ -3,8 +3,10 @@ package org.apache.cordova.twiliovideo;
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
@@ -13,6 +15,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.AudioAttributes;
+import android.media.AudioDeviceInfo;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -57,6 +60,7 @@ import com.twilio.video.VideoView;
 
 import org.json.JSONObject;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -65,6 +69,13 @@ import com.squareup.picasso.Picasso;
 
 //RELEASE - comment in before release no MainActivity in POC
 import live.sea.chat.MainActivity;
+
+import static android.media.AudioManager.MODE_CURRENT;
+import static android.media.AudioManager.MODE_INVALID;
+import static android.media.AudioManager.MODE_IN_CALL;
+import static android.media.AudioManager.MODE_IN_COMMUNICATION;
+import static android.media.AudioManager.MODE_NORMAL;
+import static android.media.AudioManager.MODE_RINGTONE;
 
 
 //DONT USE it works in this POC but when they integrate with the main sea/chat app theres no capacitor so it breaks
@@ -180,6 +191,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     private AudioManager audioManager;
 
+    HeadsetIntentReceiver headsetIntentReceiver = new HeadsetIntentReceiver();
+    SpeakerPhoneChangeIntentReceiver speakerPhoneChangeIntentReceiver = new SpeakerPhoneChangeIntentReceiver();
+
+
     private String participantIdentity;
 
     private int previousAudioMode;
@@ -250,8 +265,6 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         TwilioVideoActivity.twilioVideoActivity = this;
 
 
-
-
         TwilioVideoManager.getInstance().setActionListenerObserver(this);
 
         FAKE_R = new FakeR(this);
@@ -309,7 +322,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //FLIP CAMERA
         button_fab_switchcamera = findViewById(FAKE_R.getId("switch_camera_action_fab"));
 
-        //SWITCH AUDIO - SPEAKER/HEADPHONES
+        //SWITCH AUDIO - AUDIO/HEADPHONES
         button_fab_switchaudio = findViewById(FAKE_R.getId("switch_audio_action_fab"));
 
         //RED DISCONNECT BUTTON
@@ -530,6 +543,25 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
 
         textViewRemoteParticipantName.setText("");
+
+        //------------------------------------------------------------------------------------------
+        IntentFilter receiverFilter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
+        registerReceiver(headsetIntentReceiver, receiverFilter);
+        //unregisterReceiver is in onDestroy()
+
+        //------------------------------------------------------------------------------------------
+
+        IntentFilter receiverFilter_speakerphone = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            receiverFilter_speakerphone = new IntentFilter(AudioManager.ACTION_SPEAKERPHONE_STATE_CHANGED);
+            registerReceiver(speakerPhoneChangeIntentReceiver, receiverFilter_speakerphone);
+        }else{
+            Log.e(TAG, "onCreate: SDK not Q - cant register for ACTION_SPEAKERPHONE_STATE_CHANGED");
+        }
+
+        //unregisterReceiver is in onDestroy()
+
+
     }
 
     private void parse_Intents(){
@@ -659,6 +691,38 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         }
     }
 
+    private void dump_audioManager_Mode(){
+        if(null != audioManager){
+            //android.media.AudioSystem.modeToString(audioManager.getMode());
+            int mode = audioManager.getMode();
+            switch (mode) {
+                case MODE_CURRENT:
+                    Log.w(TAG, "[VIDEOPLUGIN][AUDIO] onCreate_configureAudio: audioManager.getMode():MODE_CURRENT" );
+                    break;
+                case MODE_IN_CALL:
+                    Log.w(TAG, "[VIDEOPLUGIN][AUDIO] onCreate_configureAudio: audioManager.getMode():MODE_IN_CALL" );
+                    break;
+                case MODE_IN_COMMUNICATION:
+                    Log.w(TAG, "[VIDEOPLUGIN][AUDIO] onCreate_configureAudio: audioManager.getMode():MODE_IN_COMMUNICATION" );
+                    break;
+                case MODE_INVALID:
+                    Log.w(TAG, "[VIDEOPLUGIN][AUDIO] onCreate_configureAudio: audioManager.getMode():MODE_INVALID" );
+                    break;
+                case MODE_NORMAL:
+                    Log.w(TAG, "[VIDEOPLUGIN][AUDIO] onCreate_configureAudio: audioManager.getMode():MODE_NORMAL" );
+                    break;
+                case MODE_RINGTONE:
+                    Log.w(TAG, "[VIDEOPLUGIN][AUDIO] onCreate_configureAudio: audioManager.getMode():MODE_RINGTONE" );
+                    break;
+                default:
+                    Log.w(TAG, "[VIDEOPLUGIN][AUDIO] onCreate_configureAudio: audioManager.getMode(): - default" );
+                    break;
+            }
+        }else{
+        	Log.e(TAG, "[VIDEOPLUGIN][AUDIO] onCreate_configureAudio: audioManager is null");
+        }
+
+    }
     private void onCreate_configureAudio(){
 
         //Enable changing the volume using the up/down keys during a conversation
@@ -666,21 +730,57 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
         //------------------------------------------------------------------------------------------
         //Needed for setting/abandoning audio focus during call
+        Log.w(TAG, "[VIDEOPLUGIN][AUDIO] onCreate_configureAudio: audioManager CREATE");
+
+
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-//TODO - speakerphone
-        audioManager.setSpeakerphoneOn(true);
+
+        dump_audioManager_Mode();
+
+
+
+        //Samsung S9 - setSpeakerphoneOn works / doesnt on S10
+        Log.w(TAG, "[VIDEOPLUGIN][AUDIO][onCreate_configureAudio] BEFORE isSpeakeraudioManager.isSpeakerphoneOn():" + audioManager.isSpeakerphoneOn());
+//RELEASE
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            //ANDROID 10 - setSpeakerphoneOn not working
+            //even added
+            //<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+            audioManager.setMode(MODE_IN_CALL);
+            audioManager.setSpeakerphoneOn(true);
+
+        }else{
+            Log.e(TAG, "[VIDEOPLUGIN][AUDIO][onCreate_configureAudio] onCreate_configureAudio: SDK not Q - cant register for ACTION_SPEAKERPHONE_STATE_CHANGED");
+            //works on S9 but not Android 10
+            audioManager.setSpeakerphoneOn(true);
+        }
+        
+        dump_audioManager_Mode();
+
+        Log.e(TAG, "[VIDEOPLUGIN][AUDIO][onCreate_configureAudio] AFTER isSpeakeraudioManager.isSpeakerphoneOn():" + audioManager.isSpeakerphoneOn());
+
+        updateSpeakerButton();
 
         //------------------------------------------------------------------------------------------
         //PLAY RING TONE - ringing.mp3
         //------------------------------------------------------------------------------------------
+
         int id_ringing =  FAKE_R.getResourceId( TwilioVideoActivity.this, "raw", "ringing");
+
+        Log.w(TAG, "[VIDEOPLUGIN][AUDIO][onCreate_configureAudio] mediaPlayer CREATE");
 
         mediaPlayer = MediaPlayer.create(TwilioVideoActivity.this, id_ringing);
 
         if (mediaPlayer != null) {
+            //--------------------------------------------------------------------------------------
+            Log.w(TAG, "[VIDEOPLUGIN][AUDIO][onCreate_configureAudio] mediaPlayer.setLooping(true);");
+            //--------------------------------------------------------------------------------------
             mediaPlayer.setLooping(true);
+            //--------------------------------------------------------------------------------------
             //use .play + pause
             //.play() + .stop() seems to kill it next .play() fails
+            //--------------------------------------------------------------------------------------
         }else{
             Log.e(TAG, "[VIDEOPLUGIN] methodName: mediaPlayer is null");
         }
@@ -1767,18 +1867,21 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         if (mediaPlayer != null) {
             //Plays ringing tone
 //RELEASE PUT BACK
+            Log.w(TAG, "[VIDEOPLUGIN][AUDIO][dialing_sound_start] mediaPlayer.start();");
             mediaPlayer.start();
             //--------------------------------------------------------------------------------------
             //use .start() + pause()
             //not .start() + .stop() seems to kill it, next .play() fails
             //--------------------------------------------------------------------------------------
         }else{
-            Log.e(TAG, "[VIDEOPLUGIN] methodName: mediaPlayer is null");
+            Log.e(TAG, "[VIDEOPLUGIN][AUDIO] dialing_sound_start: mediaPlayer is null");
         }
     }
 
     private void dialing_sound_pause(){
         if (mediaPlayer != null) {
+
+            Log.w(TAG, "[VIDEOPLUGIN][AUDIO][dialing_sound_start] mediaPlayer.pause();");
             mediaPlayer.pause();
             //use .start() + pause()
             //not .start() + .stop() seems to kill it, next .play() fails
@@ -1790,12 +1893,13 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
     private void dialing_sound_stop(){
         if (mediaPlayer != null) {
+            Log.w(TAG, "[VIDEOPLUGIN][AUDIO][dialing_sound_stop] mediaPlayer.stop();");
             mediaPlayer.stop();
             //use .start() + pause()
             //not .start() + .stop() seems to kill it, next .play() fails
 
         }else{
-            Log.e(TAG, "[VIDEOPLUGIN] methodName: mediaPlayer is null");
+            Log.e(TAG, "[VIDEOPLUGIN][AUDIO][dialing_sound_stop]: mediaPlayer is null");
         }
     }
 
@@ -2196,27 +2300,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
         TwilioVideoManager.getInstance().setActionListenerObserver(null);
 
-        //------------------------------------------------------------------------------------------
-        //WEB disconnects > delegates call onDisconnected > finish; > onPause > onStop > onDestroy
-
-        // TODO: 11/02/21 cleanup
-        //Log.d(TAG, "[VIDEOPLUGIN] onDestroy() >> endCall_can_disconnect = false; - next 'endCall' messages will be skipped");
-        //endCall_can_disconnect = false;
-        //default is true else where
+        unregisterReceiver(headsetIntentReceiver);
+        unregisterReceiver(speakerPhoneChangeIntentReceiver);
 
 
-//HACK
-//        //--------------------------------------------------------------------------------------
-//        if(roomListener_onDisconnectedCalled){
-//            //CASE 1 - if remote caller hangs up - twiliosdk room listenert.onDisconnected called - need to also process 1 endCall to hangup the VOIP
-//            //CASE 2 - incoming other call - close the room
-//
-//
-//            Log.d(TAG, "[VIDEOPLUGIN] onDestroy() >> endCall_can_disconnect = true; - next 'endCall' messages will be skipped");
-//            endCall_can_disconnect = true;
-//        }else{
-//            endCall_can_disconnect = false;
-//        }
         //------------------------------------------------------------------------------------------
         super.onDestroy();
     }
@@ -2282,7 +2369,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             Log.i(TAG, "localAudioTrack is not null - resume can be called twice after permission request alerts");
 
         }else{
-            Log.d(TAG, "localAudioTrack is null - on to create it");
+            Log.w(TAG, "localAudioTrack is null - CREATE IT");
 
             if(null != config){
                 if(config.isStartWithAudioOff()){
@@ -2309,7 +2396,6 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             }else{
                 Log.e(TAG, "hasPermissionForMicrophone is false - localAudioTrack.create failed");
             }
-
             //--------------------------------------------------------------
         }
     }
@@ -2328,7 +2414,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //--------------------------------------------------------------------------------------
 
         }else{
-            Log.e(TAG, "[VIDEOPLUGIN] localAudioTrack is null - failed to create from  callers audio source");
+            Log.e(TAG, "[VIDEOPLUGIN] localAudioTrack is null - update_button_fab_localaudio_onoff to default OFF");
             update_button_fab_localaudio_onoff(false);
         }
     }
@@ -2407,7 +2493,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     enableVideoAtStart = false;
 
                 } else {
-                    Log.i(TAG, "[VIDEOPLUGIN] setup_localVideoTrack: isStartWithVideoOff: FALSE - AUDIO enabled at start");
+                    Log.w(TAG, "[VIDEOPLUGIN] setup_localVideoTrack: isStartWithVideoOff: FALSE - AUDIO enabled at start");
                     enableVideoAtStart = true;
                 }
             }else{
@@ -2595,7 +2681,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             Log.d(TAG, "[VIDEOPLUGIN] connectToRoom: room is null - CONNECT AND CREATE IT");
 
             configureAudio(true);
-
+            //--------------------------------------------------------------------------------------
             ConnectOptions.Builder connectOptionsBuilder = new ConnectOptions.Builder(accessToken)
                                                                 .roomName(this.roomId)
                                                                 .enableIceGatheringOnAnyAddressPorts(true);
@@ -2621,6 +2707,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             //--------------------------------------------------------------------------------------
             Log.d(TAG, "[VIDEOPLUGIN] connectToRoom: CREATE ROOM: room = Video.connect(...)");
             room = Video.connect(this, connectOptionsBuilder.build(), roomListener());
+
             //--------------------------------------------------------------------------------------
         }
 
@@ -2710,6 +2797,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
         button_fab_switchaudio.show();
         button_fab_switchaudio.setOnClickListener(button_switchAudio_OnClickListener());
+
+
+        //show speaker or headset icon
+        update_icon_button_fab_switchaudio();
 
 
         //------------------------------------------------------------------------------------------
@@ -3047,7 +3138,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     //------------------------------------------------------------------------------
 
                     if(enable){
-                        Log.e(TAG, "button_mute_OnClickListener onClick: change to enabled:TRUE - dont publishTrack_localAudioTrack()");
+                        Log.w(TAG, "button_mute_OnClickListener onClick: change to enabled:TRUE - CALL publishTrack_localAudioTrack()");
                         publishTrack_localAudioTrack();
                     }else{
                         Log.e(TAG, "button_mute_OnClickListener onClick: change to enabled:FALSE - CALL unpublishTrack_localAudioTrack()");
@@ -3143,96 +3234,113 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(TAG, "[VIDEOPLUGIN] switchAudioClickListener.onClick: ");
+                //----------------------------------------------------------------------------------
+                Log.w(TAG, "[VIDEOPLUGIN] switchAudioClickListener.onClick: BEFORE audioManager.isSpeakerphoneOn():" + audioManager.isSpeakerphoneOn());
                 //----------------------------------------------------------------------------------
 //FOR RELEASE - comment this IN
-                if (audioManager.isSpeakerphoneOn()) {
-                    audioManager.setSpeakerphoneOn(false);
-                } else {
-                    audioManager.setSpeakerphoneOn(true);
+//BC
+//                if (audioManager.isSpeakerphoneOn()) {
+//                    Log.e(TAG, "[VIDEOPLUGIN][AUDIO][button_switchAudio_OnClickListener] switchAudioClickListener.onClick: CALL audioManager.setSpeakerphoneOn(false);");
+//                    audioManager.setMode(AudioManager.MODE_NORMAL);
+//                    audioManager.setSpeakerphoneOn(false);
+//                } else {
+//                    audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+//                    Log.e(TAG, "[VIDEOPLUGIN][AUDIO][button_switchAudio_OnClickListener]  switchAudioClickListener.onClick: CALL audioManager.setSpeakerphoneOn(true);");
+//                    audioManager.setSpeakerphoneOn(true);
+//
+//                }
 
+
+
+
+                //----------------------------------------------------------------------------------
+                //v1 music came out top speaker
+                //audioManager.setSpeakerphoneOn(true);
+
+
+                //----------------------------------------------------------------------------------
+                //music came out top speaker
+//                audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+//                audioManager.setSpeakerphoneOn(true);
+//----------------------------------------------------------------------------------
+                //music came out top speaker
+
+//                audioManager.setMode(AudioManager.MODE_NORMAL);
+//                audioManager.setSpeakerphoneOn(true);
+
+
+//                audioManager.setMode(MODE_IN_CALL);
+//                audioManager.setSpeakerphoneOn(true);
+
+
+logAudioDeviceInfo();
+
+                if (ActivityCompat.checkSelfPermission(TwilioVideoActivity.this, Manifest.permission.MODIFY_AUDIO_SETTINGS) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(TwilioVideoActivity.this, new String[]{Manifest.permission.MODIFY_AUDIO_SETTINGS}, 123);
+                    // i suppose that the user has granted the permission
+
+                    // if the permission is granted then ok
+                } else {
+                    Log.e(TAG, "onClick: MODIFY_AUDIO_SETTINGS is granted " );
+
+                    audioManager.setMode(MODE_IN_CALL);
+                    audioManager.setSpeakerphoneOn(true);
                 }
-                int icon = audioManager.isSpeakerphoneOn() ?
-                        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
-                button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable(
-                        TwilioVideoActivity.this, icon));
+
+
+
+
+
+
+                //----------------------------------------------------------------------------------
+                //int icon = audioManager.isSpeakerphoneOn() ?
+                //        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
+
+
+                //button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable(
+                //        TwilioVideoActivity.this, icon));
+
+                //----------------------------------------------------------------------------------
+                Log.w(TAG, "[AUDIO][button_switchAudio_OnClickListener] AFTER audioManager.isSpeakerphoneOn():" + audioManager.isSpeakerphoneOn());
+                //----------------------------------------------------------------------------------
+                updateSpeakerButton();
+                //----------------------------------------------------------------------------------
+
+
+
                 //----------------------------------------------------------------------------------
 //FOR RELEASE - COMMENT OUT - DEBUG triggers startCall
 //                publishEvent(CallEvent.DEBUGSTARTACALL);
                 //----------------------------------------------------------------------------------
-                //applyBlur();
-                //----------------------------------------------------------------------------------
-
             }
         };
     }
 
-    // TODO: 23/12/20 REMOVE IF LEE HAPPY WITH CURRENT BLURRED VIEW
-    private void applyBlur(){
-
-        //----------------------------------------------------------------------------------
-        //v1 - apply Blurry to Twilio VideoView
-        //WRONG - Can only apply Blurry to a Viewgroup
-        //VideoView is a twilio class
-        //----------------------------------------------------------------------------------
-        //                if(null != primaryVideoView){
-        //                    //Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(blurredviewgroup);
-        //
-        //                    Blurry.with(TwilioVideoActivity.this).radius(10)
-        //                            .sampling(8)
-        //                            .color(Color.argb(66, 255, 255, 0))
-        //                            .async()
-        //                            .animate(500)
-        //                            .onto(primaryVideoView);
-        //                }else{
-        //                    Log.e(TAG, "[VIDEOPLUGIN] primaryVideoView is null");
-        //                }
-        //----------------------------------------------------------------------------------
-        //v2 - apply blur to Viewgroup above videoview
-        //----------------------------------------------------------------------------------
-        //                if(null != blurredviewgroup){
-        //                    //Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(blurredviewgroup);
-        //
-        //                            Blurry.with(TwilioVideoActivity.this).radius(10)
-        //                                    .sampling(8)
-        //                                    .color(Color.argb(66, 255, 255, 0))
-        //                                    .async()
-        //                                    .animate(500)
-        //                                    .onto(blurredviewgroup);
-        //                }else{
-        //                    Log.e(TAG, "[VIDEOPLUGIN] blurredviewgroup is null");
-        //                }
-        //----------------------------------------------------------------------------------
-        //                if(null != video_container){
-        //                    Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(video_container);
-        //
-        ////                    Blurry.with(TwilioVideoActivity.this).radius(10)
-        ////                            .sampling(8)
-        ////                            .color(Color.argb(66, 255, 255, 0))
-        ////                            .async()
-        ////                            .animate(500)
-        ////                            .onto(video_container);
-        //                }else{
-        //                    Log.e(TAG, "[VIDEOPLUGIN] video_container is null");
-        //                }
-        //----------------------------------------------------------------------------------
-        //                if(null != activity_video_coordinatorlayout){
-        //                    Blurry.with(TwilioVideoActivity.this).radius(25).sampling(2).onto(activity_video_coordinatorlayout);
-        //
-        ////                    Blurry.with(TwilioVideoActivity.this).radius(10)
-        ////                            .sampling(8)
-        ////                            .color(Color.argb(66, 255, 255, 0))
-        ////                            .async()
-        ////                            .animate(500)
-        ////                            .onto(video_container);
-        //                }else{
-        //                    Log.e(TAG, "[VIDEOPLUGIN] activity_video_coordinatorlayout is null");
-        //                }
-        //----------------------------------------------------------------------------------
+    private void updateSpeakerButton(){
+        //RELEASE put back
+//        if(audioManager.isSpeakerphoneOn()){
+//
+//
+//            Log.e(TAG, "[VIDEOPLUGIN][AUDIO][updateSpeakerButton] AFTER isSpeakeraudioManager.isSpeakerphoneOn(): TRUE - CHANGE TO PHONE ICON");
+//            //------------------------------------------------------------------------------
+//            int icon = FAKE_R.getDrawable("ic_phonelink_ring_white_24dp");
+//
+//
+//            button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable(
+//                    TwilioVideoActivity.this, icon));
+//
+//            //------------------------------------------------------------------------------
+//        }else{
+//            Log.e(TAG, "[VIDEOPLUGIN][AUDIO][updateSpeakerButton] AFTER isSpeakeraudioManager.isSpeakerphoneOn(): FALSE - CHANGE TO HEADSET ICON");
+//            int icon = FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
+//
+//            button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable( TwilioVideoActivity.this, icon));
+//        }
 
     }
-
     private void configureAudio(boolean enable) {
+        Log.w(TAG, "[VIDEOPLUGIN][AUDIO] configureAudio: enable:" + enable);
+
         if (enable) {
             previousAudioMode = audioManager.getMode();
             // Request audio focus before making any device switch
@@ -3242,22 +3350,33 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
              * to be in this mode when playout and/or recording starts for the best
              * possible VoIP performance. Some devices have difficulties with
              * speaker mode if this is not set.
+             *
+             * BC - REDIRECTS SOUND TO COME OUT OF SPEAKERPHONE not top call speaker
+             * see also isSpeakerPhoneOn()/setSpeakerPhoneOn(t/f)
              */
             audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
             /*
              * Always disable microphone mute during a WebRTC call.
              */
             previousMicrophoneMute = audioManager.isMicrophoneMute();
+
+            Log.w(TAG, "[VIDEOPLUGIN][AUDIO] configureAudio: audioManager.setMicrophoneMute(false);");
             audioManager.setMicrophoneMute(false);
         } else {
             audioManager.setMode(previousAudioMode);
             audioManager.abandonAudioFocus(null);
+            Log.w(TAG, "[VIDEOPLUGIN][AUDIO] configureAudio: audioManager.setMicrophoneMute(previousMicrophoneMute):" + previousMicrophoneMute);
             audioManager.setMicrophoneMute(previousMicrophoneMute);
         }
     }
 
     private void requestAudioFocus() {
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Log.w(TAG, "[VIDEOPLUGIN][AUDIO] requestAudioFocus: Build.VERSION.SDK_INT >= Build.VERSION_CODES.O");
+
+            //AUDIO FOCUS - if another app needs the volume dim yours
+            //https://developer.android.com/guide/topics/media-apps/audio-focus
             AudioAttributes playbackAttributes = new AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
@@ -3270,11 +3389,14 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                                     new AudioManager.OnAudioFocusChangeListener() {
                                         @Override
                                         public void onAudioFocusChange(int i) {
+                                            Log.w(TAG, "onAudioFocusChange: ");
+
                                         }
                                     })
                             .build();
             audioManager.requestAudioFocus(focusRequest);
         } else {
+            Log.w(TAG, "[VIDEOPLUGIN][AUDIO] requestAudioFocus: NOT  Build.VERSION.SDK_INT >= Build.VERSION_CODES.O");
             audioManager.requestAudioFocus(null, AudioManager.STREAM_VOICE_CALL,
                     AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
         }
@@ -3995,15 +4117,11 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         //TwilioPlugin.java CLOSED will remove the Activity
         //------------------------------------------------------------------------------------------
 
-        //for single call - if WEB disconnects then this method called by twilio delegates
-        //but endCall will still be send from cordova so we should handle the first endCall
-// TODO: 15/02/21 CLEANUP
-//        endCall_can_disconnect = true;
     }
 
     @Override
     public void finish() {
-        Log.d(TAG, "[VIDEOPLUGIN][finish()] AUDIO OFF >> super.finish()");
+        Log.w(TAG, "[VIDEOPLUGIN][finish()] TURN AUDIO OFF >> super.finish()");
 
         configureAudio(false);
         super.finish();
@@ -4018,4 +4136,241 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         TwilioVideoManager.getInstance().publishEvent(event, data);
     }
 
+
+
+    //ACTION_SPEAKERPHONE_STATE_CHANGED
+
+
+    //https://github.com/Spark-Rom/packages_services_Telecomm/blob/1ae5295c6e727df8687bf1137343b614ca607cbc/src/com/android/server/telecom/CallAudioRouteStateMachine.java
+    public class SpeakerPhoneChangeIntentReceiver extends BroadcastReceiver {
+
+        public SpeakerPhoneChangeIntentReceiver() {
+
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            //----------------------------------------------------------------------------------
+            Log.e(TAG, "[VIDEOPLUGIN][AUDIO] SpeakerPhoneChangeIntentReceiver.onReceive: CALLED");
+            try {
+                if (AudioManager.ACTION_SPEAKERPHONE_STATE_CHANGED.equals(intent.getAction())) {
+                    if (null != audioManager) {
+                        //--------------------------------------------------------------------------
+                        //    if (audioManager.isSpeakerphoneOn()) {
+                        //        //sendInternalMessage(SPEAKER_ON);
+                        //
+                        //        Log.e(TAG, "[VIDEOPLUGIN][AUDIO] audioManager.isSpeakerphoneOn():" + audioManager.isSpeakerphoneOn());
+                        //    } else {
+                        //        //sendInternalMessage(SPEAKER_OFF);
+                        //    }
+                        //--------------------------------------------------------------------------
+                        Log.w(TAG, "[VIDEOPLUGIN][AUDIO] SpeakerPhoneChangeIntentReceiver.onReceive audioManager.isSpeakerphoneOn():" + audioManager.isSpeakerphoneOn());
+                        //--------------------------------------------------------------------------
+                    }
+                } else {
+                    Log.w(TAG, "[VIDEOPLUGIN][AUDIO] SpeakerPhoneChangeIntentReceiver.onReceive not ACTION_SPEAKERPHONE_STATE_CHANGED - skip");
+                }
+            } finally {
+                Log.w(TAG, "[VIDEOPLUGIN][AUDIO] SpeakerPhoneChangeIntentReceiver.onReceive: END");
+            }
+        }
+    }
+
+    //https://github.com/Lennowarweg/Plugin/blob/2d1566049d6ffbe89a6327c1ae127c67e90494d7/app/src/main/java/lenno/plugin/plugin/MainActivity.java
+
+    public class HeadsetIntentReceiver extends BroadcastReceiver {
+
+        public HeadsetIntentReceiver() {
+
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            //https://developer.android.com/reference/android/content/Intent#ACTION_HEADSET_PLUG
+
+            if (intent.getAction().equals(Intent.ACTION_HEADSET_PLUG)) {
+                int state = intent.getIntExtra("state", -1);
+                //----------------------------------------------------------------------------------
+                Log.w(TAG, "HeadsetIntentReceiver onReceive: state:" + state);
+                //----------------------------------------------------------------------------------
+                if(0 == state){
+                    Log.w(TAG, "HeadsetIntentReceiver onReceive: state:0 - headphone plugged OUT > change icon to SPEAKERPHONE");
+                    updateicon_button_fab_switchaudio_tospeaker();
+
+                }
+                else if(1 == state){
+                    Log.w(TAG, "HeadsetIntentReceiver onReceive: state:1 - headphone plugged IN > change icon to HEADPHONES");
+                    updateicon_button_fab_switchaudio_toheadphones();
+                }
+                else{
+                	Log.e(TAG, "ACTION_HEADSET_PLUG >> state is null cant ICON FOR updateicon_button_fab_switchaudio");
+                }
+                //----------------------------------------------------------------------------------
+            }else {
+                Log.w(TAG, "[VIDEOPLUGIN][AUDIO] HeadsetIntentReceiver.onReceive Intent not ACTION_HEADSET_PLUG - skip");
+            }
+        }
+    }
+
+    private void update_icon_button_fab_switchaudio(){
+        Log.w(TAG, "[VIDEOPLUGIN][AUDIO][updateSpeakerButtonIcon]");
+
+        logAudioDeviceInfo();
+
+        if(isHeadphonesPlugged()){
+            updateicon_button_fab_switchaudio_toheadphones();
+
+        }else{
+            updateicon_button_fab_switchaudio_tospeaker();
+        }
+
+    }
+    private void updateicon_button_fab_switchaudio_tospeaker(){
+        Log.w(TAG, "[VIDEOPLUGIN][AUDIO][updateSpeakerButtonIconToSpeakerPhone]");
+
+        int icon = FAKE_R.getDrawable("ic_phonelink_ring_white_24dp");
+
+        button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable( TwilioVideoActivity.this, icon));
+
+        //fab look n feel managed
+        //works but I need grey ic
+        //button_fab_switchaudio.setSelected(true);
+
+        button_fab_switchaudio.setEnabled(true);
+
+    }
+
+    private void updateicon_button_fab_switchaudio_toheadphones(){
+        Log.w(TAG, "[VIDEOPLUGIN][AUDIO][updateSpeakerButtonIconToHeadphones]");
+
+        int icon = FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
+
+        button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable( TwilioVideoActivity.this, icon));
+
+        //disable
+        //button_fab_switchaudio.setSelected(false);
+        button_fab_switchaudio.setEnabled(false);
+
+
+
+    }
+
+    private boolean isHeadphonesPlugged(){
+        AudioManager audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
+        AudioDeviceInfo[] audioDevices = audioManager.getDevices(AudioManager.GET_DEVICES_ALL);
+        for(AudioDeviceInfo deviceInfo : audioDevices){
+            if(deviceInfo.getType()==AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
+                    deviceInfo.getType()==AudioDeviceInfo.TYPE_WIRED_HEADSET)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    //Debug as we plug in wired and unwrired headset/ bluetooth headphones
+    //https://github.com/dengjianzhong/OddPoint/blob/2296ebc93392f8f8c98fa94bc30a4e049bf917b4/libwebrtc/src/main/java/sdk/android/src/java/org/webrtc/audio/WebRtcAudioUtils.java
+    private void logAudioDeviceInfo() {
+        Log.w(TAG, "[VIDEOPLUGIN][AUDIO][logAudioDeviceInfo]");
+
+        if (Build.VERSION.SDK_INT < 23) {
+            Log.w(TAG, "[VIDEOPLUGIN][AUDIO][logAudioDeviceInfo] Build.VERSION.SDK_INT < 23 - SKIP");
+
+        }else{
+            if(null != audioManager){
+                final AudioDeviceInfo[] devices = audioManager.getDevices(AudioManager.GET_DEVICES_ALL);
+
+
+                Log.w(TAG, "[VIDEOPLUGIN][AUDIO][logAudioDeviceInfo] Audio Devices:" + devices.length);
+
+                for (AudioDeviceInfo device : devices) {
+                    //----------------------------------------------------------------------------------
+                    StringBuilder info = new StringBuilder();
+
+                    info.append("  ").append(deviceTypeToString(device.getType()));
+                    info.append(device.isSource() ? "(in): " : "(out): ");
+
+                    //----------------------------------------------------------------------------------
+                    // An empty array indicates that the device supports arbitrary channel counts.
+                    if (device.getChannelCounts().length > 0) {
+                        info.append("channels=").append(Arrays.toString(device.getChannelCounts()));
+                        info.append(", ");
+                    }
+                    if (device.getEncodings().length > 0) {
+                        // Examples: ENCODING_PCM_16BIT = 2, ENCODING_PCM_FLOAT = 4.
+                        info.append("encodings=").append(Arrays.toString(device.getEncodings()));
+                        info.append(", ");
+                    }
+                    if (device.getSampleRates().length > 0) {
+                        info.append("sample rates=").append(Arrays.toString(device.getSampleRates()));
+                        info.append(", ");
+                    }
+
+                    info.append("id=").append(device.getId());
+
+                    String str = info.toString();
+                    Log.e(TAG, str );
+                }
+            }else{
+            	Log.e(TAG, "[VIDEOPLUGIN][AUDIO][logAudioDeviceInfo] audioManager is null");
+            }
+
+        }
+
+
+    }
+    // Converts AudioDeviceInfo types to local string representation.
+    private static String deviceTypeToString(int type) {
+        switch (type) {
+            case AudioDeviceInfo.TYPE_UNKNOWN:
+                return "TYPE_UNKNOWN";
+            case AudioDeviceInfo.TYPE_BUILTIN_EARPIECE:
+                return "TYPE_BUILTIN_EARPIECE";
+            case AudioDeviceInfo.TYPE_BUILTIN_SPEAKER:
+                return "TYPE_BUILTIN_SPEAKER";
+            case AudioDeviceInfo.TYPE_WIRED_HEADSET:
+                return "TYPE_WIRED_HEADSET";
+            case AudioDeviceInfo.TYPE_WIRED_HEADPHONES:
+                return "TYPE_WIRED_HEADPHONES";
+            case AudioDeviceInfo.TYPE_LINE_ANALOG:
+                return "TYPE_LINE_ANALOG";
+            case AudioDeviceInfo.TYPE_LINE_DIGITAL:
+                return "TYPE_LINE_DIGITAL";
+            case AudioDeviceInfo.TYPE_BLUETOOTH_SCO:
+                return "TYPE_BLUETOOTH_SCO";
+            case AudioDeviceInfo.TYPE_BLUETOOTH_A2DP:
+                return "TYPE_BLUETOOTH_A2DP";
+            case AudioDeviceInfo.TYPE_HDMI:
+                return "TYPE_HDMI";
+            case AudioDeviceInfo.TYPE_HDMI_ARC:
+                return "TYPE_HDMI_ARC";
+            case AudioDeviceInfo.TYPE_USB_DEVICE:
+                return "TYPE_USB_DEVICE";
+            case AudioDeviceInfo.TYPE_USB_ACCESSORY:
+                return "TYPE_USB_ACCESSORY";
+            case AudioDeviceInfo.TYPE_DOCK:
+                return "TYPE_DOCK";
+            case AudioDeviceInfo.TYPE_FM:
+                return "TYPE_FM";
+            case AudioDeviceInfo.TYPE_BUILTIN_MIC:
+                return "TYPE_BUILTIN_MIC";
+            case AudioDeviceInfo.TYPE_FM_TUNER:
+                return "TYPE_FM_TUNER";
+            case AudioDeviceInfo.TYPE_TV_TUNER:
+                return "TYPE_TV_TUNER";
+            case AudioDeviceInfo.TYPE_TELEPHONY:
+                return "TYPE_TELEPHONY";
+            case AudioDeviceInfo.TYPE_AUX_LINE:
+                return "TYPE_AUX_LINE";
+            case AudioDeviceInfo.TYPE_IP:
+                return "TYPE_IP";
+            case AudioDeviceInfo.TYPE_BUS:
+                return "TYPE_BUS";
+            case AudioDeviceInfo.TYPE_USB_HEADSET:
+                return "TYPE_USB_HEADSET";
+            default:
+                return "TYPE UNHANDLED ";
+        }
+    }
 }
