@@ -3237,68 +3237,48 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 //----------------------------------------------------------------------------------
                 Log.w(TAG, "[VIDEOPLUGIN] switchAudioClickListener.onClick: BEFORE audioManager.isSpeakerphoneOn():" + audioManager.isSpeakerphoneOn());
                 //----------------------------------------------------------------------------------
-//FOR RELEASE - comment this IN
-//BC
-//                if (audioManager.isSpeakerphoneOn()) {
-//                    Log.e(TAG, "[VIDEOPLUGIN][AUDIO][button_switchAudio_OnClickListener] switchAudioClickListener.onClick: CALL audioManager.setSpeakerphoneOn(false);");
-//                    audioManager.setMode(AudioManager.MODE_NORMAL);
-//                    audioManager.setSpeakerphoneOn(false);
-//                } else {
-//                    audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
-//                    Log.e(TAG, "[VIDEOPLUGIN][AUDIO][button_switchAudio_OnClickListener]  switchAudioClickListener.onClick: CALL audioManager.setSpeakerphoneOn(true);");
-//                    audioManager.setSpeakerphoneOn(true);
-//
-//                }
 
 
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    //ANDROID 10 - setSpeakerphoneOn not working
+                    //even added
+                    //<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
+                    if (ActivityCompat.checkSelfPermission(TwilioVideoActivity.this, Manifest.permission.MODIFY_AUDIO_SETTINGS) != PackageManager.PERMISSION_GRANTED) {
+                        ActivityCompat.requestPermissions(TwilioVideoActivity.this, new String[]{Manifest.permission.MODIFY_AUDIO_SETTINGS}, 123);
+                        // if the permission is granted then ok
+                        Log.e(TAG, "onClick: MODIFY_AUDIO_SETTINGS permission is missing" );
 
-                //----------------------------------------------------------------------------------
-                //v1 music came out top speaker
-                //audioManager.setSpeakerphoneOn(true);
+                    } else {
+                        Log.e(TAG, "onClick: MODIFY_AUDIO_SETTINGS is granted " );
 
+                        if (audioManager.isSpeakerphoneOn()) {
+                            Log.e(TAG, "[VIDEOPLUGIN][AUDIO][button_switchAudio_OnClickListener] switchAudioClickListener.onClick: CALL audioManager.setSpeakerphoneOn(false);");
+                            audioManager.setMode(AudioManager.MODE_NORMAL);
+                            audioManager.setSpeakerphoneOn(false);
+                        } else {
+                            audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+                            Log.e(TAG, "[VIDEOPLUGIN][AUDIO][button_switchAudio_OnClickListener]  switchAudioClickListener.onClick: CALL audioManager.setSpeakerphoneOn(true);");
+                            audioManager.setSpeakerphoneOn(true);
 
-                //----------------------------------------------------------------------------------
-                //music came out top speaker
-//                audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
-//                audioManager.setSpeakerphoneOn(true);
-//----------------------------------------------------------------------------------
-                //music came out top speaker
+                        }
+                    }
 
-//                audioManager.setMode(AudioManager.MODE_NORMAL);
-//                audioManager.setSpeakerphoneOn(true);
+                }else{
+                    Log.e(TAG, "[VIDEOPLUGIN][AUDIO][onCreate_configureAudio] onCreate_configureAudio: SDK not Q - cant register for ACTION_SPEAKERPHONE_STATE_CHANGED");
+                    //works on S9 but not Android 10
 
+                    if (audioManager.isSpeakerphoneOn()) {
 
-//                audioManager.setMode(MODE_IN_CALL);
-//                audioManager.setSpeakerphoneOn(true);
+                        Log.e(TAG, "[VIDEOPLUGIN][AUDIO][button_switchAudio_OnClickListener] switchAudioClickListener.onClick: CALL audioManager.setSpeakerphoneOn(false);");
+                        audioManager.setSpeakerphoneOn(false);
+                    } else {
 
+                        Log.e(TAG, "[VIDEOPLUGIN][AUDIO][button_switchAudio_OnClickListener]  switchAudioClickListener.onClick: CALL audioManager.setSpeakerphoneOn(true);");
+                        audioManager.setSpeakerphoneOn(true);
 
-logAudioDeviceInfo();
-
-                if (ActivityCompat.checkSelfPermission(TwilioVideoActivity.this, Manifest.permission.MODIFY_AUDIO_SETTINGS) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(TwilioVideoActivity.this, new String[]{Manifest.permission.MODIFY_AUDIO_SETTINGS}, 123);
-                    // i suppose that the user has granted the permission
-
-                    // if the permission is granted then ok
-                } else {
-                    Log.e(TAG, "onClick: MODIFY_AUDIO_SETTINGS is granted " );
-
-                    audioManager.setMode(MODE_IN_CALL);
-                    audioManager.setSpeakerphoneOn(true);
+                    }
                 }
-
-
-
-
-
-
-                //----------------------------------------------------------------------------------
-                //int icon = audioManager.isSpeakerphoneOn() ?
-                //        FAKE_R.getDrawable("ic_phonelink_ring_white_24dp") : FAKE_R.getDrawable("ic_volume_headhphones_white_24dp");
-
-
-                //button_fab_switchaudio.setImageDrawable(ContextCompat.getDrawable(
-                //        TwilioVideoActivity.this, icon));
 
                 //----------------------------------------------------------------------------------
                 Log.w(TAG, "[AUDIO][button_switchAudio_OnClickListener] AFTER audioManager.isSpeakerphoneOn():" + audioManager.isSpeakerphoneOn());
@@ -3317,6 +3297,7 @@ logAudioDeviceInfo();
     }
 
     private void updateSpeakerButton(){
+        Log.e(TAG, "updateSpeakerButton: TODO" );
         //RELEASE put back
 //        if(audioManager.isSpeakerphoneOn()){
 //
