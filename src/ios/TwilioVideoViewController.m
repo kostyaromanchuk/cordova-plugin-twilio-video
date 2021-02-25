@@ -1,6 +1,8 @@
 #import "TwilioVideoViewController.h"
 #import <AVFoundation/AVFoundation.h>
 #import <MediaPlayer/MediaPlayer.h>
+#import <AVKit/AVKit.h>
+#import <TwilioVideo/TwilioVideo.h>
 
 // CALL EVENTS
 NSString *const OPENED = @"OPENED";
@@ -373,11 +375,109 @@ NSString *const CLOSED = @"CLOSED";
 
 
 
-
+#pragma mark -
+#pragma mark viewDidLoad
+#pragma mark -
 
 #pragma mark - UIViewController
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    
+
+    //----------------------------------------------------------------------------------------------
+    //SPEAKERPHONE - speaker/ headset etc
+    //----------------------------------------------------------------------------------------------
+    //SHOW 'Speaker' in audio picker
+    //NOTE in CordovaCall setupAudioSession we configure the audio session
+    //You have 2 MODES
+    //  AVAudioSessionModeVoiceChat
+    //  AVAudioSessionModeVideoChat
+    
+    [self enableAudioRouteChangeObserver];
+
+    
+    //https://github.com/twilio/video-quickstart-ios/issues/379
+    //MUST BE DONE EARLY
+    TVIDefaultAudioDevice *audioDevice = [TVIDefaultAudioDevice audioDevice];
+    
+    TwilioVideoSDK.audioDevice = audioDevice;
+    
+    //...connect to a Call with audioDevice. By default the audio route will be configured to speaker.
+    //called by audioDevice.block(); below
+    //REQUIRED - speaker will be enabled without it, but Speaker is missing from picker list
+    //ISSUE -------
+    
+ 
+    audioDevice.block =  ^ {
+        // We will execute `kTVODefaultAVAudioSessionConfigurationBlock` first.
+        
+        //MUST HAVE TwilioVide   pod 'TwilioVideo', '4.3.0'
+        kTVIDefaultAVAudioSessionConfigurationBlock();
+        
+        // Overwrite the audio route
+        AVAudioSession *session = [AVAudioSession sharedInstance];
+        NSError *error = nil;
+
+        //------------------------------------------------------------------------------------------
+        //setMode:
+        //------------------------------------------------------------------------------------------
+        //ALSO SET IN setupAudioSession
+
+        if (![session setMode:AVAudioSessionModeVoiceChat error:&error]) {
+            NSLog(@"AVAudiosession setMode:AVAudioSessionModeVoiceChat FAILED : error: %@",error);
+        }else{
+            NSLog(@"AVAudiosession setMode TO AVAudioSessionModeVoiceChat OK");
+        }
+        
+        //------------------------------------------------------------------------------------------
+        //DONT USE - AVAudioSessionModeVideoChat if you want to see Speaker in piker list
+        //https://stackoverflow.com/questions/65446937/on-ios-how-can-i-force-avroutepickerview-to-allow-route-switching-between-speak
+        //Note that presense of the speaker option in AVRoutePickerView depends on the mode you've set.
+        //For example, if you use AVAudioSession.Mode.videoChat, speaker won't show up but is automatically
+        //used unless you lift receiver to your ear!!!!!!!!
+        //Per Apple's header about some of the modes: "Reduces the number of allowable audio routes to be only those that are appropriate for video chat applications."
+        
+        //        //WRONG - AVAudioSessionModeVideoChat doesnt show the speaker in the picker if we set AVAudioSessionModeVideoChat
+        //        if (![session setMode:AVAudioSessionModeVideoChat error:&error]) {
+        //            NSLog(@"AVAudiosession setMode:AVAudioSessionModeVideoChat FAILED : error: %@",error);
+        //        }else{
+        //            NSLog(@"AVAudiosession setMode:AVAudioSessionModeVideoChat OK");
+        //        }
+
+        //------------------------------------------------------------------------------------------
+        //overrideOutputAudioPort
+        //------------------------------------------------------------------------------------------
+        //IF YOU WANT TO START WITH SPEAKER OFF
+        //        if (![session overrideOutputAudioPort:AVAudioSessionPortOverrideNone error:&error]) {
+        //            NSLog(@"AVAudiosession overrideOutputAudioPort: AVAudioSessionPortOverrideNone FAILED: %@",error);
+        //        }else{
+        //            NSLog(@"AVAudiosession overrideOutputAudioPort TO AVAudioSessionPortOverrideNone OK");
+        //        }
+
+        //IF YOU WANT TO START WITH SPEAKER ON
+        if (![session overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker error:&error]) {
+            NSLog(@"AVAudiosession overrideOutputAudioPort: AVAudioSessionPortOverrideSpeaker FAILED: %@",error);
+        }else{
+            NSLog(@"AVAudiosession overrideOutputAudioPort TO AVAudioSessionPortOverrideSpeaker OK");
+        }
+        
+        //----------------------------------------------------------------------------------------
+        //BC - i added this as Speaker is on but not selected when we open picker but doesnt work
+        NSError* errorSetActive= nil;
+        [[AVAudioSession sharedInstance] setActive:TRUE error:&errorSetActive];
+
+        if (errorSetActive != nil) {
+            NSLog(@"AVAudioSessionPortOverrideNone errorSetActive: %@", [errorSetActive localizedDescription]);
+
+        } else {
+            NSLog(@"AVAudioSessionPortOverrideNone overrideOutputAudioPort + setActive OK");
+        }
+        //----------------------------------------------------------------------------------------
+
+    };
+    audioDevice.block();
+    
     
     //----------------------------------------------------------------------------------------------
     //TURN LOGGIN ON/OFF - MUST DOO ASAP
@@ -419,8 +519,7 @@ NSString *const CLOSED = @"CLOSED";
     //this view has border whos alpha will be animated when Calling...
     [self addFakeBordersToRemoteImageView];
     
-    //---------------------------------------------------------
-    [self placeVolumeIconOverButton];
+ 
     
     
     //---------------------------------------
@@ -496,9 +595,14 @@ NSString *const CLOSED = @"CLOSED";
     
     self.viewAudioWrapper.backgroundColor = [self button_backGroundColor_enabled];
 
-    //------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------
     //lee said only show remote user is muted - dont show icon if unmoted
     [self.imageViewInCallRemoteMicMuteState setHidden:TRUE];
+    
+    //----------------------------------------------------------------------------------------------
+    [self placeVolumeIconOverButton];
+    
+    //----------------------------------------------------------------------------------------------
 }
 
 
@@ -1359,25 +1463,25 @@ NSString *const CLOSED = @"CLOSED";
 #pragma mark MAIN BUTTON - VIDEO ON/OFF
 #pragma mark -
 - (IBAction)videoButtonPressed:(id)sender {
-    
+
     if(self.room){
         if (self.localVideoTrack) {
             //--------------------------------------------------------------------------------------
             [self toggle_localVideoTrack];
-            
+
             //CHECK STATE of VIDEO AFTER TOGGLE
             //The video is OFF by default. The cordova js passed in video:off in answerCall by default
             if (self.localVideoTrack.enabled) {
                 [self log_error:@"[toggle_localVideoTrack] VIDEO was TOGGLED ON to self.localVideoTrack.enabled:true"];
                 //self.localVideoTrack is not nil so no need to create it again
-                
+
             }else{
                 //VIDEO WAS TOGGLE OFF - UNPUBLISH THE TRACK due to bug in Twilio.JS where delegate not thrown when you only change .enable - you need to unpublish/unpublish too
                 [self log_error:@"[toggle_localVideoTrack] VIDEO was TOGGLED OFF to self.localVideoTrack.enabled:false > UNPUBLISH the video(bug in Twilio JS)"];
-                
+
                 if(self.room.localParticipant){
                     [self.room.localParticipant unpublishVideoTrack:self.localVideoTrack];
-                    
+
                     //self.cameraSource
                     [self.camera stopCaptureWithCompletion:^(NSError *error) {
                         self.localVideoTrack = nil;
@@ -1387,8 +1491,8 @@ NSString *const CLOSED = @"CLOSED";
                     [self log_error:@"[videoButtonPressed] self.room.localParticipant is NULL"];
                 }
             }
-            
-           
+
+
             //--------------------------------------------------------------------------------------
         } else {
             //--------------------------------------------------------------------------------------
@@ -1398,7 +1502,7 @@ NSString *const CLOSED = @"CLOSED";
                                                                   name:@"camera"];
             //required else you see black screen in thumbnail after you toggle video back on
             [self.localVideoTrack addRenderer:self.previewView];
-            
+
             AVCaptureDevice *frontCamera = [TVICameraSource captureDeviceForPosition:AVCaptureDevicePositionFront];
             AVCaptureDevice *backCamera = [TVICameraSource captureDeviceForPosition:AVCaptureDevicePositionBack];
 
@@ -1414,16 +1518,16 @@ NSString *const CLOSED = @"CLOSED";
             //--------------------------------------------------------------------------------------
             //i thought I should wait for delegate (TVIRemoteParticipantDelegate.didSubscribeToVideoTrack)
             //to confirm videotrack setup but this is localTrack - should be instant
-            
+
             //--------------------------------------------------------------------------------------
             [self update_videoButton_color_and_icon];
             //--------------------------------------------------------------------------------------
-            
-            
+
+
         }
     }else{
         [self log_error:@"[videoButtonPressed] self.room is NULL - are you in openRoom but waiting for startCall - room.connect is in startCall"];
-        
+
         [self toggle_localVideoTrack];
     }
 }
@@ -1462,8 +1566,6 @@ NSString *const CLOSED = @"CLOSED";
         [self log_error:@"[toggle_localVideoTrack] self.localVideoTrack is NULL"];
     }
 }
-
-
 
 //MUTE VIDEO BUTTON
 -(void)videoButton_changeTo_videoEnabled{
@@ -1509,9 +1611,6 @@ NSString *const CLOSED = @"CLOSED";
             [self unpublishAudioTrack_localAudioTrack];
             
         }
-        
-        
-
     }
     //[self updateConstraints_PreviewView_toFullScreen: FALSE animated:TRUE];
     //DEBUG [self dialing_sound_stop];
@@ -1574,42 +1673,104 @@ NSString *const CLOSED = @"CLOSED";
     [self update_button:self.micButton imageName:@"mic"];
     [self.micButton setBackgroundColor:[self button_backGroundColor_enabled]];
 }
+
 -(void)micButton_changeIconTo_off{
     //[self.micButton setSelected: FALSE];
     [self update_button:self.micButton imageName:@"no_mic_grey"];
     [self.micButton setBackgroundColor:[self button_backGroundColor_disabled]];
 }
+
 -(void)placeVolumeIconOverButton{
     
     if(self.viewAudioWrapper){
-        MPVolumeView *mpVolumeView = [[MPVolumeView alloc] init];
-        mpVolumeView.hidden = NO;
-        [mpVolumeView setShowsRouteButton:YES];
+        //SPEAKERPHONE
         
-        //this is a volume slide and a button to choose SPEAKER/airpods etc
-        //but we hide the slider
-        [mpVolumeView setShowsVolumeSlider:NO];
+        //same as other button icons - checked with 3D view debugger
+        CGRect rect = CGRectMake(18, 18, 24, 24);
         
-        //[mpVolumeView setFrame:CGRectMake(100, 200, 200 ,200)];
-        CGRect rect = self.viewAudioWrapper.bounds;
+        //TOO BIG 0,0,60,60
+        //CGRect rect = self.viewAudioWrapper.bounds;
         
-        
-        [mpVolumeView setFrame:rect];
-        [self.viewAudioWrapper addSubview:mpVolumeView];
-        
-        [self.viewAudioWrapper bringSubviewToFront:mpVolumeView];
-        //------------------------------------------------------------------------------------------
-        //        AVRoutePickerView
-        //        //see also AVRoutePickerView
-        //
-        //    https://developer.apple.com/documentation/mediaplayer/mpvolumeview
-        //------------------------------------------------------------------------------------------
+        if (@available(iOS 11.0, *)) {
+            // similar to MPVolumeView but you can change metadata for now playing
+            AVRoutePickerView *avRoutePickerView = [[AVRoutePickerView alloc] initWithFrame:rect];
+            
+            avRoutePickerView.activeTintColor = [UIColor blueColor];
+            avRoutePickerView.tintColor = [UIColor whiteColor];
+         
+             //-------------------------------------------------------------------------------------
+         //   [airplayButton setFrame:rect];
+            
+            [self.viewAudioWrapper addSubview:avRoutePickerView];
+            
+            [self.viewAudioWrapper bringSubviewToFront:avRoutePickerView];
+        } else {
+            
+            MPVolumeView *mpVolumeView = [[MPVolumeView alloc] init];
+            mpVolumeView.hidden = NO;
+            [mpVolumeView setShowsRouteButton:YES];
+            
+            //this is a volume slide and a button to choose SPEAKER/airpods etc
+            //but we hide the slider
+            [mpVolumeView setShowsVolumeSlider:NO];
+            
+            //[mpVolumeView setFrame:CGRectMake(100, 200, 200 ,200)];
+            //CGRect rect = self.viewAudioWrapper.bounds;
+            
+            [mpVolumeView setFrame:rect];
+            
+            [self.viewAudioWrapper addSubview:mpVolumeView];
+            
+            [self.viewAudioWrapper bringSubviewToFront:mpVolumeView];
+        }
     }else{
         [self log_error:@" is null"];
     }
-    
-   
 }
+
+//SPEAKERPHONE
+-(void)enableAudioRouteChangeObserver{
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(routeChange:)
+                                                 name:AVAudioSessionRouteChangeNotification
+                                               object:nil];
+}
+
+- (void)routeChange:(NSNotification*)notification {
+    
+    NSLog(@"Audio device route changed!");
+    
+    AVAudioSession* session = [AVAudioSession sharedInstance];
+    AVAudioSessionRouteDescription *currentRoute = session.currentRoute;
+    NSArray<AVAudioSessionPortDescription *> *outputs = currentRoute.outputs;
+    
+    if ([outputs count] == 0) {
+        NSLog(@"[outputs count] == 0");
+      
+    }else{
+        // only triggered when i tap toggle
+        // not when i chnage using ppicker
+
+        NSLog(@"[outputs count]:%ld", [outputs count]);
+        
+        AVAudioSessionPortDescription *output = [outputs objectAtIndex:0];
+        NSLog(@"[routeChange] AVAudioSessionRouteChangeNotification -  current output: portName '%@' portType '%@'", [output portName], [output portType]);
+        
+        if ([[output portType] isEqualToString:AVAudioSessionPortBuiltInReceiver]) {
+            NSLog(@"[routeChange] AVAudioSessionRouteChangeNotification : AVAudioSessionPortBuiltInReceiver");
+            
+        }
+        else if ([[output portType] isEqualToString:AVAudioSessionPortBuiltInSpeaker]) {
+            NSLog(@"[routeChange] AVAudioSessionRouteChangeNotification : AVAudioSessionPortBuiltInSpeaker");
+            
+        }
+        else
+        {
+            NSLog(@"not AVAudioSessionPortBuiltInReceiver [output portType]:%@", [output portType]);
+        }
+    }
+}
+
 #pragma mark -
 #pragma mark BUTTON DISCONECT
 #pragma mark -
@@ -2181,7 +2342,6 @@ NSString *const CLOSED = @"CLOSED";
     // Prepare local media which we will share with Room Participants.
 //    [self prepareLocalMedia];
     
-    //--------------------------------------------------------------------------
     
     //--------------------------------------------------------------------------
     TVIConnectOptions *connectOptions = [TVIConnectOptions optionsWithToken:self.accessToken
