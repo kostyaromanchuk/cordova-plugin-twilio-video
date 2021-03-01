@@ -68,13 +68,13 @@
  
 
 
-        <framework src="TwilioVideo" type="podspec" spec="3.7.2"/>
+        <framework src="TwilioVideo" type="podspec" spec="4.3.0"/>
         <podspec>
             <config>
                 <source url="https://cdn.cocoapods.org/"/>
             </config>
             <pods>
-                <pod name="TwilioVideo" spec="3.7.2"/>
+                <pod name="TwilioVideo" spec="4.3.0"/>
             </pods>
         </podspec>
 
@@ -94,6 +94,7 @@
             <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
             <uses-permission android:name="android.hardware.sensor.proximity"/>
             <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+            <uses-permission android:name="android.permission.BLUETOOTH" />
         </config-file>
         <config-file target="AndroidManifest.xml" parent="/manifest/application">
             <activity android:name="org.apache.cordova.twiliovideo.TwilioVideoActivity" android:configChanges="orientation|screenSize" android:theme="@style/Theme.AppCompat.Light.Translucent" android:launchMode="singleInstance"></activity>
@@ -113,28 +114,34 @@
         <framework src="com.google.android.gms:play-services-gcm:+" />
         <framework src="src/android/twiliovideo.gradle" custom="true" type="gradleReference" />
 
-        <resource-file src="src/android/res/drawable/ic_call_black_24dp.xml" target="res/drawable/ic_call_black_24dp.xml" />
-        <resource-file src="src/android/res/drawable/ic_call_end_white_24px.xml" target="res/drawable/ic_call_end_white_24px.xml" />
-        <resource-file src="src/android/res/drawable/ic_call_white_24px.xml" target="res/drawable/ic_call_white_24px.xml" />
-        <resource-file src="src/android/res/drawable/ic_mic_green_24px.xml" target="res/drawable/ic_mic_green_24px.xml" />
-        <resource-file src="src/android/res/drawable/ic_mic_off_red_24px.xml" target="res/drawable/ic_mic_off_red_24px.xml" />
-        <resource-file src="src/android/res/drawable/ic_switch_camera_512dp.xml" target="res/drawable/ic_switch_camera_512dp.xml" />
-        <resource-file src="src/android/res/drawable/ic_videocam_green_24px.xml" target="res/drawable/ic_videocam_green_24px.xml" />
-        <resource-file src="src/android/res/drawable/ic_videocam_off_red_24px.xml" target="res/drawable/ic_videocam_off_red_24px.xml" />
-        <resource-file src="src/android/res/drawable/ic_phonelink_ring_white_24dp.xml" target="res/drawable/ic_phonelink_ring_white_24dp.xml" />
-        <resource-file src="src/android/res/drawable/ic_volume_up_white_24dp.xml" target="res/drawable/ic_volume_up_white_24dp.xml" />
-        <resource-file src="src/android/res/drawable/ic_volume_headhphones_white_24dp.xml" target="res/drawable/ic_volume_headhphones_white_24dp.xml" />
-        <resource-file src="src/android/res/drawable/ic_flip_camera_ios_white_18dp.xml" target="res/drawable/ic_flip_camera_ios_white_18dp.xml" />
-        <resource-file src="src/android/res/drawable/ic_mic_off_white_24px.xml" target="res/drawable/ic_mic_off_white_24px.xml" />
+		<resource-file src="src/android/res/drawable/border.xml" target="res/drawable/border.xml" />
+		<resource-file src="src/android/res/drawable/ic_account_circle_black_24dp.xml" target="res/drawable/ic_account_circle_black_24dp.xml" />
+		<resource-file src="src/android/res/drawable/ic_account_circle_white_24dp.xml" target="res/drawable/ic_account_circle_white_24dp.xml" />
+		<resource-file src="src/android/res/drawable/ic_arrow_back_white_24dp.xml" target="res/drawable/ic_arrow_back_white_24dp.xml" />
+		<resource-file src="src/android/res/drawable/ic_bluetooth_connected_grey_24dp.xml" target="res/drawable/ic_bluetooth_connected_grey_24dp.xml" />
+		<resource-file src="src/android/res/drawable/ic_bluetooth_connected_white_24dp.xml" target="res/drawable/ic_bluetooth_connected_white_24dp.xml" />
+		<resource-file src="src/android/res/drawable/ic_call_black_24dp.xml" target="res/drawable/ic_call_black_24dp.xml" />
+		<resource-file src="src/android/res/drawable/ic_call_end_white_24px.xml" target="res/drawable/ic_call_end_white_24px.xml" />
+		<resource-file src="src/android/res/drawable/ic_call_white_24px.xml" target="res/drawable/ic_call_white_24px.xml" />
+		<resource-file src="src/android/res/drawable/ic_flip_camera_ios_white_18dp.xml" target="res/drawable/ic_flip_camera_ios_white_18dp.xml" />
+		<resource-file src="src/android/res/drawable/ic_hearing_grey_24dp.xml" target="res/drawable/ic_hearing_grey_24dp.xml" />
+		<resource-file src="src/android/res/drawable/ic_hearing_white_24dp.xml" target="res/drawable/ic_hearing_white_24dp.xml" />
+		<resource-file src="src/android/res/drawable/ic_mic_green_24px.xml" target="res/drawable/ic_mic_green_24px.xml" />
+		<resource-file src="src/android/res/drawable/ic_mic_off_red_24px.xml" target="res/drawable/ic_mic_off_red_24px.xml" />
+		<resource-file src="src/android/res/drawable/ic_mic_off_white_24px.xml" target="res/drawable/ic_mic_off_white_24px.xml" />
+		<resource-file src="src/android/res/drawable/ic_phonelink_ring_grey_24dp.xml" target="res/drawable/ic_phonelink_ring_grey_24dp.xml" />
+		<resource-file src="src/android/res/drawable/ic_phonelink_ring_white_24dp.xml" target="res/drawable/ic_phonelink_ring_white_24dp.xml" />
+		<resource-file src="src/android/res/drawable/ic_speaker_phone_black_24dp.xml" target="res/drawable/ic_speaker_phone_black_24dp.xml" />
+		<resource-file src="src/android/res/drawable/ic_speaker_phone_grey_24dp.xml" target="res/drawable/ic_speaker_phone_grey_24dp.xml" />
+		<resource-file src="src/android/res/drawable/ic_speaker_phone_white_24dp.xml" target="res/drawable/ic_speaker_phone_white_24dp.xml" />
+		<resource-file src="src/android/res/drawable/ic_switch_camera_512dp.xml" target="res/drawable/ic_switch_camera_512dp.xml" />
+		<resource-file src="src/android/res/drawable/ic_switch_video_white_24dp.xml" target="res/drawable/ic_switch_video_white_24dp.xml" />
+		<resource-file src="src/android/res/drawable/ic_videocam_green_24px.xml" target="res/drawable/ic_videocam_green_24px.xml" />
+		<resource-file src="src/android/res/drawable/ic_videocam_off_red_24px.xml" target="res/drawable/ic_videocam_off_red_24px.xml" />
+		<resource-file src="src/android/res/drawable/ic_volume_headhphones_grey_24dp.xml" target="res/drawable/ic_volume_headhphones_grey_24dp.xml" />
+		<resource-file src="src/android/res/drawable/ic_volume_headhphones_white_24dp.xml" target="res/drawable/ic_volume_headhphones_white_24dp.xml" />
+		<resource-file src="src/android/res/drawable/ic_volume_up_white_24dp.xml" target="res/drawable/ic_volume_up_white_24dp.xml" />
 
-       	<resource-file src="src/android/res/drawable/border.xml" target="res/drawable/border.xml" />
-
-        <resource-file src="src/android/res/drawable/ic_switch_video_white_24dp.xml" target="res/drawable/ic_switch_video_white_24dp.xml" />
-        
-        <resource-file src="src/android/res/drawable/ic_arrow_back_white_24dp.xml" target="res/drawable/ic_arrow_back_white_24dp.xml" />
-
-        <resource-file src="src/android/res/drawable/ic_account_circle_black_24dp.xml" target="res/drawable/ic_account_circle_black_24dp.xml" />
-        <resource-file src="src/android/res/drawable/ic_account_circle_white_24dp.xml" target="res/drawable/ic_account_circle_white_24dp.xml" />
 
         <resource-file src="src/android/res/mipmap-hdpi/ic_alert_in_circle.png" target="res/mipmap-hdpi/ic_alert_in_circle.png" />
         <resource-file src="src/android/res/mipmap-mdpi/ic_alert_in_circle.png" target="res/mipmap-mdpi/ic_alert_in_circle.png" />

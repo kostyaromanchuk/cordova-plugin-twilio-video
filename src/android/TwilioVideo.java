@@ -2,9 +2,11 @@ package org.apache.cordova.twiliovideo;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import org.apache.cordova.CallbackContext;
@@ -317,6 +319,9 @@ public class TwilioVideo extends CordovaPlugin {
             String remote_user_name = args.getString(4);
             String remote_user_photo_url = args.getString(5);
 
+            //param:config moved to position 6
+            //parsed below
+
 
             //--------------------------------------------------------------------------------------
             //JS null gets mapped to String "null" not JAVA null - set it back to java null
@@ -398,7 +403,7 @@ public class TwilioVideo extends CordovaPlugin {
 
 
 
-
+            //config : {"startWithAudioOff":false,"startWithVideoOff":true}
             //param:config moved to position 6
             if (args.length() > 6) {
                 this.config.parse(args.optJSONObject(6));
@@ -435,6 +440,8 @@ public class TwilioVideo extends CordovaPlugin {
                     intent_TwilioVideoActivity.putExtra("token", token);
                     intent_TwilioVideoActivity.putExtra("roomId", roomId);
                     intent_TwilioVideoActivity.putExtra("config", config);
+                    intent_TwilioVideoActivity.putExtra("isStartWithAudioOff", config.isStartWithAudioOff());
+                    intent_TwilioVideoActivity.putExtra("isStartWithVideoOff", config.isStartWithVideoOff());
 
                     //--------------------------------------------------------------------------------------
                     //putExtra can throw error: local variables referenced from an inner class must be final or effectively final
