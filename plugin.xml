@@ -68,13 +68,13 @@
  
 
 
-        <framework src="TwilioVideo" type="podspec" spec="4.3.0"/>
+        <framework src="TwilioVideo" type="podspec" spec="3.7.2"/>
         <podspec>
             <config>
                 <source url="https://cdn.cocoapods.org/"/>
             </config>
             <pods>
-                <pod name="TwilioVideo" spec="4.3.0"/>
+                <pod name="TwilioVideo" spec="3.7.2"/>
             </pods>
         </podspec>
 
