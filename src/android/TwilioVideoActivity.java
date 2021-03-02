@@ -731,6 +731,12 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                     String token = intent.getStringExtra("token");
                     String roomId = intent.getStringExtra("roomId");
 
+                    String local_user_name = intent.getStringExtra("local_user_name");
+                    String local_user_photo_url = intent.getStringExtra("local_user_photo_url");
+
+                    String remote_user_name = intent.getStringExtra("remote_user_name");
+                    String remote_user_photo_url = intent.getStringExtra("remote_user_photo_url");
+
                     //needed for flow after onRequestPermissionsResult
                     this.action_current = TwilioVideoActivityNextAction.action_startCall;
 
