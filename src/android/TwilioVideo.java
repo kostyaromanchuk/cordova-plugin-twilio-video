@@ -28,6 +28,13 @@ public class TwilioVideo extends CordovaPlugin {
       Manifest.permission.RECORD_AUDIO
     };
 
+    public static final String[] PERMISSIONS_REQUIRED_RECORD_AUDIO = new String[] {
+            Manifest.permission.RECORD_AUDIO
+    };
+    public static final String[] PERMISSIONS_REQUIRED_CAMERA = new String[] {
+            Manifest.permission.CAMERA
+    };
+
     private static final int PERMISSIONS_REQUIRED_REQUEST_CODE = 1;
 
     private CallbackContext callbackContext;
@@ -74,12 +81,37 @@ public class TwilioVideo extends CordovaPlugin {
                 this.registerCallListener(callbackContext);
                 this.closeRoom(callbackContext);
                 break;
+
+                //------------------------------------------
             case "hasRequiredPermissions":
                 this.hasRequiredPermissions(callbackContext);
                 break;
-            case "requestPermissions":
-                this.requestRequiredPermissions();
+            case "requestPermissions": //was requestPermissions
+                this.requestPermissions();
                 break;
+                //------------------------------------------
+            case "hasRequiredPermissionCamera":
+                this.hasRequiredPermissionCamera(callbackContext);
+                break;
+            case "isPermissionRestrictedOrDeniedForCamera":
+                this.isPermissionRestrictedOrDeniedForCamera(callbackContext);
+                break;
+            case "requestPermissionCamera":
+                this.requestPermissionCamera();
+                break;
+                //------------------------------------------
+            case "hasRequiredPermissionMicrophone":
+                this.hasRequiredPermissionMicrophone(callbackContext);
+                break;
+
+            case "isPermissionRestrictedOrDeniedForMicrophone":
+                this.isPermissionRestrictedOrDeniedForMicrophone(callbackContext);
+                break;
+
+            case "requestPermissionMicrophone":
+                this.requestPermissionMicrophone();
+                break;
+
         }
         return true;
     }
@@ -848,11 +880,24 @@ public class TwilioVideo extends CordovaPlugin {
         this.sendPluginOkResult(callbackContext);
     }
 
+
+    //----------------------------------------------------------------------------------------------
+    //PERMISSIONS
+    //----------------------------------------------------------------------------------------------
+
+    //----------------------------------------------------------------------------------------------
+    //v1 CAMERA and MICROPHONE
+    //----------------------------------------------------------------------------------------------
     private void hasRequiredPermissions(CallbackContext callbackContext) {
 
         boolean hasRequiredPermissions = true;
         for (String permission : TwilioVideo.PERMISSIONS_REQUIRED) {
+
             hasRequiredPermissions = cordova.hasPermission(permission);
+
+            Log.w(TAG, "[TWILIOVIDEOPLUGIN][TwilioVideo.java] hasRequiredPermissions: permission:" + permission + " RESULT:" + hasRequiredPermissions);
+
+            //if any failed - all failed
             if (!hasRequiredPermissions) { break; }
         }
 
@@ -861,10 +906,132 @@ public class TwilioVideo extends CordovaPlugin {
         );
     }
 
-    private void requestRequiredPermissions() {
+    private void requestPermissions() {
+        Log.w(TAG, "[TWILIOVIDEOPLUGIN][TwilioVideo.java] requestPermissions: CALL cordova.requestPermissions(...)");
+
         cordova.requestPermissions(this, PERMISSIONS_REQUIRED_REQUEST_CODE, PERMISSIONS_REQUIRED);
     }
 
+
+
+    //------------------------------------------
+    //PERMISSIONS v2 - CAMERA
+    //------------------------------------------
+    private void hasRequiredPermissionCamera(CallbackContext callbackContext) {
+
+        boolean hasRequiredPermissionCamera = true;
+
+        for (String permission : TwilioVideo.PERMISSIONS_REQUIRED_CAMERA) {
+            hasRequiredPermissionCamera = cordova.hasPermission(permission);
+
+            Log.w(TAG, "[TWILIOVIDEOPLUGIN][TwilioVideo.java] hasRequiredPermissionCamera: permission:" + permission + "? >> RESULT:" + hasRequiredPermissionCamera);
+
+
+            if (!hasRequiredPermissionCamera) { break; }
+        }
+
+        callbackContext.sendPluginResult(
+                new PluginResult(PluginResult.Status.OK, hasRequiredPermissionCamera)
+        );
+    }
+
+    //on iOS if users access is DENIED then were asked for permission but said no before AND they have to manually change it in Settings
+    //on iOS if users access is RESTRICTED then they have to contact their IT dept (or parental controls - unlikely)
+    //on Android hasRequiredPermissionCamera() will only return TRUE/FALSE
+    //and if FALSE just call requestPermissionCamera() again to show ALERT
+    //NOTE Android also has DENY ALWAYS - but i think thats for the lifetime of the app - so just restart the app
+    private void isPermissionRestrictedOrDeniedForCamera(CallbackContext callbackContext) {
+
+        //ALWAYS FALSE
+        boolean hasRequiredPermission = false;
+
+        //------------------------------------------------------------------------------------------
+        //TODO - how do we cheack if corporate restriction on Android like iOS mode AVAuthorizationStatusRestricted
+        //------------------------------------------------------------------------------------------
+        //        for (String permission : TwilioVideo.PERMISSIONS_REQUIRED_CAMERA) {
+        //            hasRequiredPermissionCamera = cordova.hasPermission(permission);
+        //
+        //            Log.w(TAG, "[TWILIOVIDEOPLUGIN][TwilioVideo.java] hasRequiredPermissionCamera: permission:" + permission + " RESULT:" + hasRequiredPermissionCamera);
+        //
+        //
+        //            if (!hasRequiredPermissionCamera) { break; }
+        //        }
+        //------------------------------------------------------------------------------------------
+        Log.w(TAG, "[TWILIOVIDEOPLUGIN][TwilioVideo.java] isPermissionRestrictedOrDeniedForCamera:" + hasRequiredPermission);
+        //------------------------------------------------------------------------------------------
+
+        callbackContext.sendPluginResult(
+                new PluginResult(PluginResult.Status.OK, hasRequiredPermission)
+        );
+    }
+
+    private void requestPermissionCamera() {
+        Log.w(TAG, "[TWILIOVIDEOPLUGIN][TwilioVideo.java] CALL requestPermissionCamera: [CAMERA]");
+
+        cordova.requestPermissions(this, PERMISSIONS_REQUIRED_REQUEST_CODE, PERMISSIONS_REQUIRED_CAMERA);
+        //comes out in onRequestPermissionResult
+    }
+
+
+
+    //----------------------------------------------------------------------------------------------
+    //PERMISSIONS v2 - separate calls for CAMERA and MICROPHONE required as AUDIO calls only need audio
+    //----------------------------------------------------------------------------------------------
+    private void hasRequiredPermissionMicrophone(CallbackContext callbackContext) {
+
+        boolean hasRequiredPermissionMicrophone = true;
+
+        for (String permission : TwilioVideo.PERMISSIONS_REQUIRED_RECORD_AUDIO) {
+            hasRequiredPermissionMicrophone = cordova.hasPermission(permission);
+
+            Log.w(TAG, "[TWILIOVIDEOPLUGIN][TwilioVideo.java] hasRequiredPermissionMicrophone: permission:" + permission + " RESULT:" + hasRequiredPermissionMicrophone);
+
+
+            if (!hasRequiredPermissionMicrophone) { break; }
+        }
+
+        callbackContext.sendPluginResult(
+                new PluginResult(PluginResult.Status.OK, hasRequiredPermissionMicrophone)
+        );
+    }
+
+    private void isPermissionRestrictedOrDeniedForMicrophone(CallbackContext callbackContext) {
+
+
+        boolean hasRequiredPermission = false; //ALWAYS FALSE on Android
+
+        //------------------------------------------------------------------------------------------
+        //TODO - how do we cheack if corporate restriction on Android like iOS mode AVAuthorizationStatusRestricted
+        //------------------------------------------------------------------------------------------
+        //        for (String permission : TwilioVideo.PERMISSIONS_REQUIRED_CAMERA) {
+        //            hasRequiredPermissionCamera = cordova.hasPermission(permission);
+        //
+        //            Log.w(TAG, "[TWILIOVIDEOPLUGIN][TwilioVideo.java] hasRequiredPermissionCamera: permission:" + permission + " RESULT:" + hasRequiredPermissionCamera);
+        //
+        //
+        //            if (!hasRequiredPermissionCamera) { break; }
+        //        }
+        //------------------------------------------------------------------------------------------
+        Log.w(TAG, "[TWILIOVIDEOPLUGIN][TwilioVideo.java] isPermissionRestrictedOrDeniedForMicrophone::" + hasRequiredPermission);
+        //------------------------------------------------------------------------------------------
+
+        callbackContext.sendPluginResult(
+                new PluginResult(PluginResult.Status.OK, hasRequiredPermission)
+        );
+    }
+
+    private void requestPermissionMicrophone() {
+
+        Log.w(TAG, "[TWILIOVIDEOPLUGIN][TwilioVideo.java] CALL requestPermissionMicrophone: [RECORD_AUDIO]");
+
+        cordova.requestPermissions(this, PERMISSIONS_REQUIRED_REQUEST_CODE, PERMISSIONS_REQUIRED_RECORD_AUDIO);
+    }
+
+
+
+    //----------------------------------------------------------------------------------------------
+    //ANDROID REQUEST PERMISSION FROM USER returns here
+    //----------------------------------------------------------------------------------------------
     @Override
     public void onRequestPermissionResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == PERMISSIONS_REQUIRED_REQUEST_CODE) {
@@ -877,9 +1044,19 @@ public class TwilioVideo extends CordovaPlugin {
             PluginResult result = new PluginResult(PluginResult.Status.OK, requiredPermissionsGranted);
             callbackContext.sendPluginResult(result);
         } else {
-          callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, false));
+            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, false));
         }
     }
+    //----------------------------------------------------------------------------------------------
+
+
+
+
+
+
+    //----------------------------------------------------------------------------------------------
+    //onSaveInstanceState
+    //----------------------------------------------------------------------------------------------
 
     public Bundle onSaveInstanceState() {
         Bundle state = new Bundle();

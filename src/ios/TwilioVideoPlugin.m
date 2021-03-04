@@ -400,9 +400,9 @@
 
 
 
-
-
-
+//--------------------------------------------------------------------------------------------------
+//PERMISSIONS v1 - OLD API - requests CAMERA and MIC together
+//--------------------------------------------------------------------------------------------------
 
 - (void)hasRequiredPermissions:(CDVInvokedUrlCommand*)command {
     BOOL hasRequiredPermissions = [TwilioVideoPermissions hasRequiredPermissions];
@@ -416,6 +416,66 @@
                                     callbackId:command.callbackId];
     }];
 }
+
+//--------------------------------------------------------------------------------------------------
+//PERMISSIONS v2 - REQUEST CAMERA PERMISSIONS ONLY
+//--------------------------------------------------------------------------------------------------
+
+- (void)hasRequiredPermissionCamera:(CDVInvokedUrlCommand*)command {
+    BOOL hasRequiredPermissionCamera = [TwilioVideoPermissions hasRequiredPermissionCamera];
+    [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:hasRequiredPermissionCamera] callbackId:command.callbackId];
+}
+
+- (void)isPermissionRestrictedOrDeniedForCamera:(CDVInvokedUrlCommand*)command {
+    BOOL isPermissionRestrictedOrDeniedForCamera = [TwilioVideoPermissions isPermissionRestrictedOrDeniedForCamera];
+    [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:isPermissionRestrictedOrDeniedForCamera] callbackId:command.callbackId];
+}
+
+- (void)requestPermissionCamera:(CDVInvokedUrlCommand*)command {
+    [TwilioVideoPermissions requestPermissionCamera:^(BOOL grantedPermissions) {
+        [self.commandDelegate sendPluginResult:
+         [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:grantedPermissions]
+                                    callbackId:command.callbackId];
+    }];
+}
+
+//--------------------------------------------------------------------------------------------------
+//PERMISSIONS v2 - REQUEST MICROPHONE PERMISSIONS ONLY (used for Audio only calls)
+//--------------------------------------------------------------------------------------------------
+//call always before using camera
+
+//if true then safe to use Camera
+//if false then call isPermissionRestrictedOrDeniedForCamera:
+
+//Recommendation : call BEFORE you start the TwilioVideo screen
+//.... possible issue with TwilioSdk starting with permission off.
+//.... Turning permission back on may not update twilio till room disconnects and reconnects
+//.... So workaround alwways call permissions early
+//.... once permission accepted by user hasRequiredPermissionCamera always returns true
+
+- (void)hasRequiredPermissionMicrophone:(CDVInvokedUrlCommand*)command {
+    BOOL hasRequiredPermissions = [TwilioVideoPermissions hasRequiredPermissionMicrophone];
+    [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:hasRequiredPermissions] callbackId:command.callbackId];
+}
+
+- (void)isPermissionRestrictedOrDeniedForMicrophone:(CDVInvokedUrlCommand*)command {
+    BOOL isPermissionRestrictedOrDeniedForMicrophone = [TwilioVideoPermissions isPermissionRestrictedOrDeniedForMicrophone];
+    [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:isPermissionRestrictedOrDeniedForMicrophone] callbackId:command.callbackId];
+}
+
+- (void)requestPermissionMicrophone:(CDVInvokedUrlCommand*)command {
+    [TwilioVideoPermissions requestPermissionMicrophone:^(BOOL grantedPermissions) {
+        [self.commandDelegate sendPluginResult:
+         [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:grantedPermissions]
+                                    callbackId:command.callbackId];
+    }];
+}
+
+//--------------------------------------------------------------------------------------------------
+
+
+
+
 
 #pragma mark - TwilioVideoEventProducerDelegate
 
