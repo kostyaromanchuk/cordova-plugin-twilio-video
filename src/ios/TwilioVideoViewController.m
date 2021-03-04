@@ -407,97 +407,98 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
     //  AVAudioSessionModeVoiceChat
     //  AVAudioSessionModeVideoChat
     
-    [self enableAudioRouteChangeObserver];
+   // [self enableAudioRouteChangeObserver];
 
     
-    //https://github.com/twilio/video-quickstart-ios/issues/379
-    //MUST BE DONE EARLY
-    TVIDefaultAudioDevice *audioDevice = [TVIDefaultAudioDevice audioDevice];
-
-    //WebRTC does not allow updating the audio device once the media stack is created (i.e once a track is created or memory allocated for previously created room or connect option is not deleted). You should provide the audio device to SDK prior to creating the tracks
-    if(TwilioVideoViewController.twilioAudioConfiguredOnce){
-        NSLog(@"[VOIPCALLKITPLUGIN][CordovaCall.m] endCall: TwilioVideoSDK.audioDevice is NOT NULL - dont set it again can cause crash");
-    }else{
-
-        TwilioVideoViewController.twilioAudioConfiguredOnce = TRUE;
-
-        TwilioVideoSDK.audioDevice = audioDevice;
-
-        //...connect to a Call with audioDevice. By default the audio route will be configured to speaker.
-        //called by audioDevice.block(); below
-        //REQUIRED - speaker will be enabled without it, but Speaker is missing from picker list
-        //ISSUE -------
-
-
-        audioDevice.block =  ^ {
-            // We will execute `kTVODefaultAVAudioSessionConfigurationBlock` first.
-
-            //MUST HAVE TwilioVide   pod 'TwilioVideo', '4.3.0'
-            kTVIDefaultAVAudioSessionConfigurationBlock();
-
-            // Overwrite the audio route
-            AVAudioSession *session = [AVAudioSession sharedInstance];
-            NSError *error = nil;
-
-            //------------------------------------------------------------------------------------------
-            //setMode:
-            //------------------------------------------------------------------------------------------
-            //ALSO SET IN setupAudioSession
-
-            if (![session setMode:AVAudioSessionModeVoiceChat error:&error]) {
-                NSLog(@"AVAudiosession setMode:AVAudioSessionModeVoiceChat FAILED : error: %@",error);
-            }else{
-                NSLog(@"AVAudiosession setMode TO AVAudioSessionModeVoiceChat OK");
-            }
-
-            //------------------------------------------------------------------------------------------
-            //DONT USE - AVAudioSessionModeVideoChat if you want to see Speaker in piker list
-            //https://stackoverflow.com/questions/65446937/on-ios-how-can-i-force-avroutepickerview-to-allow-route-switching-between-speak
-            //Note that presense of the speaker option in AVRoutePickerView depends on the mode you've set.
-            //For example, if you use AVAudioSession.Mode.videoChat, speaker won't show up but is automatically
-            //used unless you lift receiver to your ear!!!!!!!!
-            //Per Apple's header about some of the modes: "Reduces the number of allowable audio routes to be only those that are appropriate for video chat applications."
-
-            //        //WRONG - AVAudioSessionModeVideoChat doesnt show the speaker in the picker if we set AVAudioSessionModeVideoChat
-            //        if (![session setMode:AVAudioSessionModeVideoChat error:&error]) {
-            //            NSLog(@"AVAudiosession setMode:AVAudioSessionModeVideoChat FAILED : error: %@",error);
-            //        }else{
-            //            NSLog(@"AVAudiosession setMode:AVAudioSessionModeVideoChat OK");
-            //        }
-
-            //------------------------------------------------------------------------------------------
-            //overrideOutputAudioPort
-            //------------------------------------------------------------------------------------------
-            //IF YOU WANT TO START WITH SPEAKER OFF
-            //        if (![session overrideOutputAudioPort:AVAudioSessionPortOverrideNone error:&error]) {
-            //            NSLog(@"AVAudiosession overrideOutputAudioPort: AVAudioSessionPortOverrideNone FAILED: %@",error);
-            //        }else{
-            //            NSLog(@"AVAudiosession overrideOutputAudioPort TO AVAudioSessionPortOverrideNone OK");
-            //        }
-
-            //IF YOU WANT TO START WITH SPEAKER ON
-            if (![session overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker error:&error]) {
-                NSLog(@"AVAudiosession overrideOutputAudioPort: AVAudioSessionPortOverrideSpeaker FAILED: %@",error);
-            }else{
-                NSLog(@"AVAudiosession overrideOutputAudioPort TO AVAudioSessionPortOverrideSpeaker OK");
-            }
-
-            //----------------------------------------------------------------------------------------
-            //BC - i added this as Speaker is on but not selected when we open picker but doesnt work
-            NSError* errorSetActive= nil;
-            [[AVAudioSession sharedInstance] setActive:TRUE error:&errorSetActive];
-
-            if (errorSetActive != nil) {
-                NSLog(@"AVAudioSessionPortOverrideNone errorSetActive: %@", [errorSetActive localizedDescription]);
-
-            } else {
-                NSLog(@"AVAudioSessionPortOverrideNone overrideOutputAudioPort + setActive OK");
-            }
-            //----------------------------------------------------------------------------------------
-
-        };
-        audioDevice.block();
-    }
+//    //https://github.com/twilio/video-quickstart-ios/issues/379
+//    //https://github.com/twilio/twilio-video-ios/issues/100
+//    //MUST BE DONE EARLY
+//    TVIDefaultAudioDevice *audioDevice = [TVIDefaultAudioDevice audioDevice];
+//
+//    //WebRTC does not allow updating the audio device once the media stack is created (i.e once a track is created or memory allocated for previously created room or connect option is not deleted). You should provide the audio device to SDK prior to creating the tracks
+//    if(TwilioVideoViewController.twilioAudioConfiguredOnce){
+//        NSLog(@"[VOIPCALLKITPLUGIN][CordovaCall.m] endCall: TwilioVideoSDK.audioDevice is NOT NULL - dont set it again can cause crash");
+//    }else{
+//
+//        TwilioVideoViewController.twilioAudioConfiguredOnce = TRUE;
+//
+//        TwilioVideoSDK.audioDevice = audioDevice;
+//
+//        //...connect to a Call with audioDevice. By default the audio route will be configured to speaker.
+//        //called by audioDevice.block(); below
+//        //REQUIRED - speaker will be enabled without it, but Speaker is missing from picker list
+//        //ISSUE -------
+//
+//
+//        audioDevice.block =  ^ {
+//            // We will execute `kTVODefaultAVAudioSessionConfigurationBlock` first.
+//
+//            //MUST HAVE TwilioVide   pod 'TwilioVideo', '4.3.0'
+//            kTVIDefaultAVAudioSessionConfigurationBlock();
+//
+//            // Overwrite the audio route
+//            AVAudioSession *session = [AVAudioSession sharedInstance];
+//            NSError *error = nil;
+//
+//            //------------------------------------------------------------------------------------------
+//            //setMode:
+//            //------------------------------------------------------------------------------------------
+//            //ALSO SET IN setupAudioSession
+//
+//            if (![session setMode:AVAudioSessionModeVoiceChat error:&error]) {
+//                NSLog(@"AVAudiosession setMode:AVAudioSessionModeVoiceChat FAILED : error: %@",error);
+//            }else{
+//                NSLog(@"AVAudiosession setMode TO AVAudioSessionModeVoiceChat OK");
+//            }
+//
+//            //------------------------------------------------------------------------------------------
+//            //DONT USE - AVAudioSessionModeVideoChat if you want to see Speaker in piker list
+//            //https://stackoverflow.com/questions/65446937/on-ios-how-can-i-force-avroutepickerview-to-allow-route-switching-between-speak
+//            //Note that presense of the speaker option in AVRoutePickerView depends on the mode you've set.
+//            //For example, if you use AVAudioSession.Mode.videoChat, speaker won't show up but is automatically
+//            //used unless you lift receiver to your ear!!!!!!!!
+//            //Per Apple's header about some of the modes: "Reduces the number of allowable audio routes to be only those that are appropriate for video chat applications."
+//
+//            //        //WRONG - AVAudioSessionModeVideoChat doesnt show the speaker in the picker if we set AVAudioSessionModeVideoChat
+//            //        if (![session setMode:AVAudioSessionModeVideoChat error:&error]) {
+//            //            NSLog(@"AVAudiosession setMode:AVAudioSessionModeVideoChat FAILED : error: %@",error);
+//            //        }else{
+//            //            NSLog(@"AVAudiosession setMode:AVAudioSessionModeVideoChat OK");
+//            //        }
+//
+//            //------------------------------------------------------------------------------------------
+//            //overrideOutputAudioPort
+//            //------------------------------------------------------------------------------------------
+//            //IF YOU WANT TO START WITH SPEAKER OFF
+//            //        if (![session overrideOutputAudioPort:AVAudioSessionPortOverrideNone error:&error]) {
+//            //            NSLog(@"AVAudiosession overrideOutputAudioPort: AVAudioSessionPortOverrideNone FAILED: %@",error);
+//            //        }else{
+//            //            NSLog(@"AVAudiosession overrideOutputAudioPort TO AVAudioSessionPortOverrideNone OK");
+//            //        }
+//
+//            //IF YOU WANT TO START WITH SPEAKER ON
+//            if (![session overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker error:&error]) {
+//                NSLog(@"AVAudiosession overrideOutputAudioPort: AVAudioSessionPortOverrideSpeaker FAILED: %@",error);
+//            }else{
+//                NSLog(@"AVAudiosession overrideOutputAudioPort TO AVAudioSessionPortOverrideSpeaker OK");
+//            }
+//
+//            //----------------------------------------------------------------------------------------
+//            //BC - i added this as Speaker is on but not selected when we open picker but doesnt work
+//            NSError* errorSetActive= nil;
+//            [[AVAudioSession sharedInstance] setActive:TRUE error:&errorSetActive];
+//
+//            if (errorSetActive != nil) {
+//                NSLog(@"AVAudioSessionPortOverrideNone errorSetActive: %@", [errorSetActive localizedDescription]);
+//
+//            } else {
+//                NSLog(@"AVAudioSessionPortOverrideNone overrideOutputAudioPort + setActive OK");
+//            }
+//            //----------------------------------------------------------------------------------------
+//
+//        };
+//        audioDevice.block();
+//    }
 
     
     
@@ -1324,12 +1325,12 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
     
     [self.buttonDebugStartACall setHidden:TRUE];
     
-//cleanup VIDEO_TRACK_ADDED always called bu enabled is false if remote is off
-//    //if remote camera is off then we should show the remote users photo
-//    //if remote camera is on then this will be hidden later when P2 remote user turns their camera back on and triggers remoteParticipant:didEnableVideoTrack
-//    [self show_imageViewRemoteParticipantInCall];
-//    //if remote camera is ok can be infront of it
-//    [self sendtoback_imageViewRemoteParticipantInCall];
+    //cleanup VIDEO_TRACK_ADDED always called bu enabled is false if remote is off
+    //    //if remote camera is off then we should show the remote users photo
+    //    //if remote camera is on then this will be hidden later when P2 remote user turns their camera back on and triggers remoteParticipant:didEnableVideoTrack
+    //    [self show_imageViewRemoteParticipantInCall];
+    //    //if remote camera is ok can be infront of it
+    //    [self sendtoback_imageViewRemoteParticipantInCall];
     
     self.roomName = room;
     self.accessToken = token;
@@ -1435,7 +1436,7 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
         if (grantedPermissions) {
             [self log_debug:@"[TwilioVideoViewController] [connectToRoom] >> requestRequiredPermissions:OK > doConnect"];
             [self startCamera];
-            
+        
             [self connectToRoom];
             //we connect later with answerCall
             //[self startCamera];
@@ -1760,9 +1761,7 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
 }
 
 - (void)routeChange:(NSNotification*)notification {
-    
-    NSLog(@"Audio device route changed!");
-    
+
     AVAudioSession* session = [AVAudioSession sharedInstance];
     AVAudioSessionRouteDescription *currentRoute = session.currentRoute;
     NSArray<AVAudioSessionPortDescription *> *outputs = currentRoute.outputs;
@@ -2617,7 +2616,10 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
     //and attach a photo from photo library or by taking a picture to attach
     [self view_isDisappearing_shutdown];
     
-    [self dismissViewControllerAnimated:NO completion:nil];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self dismissViewControllerAnimated:NO completion:nil];
+    });
+    
 }
 
 #pragma mark - TwilioVideoActionProducerDelegate
