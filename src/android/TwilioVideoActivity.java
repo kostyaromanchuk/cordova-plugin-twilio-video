@@ -215,6 +215,11 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
     private FloatingActionButton button_fab_switchcamera;
     private FloatingActionButton button_fab_disconnect;
 
+    private Button button_view_alert_close;
+
+
+
+
     //----------------------------------------------------------------------------------------------
     //AUDIO
     //----------------------------------------------------------------------------------------------
@@ -387,6 +392,10 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
         //RED DISCONNECT BUTTON
         button_fab_disconnect = findViewById(FAKE_R.getId("connect_action_fab"));
+
+        //------------------------------------------------------------------------------------------
+        //ALERT VIEW CLOSE BUTTON - Button
+        button_view_alert_close = findViewById(FAKE_R.getId("button_view_alert_close"));
         //------------------------------------------------------------------------------------------
 
         //filled below from url passed in from cordova via intent
@@ -438,7 +447,8 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                 }
                 //----------------------------------------------------------------------------------
 //RELEASE - comment out
-//                publishEvent(CallEvent.DEBUGCLOSEROOM);
+//                //publishEvent(CallEvent.DEBUGCLOSEROOM);
+//                publishEvent(CallEvent.ALERTCLOSEBUTTONTAPPED);
 
 
             }
@@ -1187,7 +1197,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
 
 
-
+//RELEASE - COMMENT IN
         Connection connection = MyConnectionService.getLastConnection();
 
         if(null != connection){
@@ -3106,6 +3116,12 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
 
 
         //------------------------------------------------------------------------------------------
+        //VIEW ALERT CLOSE BUTTON
+        //------------------------------------------------------------------------------------------
+        button_view_alert_close.setOnClickListener(button_view_alert_close_OnClickListener());
+
+
+        //------------------------------------------------------------------------------------------
         //        if(null != button_fab_switchcamera){
         //            button_fab_switchcamera.show();
         //            button_fab_switchcamera.setOnClickListener(button_switchCamera_OnClickListener());
@@ -3241,7 +3257,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             public void onClick(View v) {
 
                 Log.w(TAG, "[VIDEOPLUGIN] button_localVideo_OnClickListener.onClick: ADDED DELAY TIMER AS IT CRASHES ");
-
+//RELEASE - COMMENT IN
                 //----------------------------------------------------------------------------------
                 //PREVENT DOUBLE TAP
 
@@ -3372,6 +3388,12 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
                             delayMillis_onClick_camera_doubletap);
                     //------------------------------------------------------------------------------
                 }
+
+//RELEASE - COMMENT OUT
+                //publishEvent(CallEvent.DEBUGSHOWOFFLINE);
+                //publishEvent(CallEvent.ALERTCLOSEBUTTONTAPPED);
+
+
             }//onClick
         };
     }
@@ -3495,6 +3517,20 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         };
     }
 
+
+    //----------------------------------------------------------------------------------------------
+    //BUTTON - ALERT VIEW CLOSE BUTTON
+    //----------------------------------------------------------------------------------------------
+    private View.OnClickListener button_view_alert_close_OnClickListener() {
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.w(TAG, "[VIDEOPLUGIN] onClick: button_view_alert_close_OnClickListener TODO" );
+                publishEvent(CallEvent.ALERTCLOSEBUTTONTAPPED);
+            }
+        };
+    }
+
     //----------------------------------------------------------------------------------------------
     //BUTTON - FLIP FRONT and BACk camera - tap on mini view
     //----------------------------------------------------------------------------------------------
@@ -3558,7 +3594,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             // there should be an active VOIP Connection object
             // setSpeakerphoneOn(t/f) will do nothing
             // you need to chnage the audioRoute on active Connection
-
+//RELEASE - COMMENT IN
             Connection connection = MyConnectionService.getLastConnection();
 
             if(null != connection){
@@ -3600,7 +3636,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
             // answerCall - there should be an active connection
             // setSpeakerphoneOn(t/f) will do nothing
             // you need to change the audioRoute on active Connection
-
+//RELEASE - COMMENT IN
             Connection connection = MyConnectionService.getLastConnection();
 
             if(null != connection){
@@ -4431,7 +4467,7 @@ public class TwilioVideoActivity extends AppCompatActivity implements CallAction
         dialing_sound_stop();
 
         //------------------------------------------------------------------------------------------
-//RELEASE - doesnt work in POC but comment in before release as it builds ok there
+//RELEASE - COMMENT IN - doesnt work in POC but comment in before release as it builds ok there
         //in older Android MainActivity may not be right behind TwilioVideoActivity
         //sometime InCallActivity is
         //so need to switch to MainA here before finish;

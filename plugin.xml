@@ -150,6 +150,12 @@
         <resource-file src="src/android/res/mipmap-xxhdpi/ic_alert_in_circle.png" target="res/mipmap-xxhdpi/ic_alert_in_circle.png" />
         <resource-file src="src/android/res/mipmap-xxxhdpi/ic_alert_in_circle.png" target="res/mipmap-xxxhdpi/ic_alert_in_circle.png" />
 
+        <resource-file src="src/android/res/mipmap-hdpi/close_x_red_circle.png" target="res/mipmap-hdpi/close_x_red_circle.png" />
+        <resource-file src="src/android/res/mipmap-mdpi/close_x_red_circle.png" target="res/mipmap-mdpi/close_x_red_circle.png" />
+        <resource-file src="src/android/res/mipmap-xhdpi/close_x_red_circle.png" target="res/mipmap-xhdpi/close_x_red_circle.png" />
+        <resource-file src="src/android/res/mipmap-xxhdpi/close_x_red_circle.png" target="res/mipmap-xxhdpi/close_x_red_circle.png" />
+        <resource-file src="src/android/res/mipmap-xxxhdpi/close_x_red_circle.png" target="res/mipmap-xxxhdpi/close_x_red_circle.png" />
+        
 
         <resource-file src="src/android/res/layout/activity_video.xml" target="res/layout/activity_video.xml" />
         <resource-file src="src/android/res/layout/content_video.xml" target="res/layout/content_video.xml" />
