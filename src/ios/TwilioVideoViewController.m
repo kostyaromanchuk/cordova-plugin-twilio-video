@@ -1247,12 +1247,14 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
 {
     
     [self log_debug:@"[TwilioVideoViewController] [openRoom]"];
-    
+
+    //------------------------------------------------------------------------------------------
     //RELEASE - COMMENT ALL OUT
-//    [self showhide_buttonDebugStartACall];
-//    [self showhide_buttonDebug_showOnline];
-    [self showhide_buttonDebug_showOffline];
-//    [self showhide_closeRoom];
+    //    //    [self showhide_buttonDebugStartACall];
+    //    //    [self showhide_buttonDebug_showOnline];
+    //    //    [self showhide_closeRoom];
+    //    [self showhide_buttonDebug_showOffline];
+    //------------------------------------------------------------------------------------------
 
     
     
@@ -2480,8 +2482,8 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
     
     
     //DO NOT RELEASE - COMMENT OUT - cordova should send showOnline()
-    [self.buttonDebug_showOnline setHidden:FALSE];
-    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
+//    [self.buttonDebug_showOnline setHidden:FALSE];
+//    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
     
 //--------------------------------------------------------------------------------------------------
 //    working
@@ -2507,7 +2509,9 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
  
 }
 - (IBAction)buttonViewAlertClose_Action:(id)sender {
-    NSLog(@"buttonViewAlertClose_Action TAPPED");
+    NSLog(@"buttonViewAlertClose_Action TAPPED >> return ALERTCLOSEBUTTONTAPPED");
+    
+    [[TwilioVideoManager getInstance] publishEvent: @"ALERTCLOSEBUTTONTAPPED"];
 }
 
 -(void)showhide_buttonDebugStartACall{
@@ -2528,26 +2532,26 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
     //------------------------------------------------------------------------------------------
     //FOR RELEASE - COMMENT THIS OUT
     //------------------------------------------------------------------------------------------
-    [self.buttonDebug_showOnline setHidden:FALSE];
-    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
+//    [self.buttonDebug_showOnline setHidden:FALSE];
+//    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
 
     //------------------------------------------------------------------------------------------
     //FOR RELEASE - COMMENT THIS IN
     //------------------------------------------------------------------------------------------
-//    [self.buttonDebug_showOnline setHidden:TRUE];
+    [self.buttonDebug_showOnline setHidden:TRUE];
     //------------------------------------------------------------------------------------------
 }
 -(void)showhide_buttonDebug_showOffline{
     //------------------------------------------------------------------------------------------
     //FOR RELEASE - COMMENT THIS OUT
     //------------------------------------------------------------------------------------------
-    [self.buttonDebug_showOffline setHidden:FALSE];
-    [self.view bringSubviewToFront:self.buttonDebug_showOffline];
+//    [self.buttonDebug_showOffline setHidden:FALSE];
+//    [self.view bringSubviewToFront:self.buttonDebug_showOffline];
     
     //------------------------------------------------------------------------------------------
     //FOR RELEASE - COMMENT THIS IN
     //------------------------------------------------------------------------------------------
-    //    [self.buttonDebug_showOffline setHidden:TRUE];
+    [self.buttonDebug_showOffline setHidden:TRUE];
     //------------------------------------------------------------------------------------------
 }
 
@@ -2589,15 +2593,15 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
 }
 
 - (IBAction)buttonDebug_showOnline_Action:(id)sender {
-//showOnline
+
     //------------------------------------------------------------------------------------------
-//    [self showOnline];
-//
-//    [self.buttonDebug_showOnline setHidden:TRUE];
-//
-//    //its hidden in answercall  for REMOTE user just bring to front may stil be hidden
-//    //[self.buttonDebugStartACall setHidden:FALSE];
-//    [self.view bringSubviewToFront:self.buttonDebugStartACall];
+    //    [self showOnline];
+    //
+    //    [self.buttonDebug_showOnline setHidden:TRUE];
+    //
+    //    //its hidden in answercall  for REMOTE user just bring to front may stil be hidden
+    //    //[self.buttonDebugStartACall setHidden:FALSE];
+    //    [self.view bringSubviewToFront:self.buttonDebugStartACall];
 
     //------------------------------------------------------------------------------------------
     //call it from JS so we can test callback
