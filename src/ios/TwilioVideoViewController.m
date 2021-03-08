@@ -1248,8 +1248,11 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
     
     [self log_debug:@"[TwilioVideoViewController] [openRoom]"];
     
-    [self showhide_buttonDebugStartACall];
-    [self showhide_closeRoom];
+    //RELEASE - COMMENT ALL OUT
+//    [self showhide_buttonDebugStartACall];
+//    [self showhide_buttonDebug_showOnline];
+    [self showhide_buttonDebug_showOffline];
+//    [self showhide_closeRoom];
 
     
     
@@ -2477,15 +2480,34 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
     
     
     //DO NOT RELEASE - COMMENT OUT - cordova should send showOnline()
-//    [self.buttonDebug_showOnline setHidden:FALSE];
-//    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
+    [self.buttonDebug_showOnline setHidden:FALSE];
+    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
+    
+//--------------------------------------------------------------------------------------------------
+//    working
+//    add button
+//    publish response and it shoudl come out of openRoom
+//    also need to add callback to answerRoom and startCall
+//    EV added code to redirect to the current called method
+//    
+//    close should NOT call endCall
+//    just return response to JS and JS should endCall
+//    dont need to call showOnline() to hide the alert TVA should disappear in endCall
+//    
+//    add method showAlert(title,subtitle)
+    //--------------------------------------------------------------------------------------------------
+    
 
 }
 
 //internet returned - seachat tells plugin to hide alert
 - (void)showOnline{
     [self.viewAlert setHidden:TRUE];
+    [self.view bringSubviewToFront:self.viewAlert];
  
+}
+- (IBAction)buttonViewAlertClose_Action:(id)sender {
+    NSLog(@"buttonViewAlertClose_Action TAPPED");
 }
 
 -(void)showhide_buttonDebugStartACall{
@@ -2502,17 +2524,30 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
     //------------------------------------------------------------------------------------------
 }
 
--(void)showhide_showOnline{
+-(void)showhide_buttonDebug_showOnline{
     //------------------------------------------------------------------------------------------
     //FOR RELEASE - COMMENT THIS OUT
-//    //------------------------------------------------------------------------------------------
-//    [self.buttonDebug_showOnline setHidden:FALSE];
-//    [self.view bringSubviewToFront:self.buttonDebugStartACall];
+    //------------------------------------------------------------------------------------------
+    [self.buttonDebug_showOnline setHidden:FALSE];
+    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
+
+    //------------------------------------------------------------------------------------------
+    //FOR RELEASE - COMMENT THIS IN
+    //------------------------------------------------------------------------------------------
+//    [self.buttonDebug_showOnline setHidden:TRUE];
+    //------------------------------------------------------------------------------------------
+}
+-(void)showhide_buttonDebug_showOffline{
+    //------------------------------------------------------------------------------------------
+    //FOR RELEASE - COMMENT THIS OUT
+    //------------------------------------------------------------------------------------------
+    [self.buttonDebug_showOffline setHidden:FALSE];
+    [self.view bringSubviewToFront:self.buttonDebug_showOffline];
     
     //------------------------------------------------------------------------------------------
     //FOR RELEASE - COMMENT THIS IN
     //------------------------------------------------------------------------------------------
-    [self.buttonDebug_showOnline setHidden:TRUE];
+    //    [self.buttonDebug_showOffline setHidden:TRUE];
     //------------------------------------------------------------------------------------------
 }
 
@@ -2532,30 +2567,42 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
     
 }
 
+- (IBAction)buttonDebugStartACall_action:(id)sender {
+    //RELEASE
+    [[TwilioVideoManager getInstance] publishEvent: @"DEBUGSTARTACALL"];
+}
+
 - (IBAction)buttonDebug_showOffline_Action:(id)sender {
-    [self showOffline];
+//    [self showOffline];
+//    sss
+//    [self.buttonDebug_showOnline setHidden:FALSE];
+//    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
+//
+//    //its hidden in answercall  for REMOTE user just bring to front may stil be hidden
+//    //[self.buttonDebugStartACall setHidden:FALSE];
+//    [self.view bringSubviewToFront:self.buttonDebugStartACall];
     
-    [self.buttonDebug_showOnline setHidden:FALSE];
-    [self.view bringSubviewToFront:self.buttonDebug_showOnline];
-    
-    //its hidden in answercall  for REMOTE user just bring to front may stil be hidden
-    //[self.buttonDebugStartACall setHidden:FALSE];
-    [self.view bringSubviewToFront:self.buttonDebugStartACall];
+    //------------------------------------------------------------------------------------------
+    //call it from JS so we can test callback
+    //RELEASE
+    [[TwilioVideoManager getInstance] publishEvent: @"DEBUGSHOWOFFLINE"];
 }
 
 - (IBAction)buttonDebug_showOnline_Action:(id)sender {
 //showOnline
     //------------------------------------------------------------------------------------------
-    [self showOnline];
-
-    [self.buttonDebug_showOnline setHidden:TRUE];
-
-    //its hidden in answercall  for REMOTE user just bring to front may stil be hidden
-    //[self.buttonDebugStartACall setHidden:FALSE];
-    [self.view bringSubviewToFront:self.buttonDebugStartACall];
+//    [self showOnline];
+//
+//    [self.buttonDebug_showOnline setHidden:TRUE];
+//
+//    //its hidden in answercall  for REMOTE user just bring to front may stil be hidden
+//    //[self.buttonDebugStartACall setHidden:FALSE];
+//    [self.view bringSubviewToFront:self.buttonDebugStartACall];
 
     //------------------------------------------------------------------------------------------
-
+    //call it from JS so we can test callback
+    //RELEASE
+    [[TwilioVideoManager getInstance] publishEvent: @"DEBUGSHOWONLINE"];
     
 }
 
@@ -3228,10 +3275,7 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
 }
 
 
-- (IBAction)buttonDebugStartACall_action:(id)sender {
-    //RELEASE
-//    [[TwilioVideoManager getInstance] publishEvent: @"DEBUGSTARTACALL"];
-}
+
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
