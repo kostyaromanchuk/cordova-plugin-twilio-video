@@ -393,10 +393,20 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
 #pragma mark -
 
 #pragma mark - UIViewController
+- (void)viewDidDisappear:(BOOL)animated {
+    [super viewDidDisappear:animated];
+    
+    NSLog(@"[VOIPCALLKITPLUGIN][CordovaCall.m] viewDidDisappear: ");
+}
+
+
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    
+    //SHOW ALL TWILIO LOGGING
+    //[TwilioVideoSDK setLogLevel:TVILogLevelAll];
+    //[TwilioVideoSDK setLogLevel:TVILogLevelError];
 
     //----------------------------------------------------------------------------------------------
     //SPEAKERPHONE - speaker/ headset etc
@@ -407,7 +417,7 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
     //  AVAudioSessionModeVoiceChat
     //  AVAudioSessionModeVideoChat
     
-   // [self enableAudioRouteChangeObserver];
+    [self enableAudioRouteChangeObserver];
 
     
 //    //https://github.com/twilio/video-quickstart-ios/issues/379
@@ -429,7 +439,13 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
 //        //REQUIRED - speaker will be enabled without it, but Speaker is missing from picker list
 //        //ISSUE -------
 //
-//
+// was interfering with outgoing call  - possibly because it calls mp3 playerCHINA
+//TO PUT BACK DEFAULT if theres issues
+//https://www.twilio.com/docs/video/ios-v3-configuring-audio-video-inputs-and-outputs#selecting-specific-audio-routes
+//   self.audioDevice = DefaultAudioDevice()
+//  TwilioVideoSDK.audioDevice = self.audioDevice
+    
+    
 //        audioDevice.block =  ^ {
 //            // We will execute `kTVODefaultAVAudioSessionConfigurationBlock` first.
 //
@@ -1766,31 +1782,30 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
     AVAudioSessionRouteDescription *currentRoute = session.currentRoute;
     NSArray<AVAudioSessionPortDescription *> *outputs = currentRoute.outputs;
     
+    NSLog(@"[VIDEOPLUGIN][TwilioVideoViewController.m][AUDIO][routeChange] START ********");
+    
     if ([outputs count] == 0) {
-        NSLog(@"[outputs count] == 0");
+        NSLog(@"[VIDEOPLUGIN][TwilioVideoViewController.m][AUDIO][routeChange] CALLED: [outputs count] == 0");
       
     }else{
-        // only triggered when i tap toggle
-        // not when i chnage using ppicker
 
-        NSLog(@"[outputs count]:%ld", [outputs count]);
+        NSLog(@"[VIDEOPLUGIN][TwilioVideoViewController.m][AUDIO][routeChange] CALLED: [outputs count]:%ld", [outputs count]);
         
         AVAudioSessionPortDescription *output = [outputs objectAtIndex:0];
-        NSLog(@"[routeChange] AVAudioSessionRouteChangeNotification -  current output: portName '%@' portType '%@'", [output portName], [output portType]);
-        
+        //see speakerOn: speakeroff:
         if ([[output portType] isEqualToString:AVAudioSessionPortBuiltInReceiver]) {
-            NSLog(@"[routeChange] AVAudioSessionRouteChangeNotification : AVAudioSessionPortBuiltInReceiver");
+            NSLog(@"[VIDEOPLUGIN][TwilioVideoViewController.m][AUDIO][routeChange] NEW >> AVAudioSessionPortBuiltInReceiver - EARPIECE");
             
         }
         else if ([[output portType] isEqualToString:AVAudioSessionPortBuiltInSpeaker]) {
-            NSLog(@"[routeChange] AVAudioSessionRouteChangeNotification : AVAudioSessionPortBuiltInSpeaker");
-            
+            NSLog(@"[VIDEOPLUGIN][TwilioVideoViewController.m][AUDIO][routeChange] NEW >> AVAudioSessionPortBuiltInSpeaker - SPEAKER");
         }
         else
         {
-            NSLog(@"not AVAudioSessionPortBuiltInReceiver [output portType]:%@", [output portType]);
+            NSLog(@"[VIDEOPLUGIN][TwilioVideoViewController.m][AUDIO][routeChange] NEW >> OUTPUT: portName:%@ portType:%@",[output portName], [output portType]);
         }
     }
+    NSLog(@"[VIDEOPLUGIN][TwilioVideoViewController.m][AUDIO][routeChange] END ********");
 }
 
 #pragma mark -
@@ -2372,6 +2387,7 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
         // Use the local media that we prepared earlier.
         builder.audioTracks = self.localAudioTrack ? @[ self.localAudioTrack ] : @[ ];
         builder.videoTracks = self.localVideoTrack ? @[ self.localVideoTrack ] : @[ ];
+        
     }];
     //--------------------------------------------------------------------------
     // Connect to the Room using the options we provided.
@@ -3035,27 +3051,33 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
 -(void)view_isDisappearing_shutdown{
  
     [self log_debug:@"[TwilioVideoViewController.m] viewWillDisappear CALLED - DOES NOTHING"];
-        //if user disconnects while waiting for remote user to answer
-        //also when you do BACK TO CALL > Attach a file > attach a photo from phot libaray or photo from taking a pic it triggers viewWillDisappear
-        [self dialing_sound_stop];
+    //if user disconnects while waiting for remote user to answer
+    //also when you do BACK TO CALL > Attach a file > attach a photo from phot libaray or photo from taking a pic it triggers viewWillDisappear
+    [self dialing_sound_stop];
+
+    //Strange issue where first time was quiet but 2nd, 3rd loud
+    //i think maybe multiple players?
+    audioPlayer = NULL;
+
+    [self log_debug:@"[TwilioVideoViewController.m] viewWillDisappear >> stopCaptureWithCompletion"];
+    [self.camera stopCaptureWithCompletion:^(NSError * _Nullable error) {
+        if(error){
+            [self log_debug:[NSString stringWithFormat:@"[TwilioVideoViewController.m] stopCaptureWithCompletion: >> error:%@", error]];
+        }else{
+            [self log_debug:@"[TwilioVideoViewController.m] stopCaptureWithCompletion: OK"];
+        }
+    }];
+
+    [self log_debug:@"[TwilioVideoViewController.m] viewWillDisappear >> stopProximitySensor"];
+    [self disable_proximityMonitoring_and_removeObserver];
+
+    [self log_info:@"[TwilioVideoViewController.m] viewWillDisappear - VIEW CONTROLLER closed"];
     
-        //Strange issue where first time was quiet but 2nd, 3rd loud
-        //i think maybe multiple players?
-        audioPlayer = NULL;
-    
-        [self log_debug:@"[TwilioVideoViewController.m] viewWillDisappear >> stopCaptureWithCompletion"];
-        [self.camera stopCaptureWithCompletion:^(NSError * _Nullable error) {
-            if(error){
-                [self log_debug:[NSString stringWithFormat:@"[TwilioVideoViewController.m] stopCaptureWithCompletion: >> error:%@", error]];
-            }else{
-                [self log_debug:@"[TwilioVideoViewController.m] stopCaptureWithCompletion: OK"];
-            }
-        }];
-    
-        [self log_debug:@"[TwilioVideoViewController.m] viewWillDisappear >> stopProximitySensor"];
-        [self disable_proximityMonitoring_and_removeObserver];
-    
-        [self log_info:@"[TwilioVideoViewController.m] viewWillDisappear - VIEW CONTROLLER closed"];
+    //REQUIRED else twilio crashes on 2nd calls
+    //WebRTC does not allow updating the audio device once the media stack is created
+    //TwilioVideoSDK.audioDevice = NULL;
+    //R2021-03-03 18:57:22.929017+0000 Seachat[5694:2060889] *** Terminating app due to uncaught exception 'NSInvalidArgumentException', reason: 'The supplied audio device is either nil or does not conform to the TVIAudioDevice protocol.'
+
 }
 
 
