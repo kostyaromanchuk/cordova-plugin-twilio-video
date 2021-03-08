@@ -3,6 +3,7 @@
     <device id="retina4_7" orientation="portrait" appearance="light"/>
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17703"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
@@ -26,71 +27,6 @@
                                     <action selector="buttonDebugStartACall_action:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="TYg-Kw-SRo"/>
                                 </connections>
                             </button>
-                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MOz-y7-RXA">
-                                <rect key="frame" x="16" y="182" width="82" height="30"/>
-                                <constraints>
-                                    <constraint firstAttribute="width" constant="82" id="kEy-pl-fWd"/>
-                                    <constraint firstAttribute="height" constant="30" id="sxt-xv-BHT"/>
-                                </constraints>
-                                <state key="normal" title="showOffline"/>
-                                <connections>
-                                    <action selector="buttonDebug_showOffline_Action:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="1IZ-sU-Nbh"/>
-                                </connections>
-                            </button>
-                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="qSc-QC-8BN">
-                                <rect key="frame" x="16" y="228" width="80" height="30"/>
-                                <constraints>
-                                    <constraint firstAttribute="height" constant="30" id="Dmk-iA-SFr"/>
-                                    <constraint firstAttribute="width" constant="80" id="yDG-Cr-NFf"/>
-                                </constraints>
-                                <state key="normal" title="showOnline"/>
-                                <connections>
-                                    <action selector="buttonDebug_showOnline_Action:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="guh-sL-XW3"/>
-                                </connections>
-                            </button>
-                            <view contentMode="scaleToFill" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Mof-LL-MfS" userLabel="viewAlert">
-                                <rect key="frame" x="1000" y="0.0" width="375" height="667"/>
-                                <subviews>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Something went wrong" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="9" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="DbX-Yg-QbD">
-                                        <rect key="frame" x="8" y="320" width="359" height="27"/>
-                                        <constraints>
-                                            <constraint firstAttribute="height" constant="27" id="9OW-oF-LpO"/>
-                                        </constraints>
-                                        <fontDescription key="fontDescription" style="UICTFontTextStyleTitle2"/>
-                                        <color key="textColor" red="1" green="0.99311947410000001" blue="0.90725500079999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                        <nil key="highlightedColor"/>
-                                    </label>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="We're trying to reconnect you" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="8" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="weU-jh-Fgv">
-                                        <rect key="frame" x="8" y="363" width="359" height="18"/>
-                                        <constraints>
-                                            <constraint firstAttribute="height" constant="18" id="ted-XO-4HQ"/>
-                                        </constraints>
-                                        <fontDescription key="fontDescription" style="UICTFontTextStyleSubhead"/>
-                                        <color key="textColor" red="1" green="0.99311947410000001" blue="0.90725500079999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                        <nil key="highlightedColor"/>
-                                    </label>
-                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="alert_in_circle.png" translatesAutoresizingMaskIntoConstraints="NO" id="byJ-I9-Kp8">
-                                        <rect key="frame" x="76" y="204" width="223" height="100"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" constant="223" id="Gsa-IY-OEd"/>
-                                            <constraint firstAttribute="height" constant="100" id="y2r-yO-C0L"/>
-                                        </constraints>
-                                    </imageView>
-                                </subviews>
-                                <color key="backgroundColor" red="0.043137254901960784" green="0.10588235294117647" blue="0.17254901960784313" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                <constraints>
-                                    <constraint firstAttribute="trailing" secondItem="DbX-Yg-QbD" secondAttribute="trailing" constant="8" id="2Xd-mc-uwA"/>
-                                    <constraint firstItem="weU-jh-Fgv" firstAttribute="centerX" secondItem="Mof-LL-MfS" secondAttribute="centerX" id="APD-6Q-r0H"/>
-                                    <constraint firstItem="DbX-Yg-QbD" firstAttribute="centerX" secondItem="Mof-LL-MfS" secondAttribute="centerX" id="OkN-1M-mQz"/>
-                                    <constraint firstItem="DbX-Yg-QbD" firstAttribute="centerY" secondItem="Mof-LL-MfS" secondAttribute="centerY" id="cWU-eB-MzY"/>
-                                    <constraint firstAttribute="trailing" secondItem="weU-jh-Fgv" secondAttribute="trailing" constant="8" id="gRK-5p-OCV"/>
-                                    <constraint firstItem="weU-jh-Fgv" firstAttribute="top" secondItem="DbX-Yg-QbD" secondAttribute="bottom" constant="16" id="ifp-BO-fiG"/>
-                                    <constraint firstItem="byJ-I9-Kp8" firstAttribute="centerX" secondItem="Mof-LL-MfS" secondAttribute="centerX" id="l1o-Zb-aPB"/>
-                                    <constraint firstItem="weU-jh-Fgv" firstAttribute="leading" secondItem="Mof-LL-MfS" secondAttribute="leading" constant="8" id="lBv-l9-knV"/>
-                                    <constraint firstItem="DbX-Yg-QbD" firstAttribute="leading" secondItem="Mof-LL-MfS" secondAttribute="leading" constant="8" id="mqE-aa-jJU"/>
-                                    <constraint firstItem="DbX-Yg-QbD" firstAttribute="top" secondItem="byJ-I9-Kp8" secondAttribute="bottom" constant="16" id="zja-Nx-cJo"/>
-                                </constraints>
-                            </view>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="7RT-Bo-1q4" userLabel="viewBorderFor_previewView">
                                 <rect key="frame" x="239" y="399" width="120" height="124"/>
                                 <subviews>
@@ -336,6 +272,62 @@
                                     <constraint firstAttribute="height" constant="76" id="Prw-wf-xLy"/>
                                 </constraints>
                             </imageView>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Mof-LL-MfS" userLabel="viewAlert">
+                                <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                                <subviews>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Something went wrong" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="9" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="DbX-Yg-QbD" userLabel="textFieldAlertTitle">
+                                        <rect key="frame" x="8" y="320" width="359" height="27"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="27" id="9OW-oF-LpO"/>
+                                        </constraints>
+                                        <fontDescription key="fontDescription" style="UICTFontTextStyleTitle2"/>
+                                        <color key="textColor" red="1" green="0.99311947410000001" blue="0.90725500079999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="We're trying to reconnect you" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="8" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="weU-jh-Fgv" userLabel="textFieldAlertSubtitle">
+                                        <rect key="frame" x="8" y="363" width="359" height="18"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="18" id="ted-XO-4HQ"/>
+                                        </constraints>
+                                        <fontDescription key="fontDescription" style="UICTFontTextStyleSubhead"/>
+                                        <color key="textColor" red="1" green="0.99311947410000001" blue="0.90725500079999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="alert_in_circle.png" translatesAutoresizingMaskIntoConstraints="NO" id="byJ-I9-Kp8">
+                                        <rect key="frame" x="76" y="204" width="223" height="100"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="223" id="Gsa-IY-OEd"/>
+                                            <constraint firstAttribute="height" constant="100" id="y2r-yO-C0L"/>
+                                        </constraints>
+                                    </imageView>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="GBY-hR-oWk" userLabel="buttonViewAlertClose">
+                                        <rect key="frame" x="157.5" y="567" width="60" height="60"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="60" id="FK1-mU-hJB"/>
+                                            <constraint firstAttribute="width" constant="60" id="frT-Vz-bsK"/>
+                                        </constraints>
+                                        <state key="normal" image="close_x_red_circle.png"/>
+                                        <connections>
+                                            <action selector="buttonViewAlertClose_Action:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="svH-CT-Nd4"/>
+                                        </connections>
+                                    </button>
+                                </subviews>
+                                <color key="backgroundColor" systemColor="systemYellowColor"/>
+                                <constraints>
+                                    <constraint firstAttribute="trailing" secondItem="DbX-Yg-QbD" secondAttribute="trailing" constant="8" id="2Xd-mc-uwA"/>
+                                    <constraint firstItem="weU-jh-Fgv" firstAttribute="centerX" secondItem="Mof-LL-MfS" secondAttribute="centerX" id="APD-6Q-r0H"/>
+                                    <constraint firstItem="GBY-hR-oWk" firstAttribute="centerX" secondItem="Mof-LL-MfS" secondAttribute="centerX" id="GFS-Gl-4nG"/>
+                                    <constraint firstAttribute="bottom" secondItem="GBY-hR-oWk" secondAttribute="bottom" constant="40" id="Nfb-VR-mIW"/>
+                                    <constraint firstItem="DbX-Yg-QbD" firstAttribute="centerX" secondItem="Mof-LL-MfS" secondAttribute="centerX" id="OkN-1M-mQz"/>
+                                    <constraint firstItem="DbX-Yg-QbD" firstAttribute="centerY" secondItem="Mof-LL-MfS" secondAttribute="centerY" id="cWU-eB-MzY"/>
+                                    <constraint firstAttribute="trailing" secondItem="weU-jh-Fgv" secondAttribute="trailing" constant="8" id="gRK-5p-OCV"/>
+                                    <constraint firstItem="weU-jh-Fgv" firstAttribute="top" secondItem="DbX-Yg-QbD" secondAttribute="bottom" constant="16" id="ifp-BO-fiG"/>
+                                    <constraint firstItem="byJ-I9-Kp8" firstAttribute="centerX" secondItem="Mof-LL-MfS" secondAttribute="centerX" id="l1o-Zb-aPB"/>
+                                    <constraint firstItem="weU-jh-Fgv" firstAttribute="leading" secondItem="Mof-LL-MfS" secondAttribute="leading" constant="8" id="lBv-l9-knV"/>
+                                    <constraint firstItem="DbX-Yg-QbD" firstAttribute="leading" secondItem="Mof-LL-MfS" secondAttribute="leading" constant="8" id="mqE-aa-jJU"/>
+                                    <constraint firstItem="DbX-Yg-QbD" firstAttribute="top" secondItem="byJ-I9-Kp8" secondAttribute="bottom" constant="16" id="zja-Nx-cJo"/>
+                                </constraints>
+                            </view>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="hiG-4D-JfK" userLabel="buttonBack">
                                 <rect key="frame" x="16" y="16" width="24" height="24"/>
                                 <constraints>
@@ -347,7 +339,7 @@
                                     <action selector="buttonBackTocCall_HideVCView:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="7HK-rf-M2S"/>
                                 </connections>
                             </button>
-                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="LPB-Vp-nyU">
+                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="LPB-Vp-nyU" userLabel="buttonDebug_closeRoom">
                                 <rect key="frame" x="16" y="266" width="80" height="30"/>
                                 <constraints>
                                     <constraint firstAttribute="width" constant="80" id="5Db-gW-mdH"/>
@@ -355,8 +347,29 @@
                                 </constraints>
                                 <state key="normal" title="closeRoom"/>
                                 <connections>
-                                    <action selector="buttonDebug_closeRoom_Action:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="fPz-cn-Yfs"/>
                                     <action selector="buttonDebug_showOnline_Action:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="sl2-DC-mzE"/>
+                                </connections>
+                            </button>
+                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="qSc-QC-8BN">
+                                <rect key="frame" x="16" y="228" width="80" height="30"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="30" id="Dmk-iA-SFr"/>
+                                    <constraint firstAttribute="width" constant="80" id="yDG-Cr-NFf"/>
+                                </constraints>
+                                <state key="normal" title="showOnline"/>
+                                <connections>
+                                    <action selector="buttonDebug_showOnline_Action:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="guh-sL-XW3"/>
+                                </connections>
+                            </button>
+                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MOz-y7-RXA">
+                                <rect key="frame" x="16" y="182" width="82" height="30"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="82" id="kEy-pl-fWd"/>
+                                    <constraint firstAttribute="height" constant="30" id="sxt-xv-BHT"/>
+                                </constraints>
+                                <state key="normal" title="showOffline"/>
+                                <connections>
+                                    <action selector="buttonDebug_showOffline_Action:" destination="jSN-F6-Q4K" eventType="touchUpInside" id="1IZ-sU-Nbh"/>
                                 </connections>
                             </button>
                         </subviews>
@@ -432,8 +445,12 @@
         <image name="alert_in_circle.png" width="223" height="208"/>
         <image name="baseline_arrow_back_white_48dp.png" width="24" height="24"/>
         <image name="baseline_switch_video_white_18dp.png" width="36" height="36"/>
+        <image name="close_x_red_circle.png" width="60" height="60"/>
         <image name="end_call.png" width="24" height="24"/>
         <image name="mic.png" width="24" height="24"/>
         <image name="video.png" width="24" height="24"/>
+        <systemColor name="systemYellowColor">
+            <color red="1" green="0.80000000000000004" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
     </resources>
 </document>
