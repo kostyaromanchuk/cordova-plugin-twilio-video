@@ -54,6 +54,7 @@
         <resource-file src="src/ios/Resources/baseline_switch_video_black_18dp.png" target="Resources/baseline_switch_video_black_18dp.png" />
         <resource-file src="src/ios/Resources/baseline_switch_video_white_18dp.png" target="Resources/baseline_switch_video_white_18dp.png" />
         <resource-file src="src/ios/Resources/alert_in_circle.png" target="Resources/alert_in_circle.png" />
+        <resource-file src="src/ios/Resources/close_x_red_circle.png" target="Resources/close_x_red_circle.png" />
 
         <resource-file src="src/ios/Resources/no_mic_grey.png" target="Resources/no_mic_grey.png" />
         <resource-file src="src/ios/Resources/no_mic_grey@2x.png" target="Resources/no_mic_grey@2x.png" />
