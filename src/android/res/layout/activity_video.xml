@@ -119,25 +119,36 @@
             android:id="@+id/imageAlertInCircle"
             android:layout_width="100dp"
             android:layout_height="100dp"
-            android:layout_marginTop="100dp"
             android:layout_gravity="center_horizontal"
+            android:layout_marginTop="100dp"
             app:srcCompat="@mipmap/ic_alert_in_circle" />
 
         <TextView
             android:id="@+id/textViewAlertTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textAlignment="center"
             android:layout_marginTop="8dp"
-            android:textSize="20sp"
-            android:text="@string/something_went_wrong" />
+            android:text="@string/something_went_wrong"
+            android:textAlignment="center"
+            android:textSize="20sp" />
+
         <TextView
             android:id="@+id/textViewAlertSubtitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:text="@string/we_re_trying_to_reconnect_you"
             android:textAlignment="center"
-            android:textSize="18sp"
-            android:text="@string/we_re_trying_to_reconnect_you" />
+            android:textSize="18sp" />
+
+
+        <Button
+            android:id="@+id/button_view_alert_close"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginTop="200dp"
+            android:background="@mipmap/close_x_red_circle"
+            android:gravity="bottom|center" />
 
     </LinearLayout>
 
