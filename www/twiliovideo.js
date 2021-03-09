@@ -549,40 +549,42 @@ TwilioVideo.requestPermissionMicrophone = function (eventCallback) {
 // 		 );
 // };
 // 
-// //internet returned on device - tell plugin to hide alert
-// TwilioVideo.showOnline = function (success, error) {
-// 	console.log("[VIDEOPLUGIN][twilio.js][Twilio.showOnline] CALLED");
-// 	exec(
-// 		 success,
-// 		 error,
-// 		 "TwilioVideoPlugin",
-// 		 "showOnline",
-// 		 []  /* no params */
-// 		 );
-// };
 
 
+//internet returned on device - tell plugin to hide alert
+TwilioVideo.showOnline = function (success, error) {
+	console.log("[VIDEOPLUGIN][twilio.js][Twilio.showOnline] CALLED");
+	exec(
+		 success,
+		 error,
+		 "TwilioVideoPlugin",
+		 "showOnline",
+		 []  /* no params */
+		 );
+};
 
-   TwilioVideo.showOnline = function (eventCallback) {
 
-       console.log("[VIDEOPLUGIN][twilio.js] showOnline CALLED");
-
-       exec(
-            function (e) {
-               console.log("[VIDEOPLUGIN][twilio.js] showOnline() RESPONSE: " + e); //e is true/false
-
-               if (eventCallback) {
-                   // not object
-                   //eventCallback(e.event, e.data);
-                   eventCallback(e.event, e);  
-               }
-           },
-            null,
-            "TwilioVideoPlugin",
-            "showOnline",
-            []
-       );
-   };
+//NO CALLBACKS FOR showOnline
+//    TwilioVideo.showOnline = function (eventCallback) {
+// 
+//        console.log("[VIDEOPLUGIN][twilio.js] showOnline CALLED");
+// 
+//        exec(
+//             function (e) {
+//                console.log("[VIDEOPLUGIN][twilio.js] showOnline() RESPONSE: " + e); //e is true/false
+// 
+//                if (eventCallback) {
+//                    // not object
+//                    //eventCallback(e.event, e.data);
+//                    eventCallback(e.event, e);  
+//                }
+//            },
+//             null,
+//             "TwilioVideoPlugin",
+//             "showOnline",
+//             []
+//        );
+//    };
 
    TwilioVideo.showOffline = function (eventCallback) {
 
