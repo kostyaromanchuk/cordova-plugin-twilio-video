@@ -537,94 +537,94 @@ TwilioVideo.requestPermissionMicrophone = function (eventCallback) {
 //SHOW HIDE
 //---------------------------------------------------------
 
-//internet gone on device - tell plugin to show alert
-TwilioVideo.showOffline = function (success, error) {
-	console.log("[VIDEOPLUGIN][twilio.js][Twilio.showOffline] CALLED");
-	exec(
-		 success,
-		 error,
-		 "TwilioVideoPlugin",
-		 "showOffline",
-		 []  /* no params */
-		 );
-};
+// //internet gone on device - tell plugin to show alert
+// TwilioVideo.showOffline = function (success, error) {
+// 	console.log("[VIDEOPLUGIN][twilio.js][Twilio.showOffline] CALLED");
+// 	exec(
+// 		 success,
+// 		 error,
+// 		 "TwilioVideoPlugin",
+// 		 "showOffline",
+// 		 []  /* no params */
+// 		 );
+// };
+// 
+// //internet returned on device - tell plugin to hide alert
+// TwilioVideo.showOnline = function (success, error) {
+// 	console.log("[VIDEOPLUGIN][twilio.js][Twilio.showOnline] CALLED");
+// 	exec(
+// 		 success,
+// 		 error,
+// 		 "TwilioVideoPlugin",
+// 		 "showOnline",
+// 		 []  /* no params */
+// 		 );
+// };
 
-//internet returned on device - tell plugin to hide alert
-TwilioVideo.showOnline = function (success, error) {
-	console.log("[VIDEOPLUGIN][twilio.js][Twilio.showOnline] CALLED");
-	exec(
-		 success,
-		 error,
-		 "TwilioVideoPlugin",
-		 "showOnline",
-		 []  /* no params */
-		 );
-};
 
 
+   TwilioVideo.showOnline = function (eventCallback) {
 
-//    TwilioVideo.showOnline = function (eventCallback) {
-//
-//        console.log("[VIDEOPLUGIN][twilio.js] showOnline CALLED");
-//
-//        exec(
-//             function (e) {
-//                console.log("[VIDEOPLUGIN][twilio.js] showOnline() RESPONSE: " + e); //e is true/false
-//
-//                if (eventCallback) {
-//                    // not object
-//                    //eventCallback(e.event, e.data);
-//                    eventCallback(e.event, e);  //e is true/false
-//                }
-//            },
-//             null,
-//             "TwilioVideoPlugin",
-//             "showOnline",
-//             []
-//        );
-//    };
-//
-//    TwilioVideo.showOffline = function (eventCallback) {
-//
-//        console.log("[VIDEOPLUGIN][twilio.js] showOffline CALLED");
-//
-//        exec(
-//             function (e) {
-//            console.log("[VIDEOPLUGIN][twilio.js] showOffline() RESPONSE: " + e); //e is true/false
-//
-//            if (eventCallback) {
-//                // not object
-//                //eventCallback(e.event, e.data);
-//                eventCallback(e.event, e);  //e is true/false
-//            }
-//        },
-//             null,
-//             "TwilioVideoPlugin",
-//             "showOffline",
-//             []
-//             );
-//    };
+       console.log("[VIDEOPLUGIN][twilio.js] showOnline CALLED");
 
-TwilioVideo.showAlert = function (eventCallback) {
-	
-	console.log("[VIDEOPLUGIN][twilio.js] showAlert CALLED");
-	
-	exec(
-		 function (e) {
-			console.log("[VIDEOPLUGIN][twilio.js] showAlert() RESPONSE: " + e); //e is true/false
-			
-			if (eventCallback) {
-				// not object
-				//eventCallback(e.event, e.data);
-				eventCallback(e.event, e);  //e is true/false
-			}
-		},
-		 null,
-		 "TwilioVideoPlugin",
-		 "showAlert",
-		 []
-		 );
-};
+       exec(
+            function (e) {
+               console.log("[VIDEOPLUGIN][twilio.js] showOnline() RESPONSE: " + e); //e is true/false
+
+               if (eventCallback) {
+                   // not object
+                   //eventCallback(e.event, e.data);
+                   eventCallback(e.event, e);  
+               }
+           },
+            null,
+            "TwilioVideoPlugin",
+            "showOnline",
+            []
+       );
+   };
+
+   TwilioVideo.showOffline = function (eventCallback) {
+
+       console.log("[VIDEOPLUGIN][twilio.js] showOffline CALLED");
+
+       exec(
+            function (e) {
+           console.log("[VIDEOPLUGIN][twilio.js] showOffline() RESPONSE: " + e); //e is true/false
+
+           if (eventCallback) {
+               // not object
+               //eventCallback(e.event, e.data);
+               eventCallback(e.event, e); 
+           }
+       },
+            null,
+            "TwilioVideoPlugin",
+            "showOffline",
+            []
+            );
+   };
+
+	// TwilioVideo.showAlert = function (eventCallback) {
+	// 	
+	// 	console.log("[VIDEOPLUGIN][twilio.js] showAlert CALLED");
+	// 	
+	// 	exec(
+	// 		 function (e) {
+	// 			console.log("[VIDEOPLUGIN][twilio.js] showAlert() RESPONSE: " + e); //e is true/false
+	// 			
+	// 			if (eventCallback) {
+	// 				// not object
+	// 				//eventCallback(e.event, e.data);
+	// 				eventCallback(e.event, e);  //e is true/false
+	// 			}
+	// 		},
+	// 		 null,
+	// 		 "TwilioVideoPlugin",
+	// 		 "showAlert",
+	// 		 []
+	// 		 );
+	// };
 
 module.exports = TwilioVideo;
 
