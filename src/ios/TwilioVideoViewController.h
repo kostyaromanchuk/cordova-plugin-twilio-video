@@ -33,6 +33,7 @@
 
 @property (nonatomic, weak) IBOutlet UIButton *disconnectButton;
 @property (nonatomic, weak) IBOutlet UIButton *micButton;
+@property (nonatomic, weak) IBOutlet UIButton *switchAudioButton;
 @property (nonatomic, weak) IBOutlet UILabel *roomLabel;
 @property (nonatomic, weak) IBOutlet UILabel *roomLine;
 

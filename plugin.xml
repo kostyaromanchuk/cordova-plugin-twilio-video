@@ -66,8 +66,33 @@
         <resource-file src="src/ios/Resources/baseline_arrow_back_white_48dp.png" target="Resources/baseline_arrow_back_white_48dp.png" />
         <resource-file src="src/ios/Resources/baseline_arrow_back_white_48dp@2x.png" target="Resources/baseline_arrow_back_white_48dp@2x.png" />
         <resource-file src="src/ios/Resources/baseline_arrow_back_white_48dp@3x.png" target="Resources/baseline_arrow_back_white_48dp@3x.png" />
- 
 
+		<resource-file src="src/iosesources/baseline_bluetooth_connected_grey_24pt.png" target="Resources/baseline_bluetooth_connected_grey_24pt.png" />
+		<resource-file src="src/iosesources/baseline_bluetooth_connected_grey_24pt@2x.png" target="Resources/baseline_bluetooth_connected_grey_24pt@2x.png" />
+		<resource-file src="src/iosesources/baseline_bluetooth_connected_grey_24pt@3x.png" target="Resources/baseline_bluetooth_connected_grey_24pt@3x.png" />
+		<resource-file src="src/iosesources/baseline_bluetooth_connected_white_24pt.png" target="Resources/baseline_bluetooth_connected_white_24pt.png" />
+		<resource-file src="src/iosesources/baseline_bluetooth_connected_white_24pt@2x.png" target="Resources/baseline_bluetooth_connected_white_24pt@2x.png" />
+		<resource-file src="src/iosesources/baseline_bluetooth_connected_white_24pt@3x.png" target="Resources/baseline_bluetooth_connected_white_24pt@3x.png" />
+		<resource-file src="src/iosesources/baseline_headphones_grey_24pt.png" target="Resources/baseline_headphones_grey_24pt.png" />
+		<resource-file src="src/iosesources/baseline_headphones_grey_24pt@2x.png" target="Resources/baseline_headphones_grey_24pt@2x.png" />
+		<resource-file src="src/iosesources/baseline_headphones_grey_24pt@3x.png" target="Resources/baseline_headphones_grey_24pt@3x.png" />
+		<resource-file src="src/iosesources/baseline_headphones_white_24pt@1x.png" target="Resources/baseline_headphones_white_24pt@1x.png" />
+		<resource-file src="src/iosesources/baseline_headphones_white_24pt@2x.png" target="Resources/baseline_headphones_white_24pt@2x.png" />
+		<resource-file src="src/iosesources/baseline_headphones_white_24pt@3x.png" target="Resources/baseline_headphones_white_24pt@3x.png" />
+		<resource-file src="src/iosesources/baseline_hearing_grey_24pt.png" target="Resources/baseline_hearing_grey_24pt.png" />
+		<resource-file src="src/iosesources/baseline_hearing_grey_24pt@2x.png" target="Resources/baseline_hearing_grey_24pt@2x.png" />
+		<resource-file src="src/iosesources/baseline_hearing_grey_24pt@3x.png" target="Resources/baseline_hearing_grey_24pt@3x.png" />
+		<resource-file src="src/iosesources/baseline_hearing_white_24pt@1x.png" target="Resources/baseline_hearing_white_24pt@1x.png" />
+		<resource-file src="src/iosesources/baseline_hearing_white_24pt@2x.png" target="Resources/baseline_hearing_white_24pt@2x.png" />
+		<resource-file src="src/iosesources/baseline_hearing_white_24pt@3x.png" target="Resources/baseline_hearing_white_24pt@3x.png" />
+		<resource-file src="src/iosesources/baseline_phonelink_ring_grey_24pt.png" target="Resources/baseline_phonelink_ring_grey_24pt.png" />
+		<resource-file src="src/iosesources/baseline_phonelink_ring_grey_24pt@2x.png" target="Resources/baseline_phonelink_ring_grey_24pt@2x.png" />
+		<resource-file src="src/iosesources/baseline_phonelink_ring_grey_24pt@3x.png" target="Resources/baseline_phonelink_ring_grey_24pt@3x.png" />
+		<resource-file src="src/iosesources/baseline_phonelink_ring_white_24pt@1x.png" target="Resources/baseline_phonelink_ring_white_24pt@1x.png" />
+		<resource-file src="src/iosesources/baseline_phonelink_ring_white_24pt@2x.png" target="Resources/baseline_phonelink_ring_white_24pt@2x.png" />
+		<resource-file src="src/iosesources/baseline_phonelink_ring_white_24pt@3x.png" target="Resources/baseline_phonelink_ring_white_24pt@3x.png" />
+		<resource-file src="src/iosesources/baseline_switch_video_black_18dp.png" target="Resources/baseline_switch_video_black_18dp.png" />
+		<resource-file src="src/iosesources/baseline_switch_video_white_18dp.png" target="Resources/baseline_switch_video_white_18dp.png" />
 
         <framework src="TwilioVideo" type="podspec" spec="3.7.2"/>
         <podspec>
