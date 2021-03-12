@@ -402,6 +402,22 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
 #pragma mark VIEW LIFECYCLE
 #pragma mark -
 
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+
+    //used to chack if device is faceup
+    [self start_deviceOrientation_monitoring];
+}
+
+-(void)viewWillDisappear:(BOOL)animated{
+    [super viewWillDisappear: animated];
+    
+    [self viewWillDisappear_TurnOffOrientationsNotifications];
+    
+    [self log_debug:@"[TwilioVideoViewController.m] viewWillDisappear CALLED - DOES NOTHING"];
+
+}
+
 - (void)viewDidDisappear:(BOOL)animated {
     [super viewDidDisappear:animated];
     
@@ -561,9 +577,6 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
     //----------------------------------------------------------------------------------------------
     //MONITOR PROXIMITY and ORIENTATION
     //----------------------------------------------------------------------------------------------
-    //used to chack if device is faceup
-    [self start_deviceOrientation_monitoring];
-    
     //used to disable camera if device is near your ear (except if it face up)
     [self enable_ProximitySensor_addObserver];
     //----------------------------------------------------------------------------------------------
@@ -3557,17 +3570,6 @@ static NSInteger _twilioAudioConfiguredOnce = FALSE;
     [self log_info:[NSString stringWithFormat:@"[TwilioVideoViewController] [cameraSource:didFailWithError:] Capture failed with error.\ncode = %lu error = %@", error.code, error.localizedDescription]];
 }
 
-
-
-
--(void)viewWillDisappear:(BOOL)animated{
-    [super viewWillDisappear: animated];
-    
-    [self viewWillDisappear_TurnOffOrientationsNotifications];
-    
-    [self log_debug:@"[TwilioVideoViewController.m] viewWillDisappear CALLED - DOES NOTHING"];
-
-}
 
 //CODE WAS IN viewWillDisappear but hung camera in following use case
 //start a call
